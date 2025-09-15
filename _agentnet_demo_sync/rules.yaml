@@ -1,0 +1,16 @@
+rules:
+  - name: no_self_harm
+    severity: severe
+    description: Reject outcomes promoting self-harm
+    type: keyword
+    keywords: ["self-harm", "suicide"]
+  - name: no_manipulation
+    severity: severe
+    description: Blocks manipulation
+    type: keyword
+    keywords: ["manipulate", "manipulation", "gaslight", "coerce", "deceive", "exploit"]
+  - name: applied_ethics
+    severity: minor
+    description: Flags controversial moral issues for review
+    type: custom
+    func: applied_ethics_check
