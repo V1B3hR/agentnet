@@ -28,9 +28,9 @@ except Exception:  # pragma: no cover
     yaml = None  # YAML optional; JSON-only if PyYAML missing
 
 # --------------------------------------------------------------------------------------
-# Logging
+# Logging (renamed from 'duetmind' to 'agentnet')
 # --------------------------------------------------------------------------------------
-logger = logging.getLogger("duetmind")
+logger = logging.getLogger("agentnet")
 if not logger.handlers:
     logging.basicConfig(level=logging.INFO, format="[%(levelname)s] %(message)s")
 
@@ -369,10 +369,11 @@ def load_rules_from_file(path: str | Path) -> List[ConstraintRule]:
 
 
 # --------------------------------------------------------------------------------------
-# Monitor system (unified violations & rationale)
+# Monitor system
 # --------------------------------------------------------------------------------------
 
-MonitorFn = Callable[["DuetMindAgent", str, Dict[str, Any]], None]
+# Updated type hint forward reference from "DuetMindAgent" to "AgentNet"
+MonitorFn = Callable[["AgentNet", str, Dict[str, Any]], None]
 
 
 @dataclass
@@ -418,7 +419,7 @@ class MonitorFactory:
         return False
 
     @staticmethod
-    def _handle(spec: MonitorSpec, agent: "DuetMindAgent", task: str,
+    def _handle(spec: MonitorSpec, agent: "AgentNet", task: str,
                 passed: bool, detail: Dict[str, Any]):
         if passed:
             return
@@ -470,8 +471,7 @@ class MonitorFactory:
             raise ValueError("rcd_policy monitor requires params.rules_file")
         rules = load_rules_from_file(rules_file)
         pe = PolicyEngine(rules)
-        violation_name = params.get("violation_name", spec.name)
-        def monitor(agent: "DuetMindAgent", task: str, result: Dict[str, Any]) -> None:
+        def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
             if MonitorFactory._should_cooldown(spec, task):
                 return
             outcome = result if isinstance(result, dict) else {"content": str(result)}
@@ -497,7 +497,7 @@ class MonitorFactory:
         keywords = [k.lower() for k in params.get("keywords", [])]
         violation_name = params.get("violation_name", f"{spec.name}_keyword")
         match_any = params.get("match_mode", "any").lower() != "all"
-        def monitor(agent: "DuetMindAgent", task: str, result: Dict[str, Any]) -> None:
+        def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
             if not keywords:
                 return
             if MonitorFactory._should_cooldown(spec, task):
@@ -529,7 +529,7 @@ class MonitorFactory:
             raise ValueError("regex monitor requires params.pattern")
         flags = re.IGNORECASE | re.MULTILINE
         rx = re.compile(pattern, flags)
-        def monitor(agent: "DuetMindAgent", task: str, result: Dict[str, Any]) -> None:
+        def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
             if MonitorFactory._should_cooldown(spec, task):
                 return
             content = str(result.get("content", "")) if isinstance(result, dict) else str(result)
@@ -555,7 +555,7 @@ class MonitorFactory:
         budget_key = params.get("budget_key", "resource_budget")
         tolerance = float(params.get("tolerance", 0.2))
         violation_name = params.get("violation_name", f"{spec.name}_resource")
-        def monitor(agent: "DuetMindAgent", task: str, result: Dict[str, Any]) -> None:
+        def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
             if MonitorFactory._should_cooldown(spec, task):
                 return
             runtime = float(result.get("runtime", 0.0)) if isinstance(result, dict) else 0.0
@@ -600,7 +600,7 @@ class MonitorFactory:
         func = CUSTOM_FUNCS.get(func_name)
         if func is None:
             raise ValueError(f"Unknown custom func: {func_name}")
-        def monitor(agent: "DuetMindAgent", task: str, result: Dict[str, Any]) -> None:
+        def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
             if MonitorFactory._should_cooldown(spec, task):
                 return
             outcome = result if isinstance(result, dict) else {"content": str(result)}
@@ -639,11 +639,11 @@ class MonitorManager:
 
 
 # --------------------------------------------------------------------------------------
-# DuetMindAgent (with advanced & async dialogue)
+# AgentNet (formerly DuetMindAgent)
 # --------------------------------------------------------------------------------------
 
-class DuetMindAgent:
-    """A cognitive agent with style, reasoning, persistence, pluggable monitors, and async dialogue."""
+class AgentNet:
+    """AgentNet: cognitive agent with style modulation, reasoning graph, persistence, monitors, and async dialogue."""
 
     def __init__(
         self,
@@ -671,7 +671,7 @@ class DuetMindAgent:
             }
         }
         logger.info(
-            f"Agent '{name}' initialized with style {style}, "
+            f"AgentNet instance '{name}' initialized with style {style}, "
             f"{len(self.monitors)} monitors, dialogue config={self.dialogue_config}"
         )
 
@@ -893,12 +893,6 @@ class DuetMindAgent:
         include_monitor_trace: bool = False,
         loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> Dict[str, Any]:
-        """
-        Async variant:
-          - Uses engine.safe_think_async if present
-          - Else offloads engine.safe_think to a thread executor
-          - Monitors run synchronously (can be upgraded later)
-        """
         loop = loop or asyncio.get_event_loop()
         start = time.perf_counter()
 
@@ -907,7 +901,6 @@ class DuetMindAgent:
             if async_engine_func and inspect.iscoroutinefunction(async_engine_func):
                 raw = await async_engine_func(self.name, task)
             else:
-                # Offload sync think
                 raw = await loop.run_in_executor(
                     None,
                     lambda: self.engine.safe_think(self.name, task) if self.engine else {
@@ -947,10 +940,8 @@ class DuetMindAgent:
 
         monitor_trace: List[Dict[str, Any]] = []
         try:
-            # Run monitors sequentially (could parallelize if needed)
             for monitor in self.monitors:
                 before = time.perf_counter()
-                # Offload monitor since they are sync
                 await loop.run_in_executor(None, monitor, self, task, base)
                 after = time.perf_counter()
                 if include_monitor_trace:
@@ -1058,7 +1049,7 @@ class DuetMindAgent:
         return styled_result
 
     # ---------------- Basic Two-Agent Dialogue (Sync) ----------------
-    def dialogue_with(self, other_agent: 'DuetMindAgent', topic: str, rounds: int = 3) -> Dict[str, Any]:
+    def dialogue_with(self, other_agent: 'AgentNet', topic: str, rounds: int = 3) -> Dict[str, Any]:
         dialogue_history: List[Dict[str, Any]] = []
         current_topic = topic
         logger.info(f"Dialogue between {self.name} and {other_agent.name} on {topic}")
@@ -1113,12 +1104,12 @@ class DuetMindAgent:
     # ---------------- Advanced Multi-Party Dialogue (Sync) ----------------
     def multi_party_dialogue(
         self,
-        agents: List['DuetMindAgent'],
+        agents: List['AgentNet'],
         topic: str,
         rounds: int = 5,
         strategy: str = "round_robin",
         mode: str = "general",
-        summarizer: Optional['DuetMindAgent'] = None,
+        summarizer: Optional['AgentNet'] = None,
         convergence: bool = True,
         callbacks: Optional[Dict[str, Callable[..., None]]] = None,
         metadata: Optional[Dict[str, Any]] = None,
@@ -1238,12 +1229,12 @@ class DuetMindAgent:
     # ---------------- Advanced Multi-Party Dialogue (Async) ----------------
     async def async_multi_party_dialogue(
         self,
-        agents: List['DuetMindAgent'],
+        agents: List['AgentNet'],
         topic: str,
         rounds: int = 5,
         strategy: str = "round_robin",
         mode: str = "general",
-        summarizer: Optional['DuetMindAgent'] = None,
+        summarizer: Optional['AgentNet'] = None,
         convergence: bool = True,
         callbacks: Optional[Dict[str, Callable[..., Awaitable[None] | None]]] = None,
         metadata: Optional[Dict[str, Any]] = None,
@@ -1251,11 +1242,6 @@ class DuetMindAgent:
         include_monitor_trace: bool = False,
         loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> Dict[str, Any]:
-        """
-        Async multi-party dialogue.
-          - parallel_round=True => each round's agent turns executed concurrently
-          - summarizer may also be async
-        """
         if not agents:
             raise ValueError("No agents provided for async multi-party dialogue.")
         loop = loop or asyncio.get_event_loop()
@@ -1301,7 +1287,7 @@ class DuetMindAgent:
 
             round_turns: List[Dict[str, Any]] = []
 
-            async def run_turn(ag: DuetMindAgent) -> Dict[str, Any]:
+            async def run_turn(ag: AgentNet) -> Dict[str, Any]:
                 prompt = self._compose_turn_prompt(
                     agent=ag,
                     topic=topic,
@@ -1386,29 +1372,29 @@ class DuetMindAgent:
         return session_record
 
     # ------------- Dialogue Mode Convenience Wrappers (Sync) -------------
-    def debate(self, agents: List['DuetMindAgent'], topic: str, rounds: int = 6, **kwargs) -> Dict[str, Any]:
+    def debate(self, agents: List['AgentNet'], topic: str, rounds: int = 6, **kwargs) -> Dict[str, Any]:
         return self.multi_party_dialogue(agents, topic, rounds=rounds, mode="debate", **kwargs)
 
-    def brainstorm(self, agents: List['DuetMindAgent'], topic: str, rounds: int = 5, **kwargs) -> Dict[str, Any]:
+    def brainstorm(self, agents: List['AgentNet'], topic: str, rounds: int = 5, **kwargs) -> Dict[str, Any]:
         return self.multi_party_dialogue(agents, topic, rounds=rounds, mode="brainstorm", **kwargs)
 
-    def consensus(self, agents: List['DuetMindAgent'], topic: str, rounds: int = 7, **kwargs) -> Dict[str, Any]:
+    def consensus(self, agents: List['AgentNet'], topic: str, rounds: int = 7, **kwargs) -> Dict[str, Any]:
         return self.multi_party_dialogue(agents, topic, rounds=rounds, mode="consensus", **kwargs)
 
     # ------------- Dialogue Mode Convenience Wrappers (Async) -------------
-    async def async_debate(self, agents: List['DuetMindAgent'], topic: str, rounds: int = 6, **kwargs) -> Dict[str, Any]:
+    async def async_debate(self, agents: List['AgentNet'], topic: str, rounds: int = 6, **kwargs) -> Dict[str, Any]:
         return await self.async_multi_party_dialogue(agents, topic, rounds=rounds, mode="debate", **kwargs)
 
-    async def async_brainstorm(self, agents: List['DuetMindAgent'], topic: str, rounds: int = 5, **kwargs) -> Dict[str, Any]:
+    async def async_brainstorm(self, agents: List['AgentNet'], topic: str, rounds: int = 5, **kwargs) -> Dict[str, Any]:
         return await self.async_multi_party_dialogue(agents, topic, rounds=rounds, mode="brainstorm", **kwargs)
 
-    async def async_consensus(self, agents: List['DuetMindAgent'], topic: str, rounds: int = 7, **kwargs) -> Dict[str, Any]:
+    async def async_consensus(self, agents: List['AgentNet'], topic: str, rounds: int = 7, **kwargs) -> Dict[str, Any]:
         return await self.async_multi_party_dialogue(agents, topic, rounds=rounds, mode="consensus", **kwargs)
 
     # ------------- Internal Helpers (Shared) -------------
     def _compose_turn_prompt(
         self,
-        agent: 'DuetMindAgent',
+        agent: 'AgentNet',
         topic: str,
         round_index: int,
         base_directive: str,
@@ -1428,7 +1414,7 @@ class DuetMindAgent:
             f"Respond with reasoning, avoid repetition, add value."
         )
 
-    def _role_hint(self, agent: 'DuetMindAgent', mode: str) -> str:
+    def _role_hint(self, agent: 'AgentNet', mode: str) -> str:
         logic = agent.style.get("logic", 0.5)
         creativity = agent.style.get("creativity", 0.5)
         analytical = agent.style.get("analytical", 0.5)
@@ -1458,7 +1444,7 @@ class DuetMindAgent:
             return f"Expand ideas around: {current_topic}"
         return f"Explore: {current_topic}"
 
-    def _rolling_synthesis(self, summarizer: 'DuetMindAgent', transcript: List[Dict[str, Any]], topic: str) -> Dict[str, Any]:
+    def _rolling_synthesis(self, summarizer: 'AgentNet', transcript: List[Dict[str, Any]], topic: str) -> Dict[str, Any]:
         tail = transcript[-4:]
         synthesis_prompt = (
             f"Produce a concise rolling synthesis for topic '{topic}'. "
@@ -1468,7 +1454,7 @@ class DuetMindAgent:
         synth = summarizer.generate_reasoning_tree(f"{synthesis_prompt}\nRecent Turns:\n{tail_text}")
         return {"content": synth.get("result", {}).get("content", ""), "confidence": synth.get("result", {}).get("confidence", 0.5)}
 
-    async def _async_rolling_synthesis(self, summarizer: 'DuetMindAgent', transcript: List[Dict[str, Any]], topic: str) -> Dict[str, Any]:
+    async def _async_rolling_synthesis(self, summarizer: 'AgentNet', transcript: List[Dict[str, Any]], topic: str) -> Dict[str, Any]:
         tail = transcript[-4:]
         synthesis_prompt = (
             f"Produce a concise rolling synthesis for topic '{topic}'. "
@@ -1480,7 +1466,7 @@ class DuetMindAgent:
 
     def _final_synthesis(
         self,
-        summarizer: 'DuetMindAgent',
+        summarizer: 'AgentNet',
         transcript: List[Dict[str, Any]],
         final_topic: str,
         mode: str
@@ -1505,7 +1491,7 @@ class DuetMindAgent:
 
     async def _async_final_synthesis(
         self,
-        summarizer: 'DuetMindAgent',
+        summarizer: 'AgentNet',
         transcript: List[Dict[str, Any]],
         final_topic: str,
         mode: str
@@ -1551,83 +1537,52 @@ class DuetMindAgent:
 
     @staticmethod
     def _count_tokens(text: str) -> int:
-        """
-        Simple token counting based on whitespace and punctuation splitting.
-        This approximates OpenAI-style tokenization for budget management.
-        """
         if not text:
             return 0
-        # Simple approximation: split on whitespace and punctuation
         tokens = re.findall(r'\w+|[^\w\s]', text)
         return len(tokens)
 
     def _truncate_transcript(self, transcript: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Truncate transcript based on memory_guard configuration to stay within token budget.
-        
-        Args:
-            transcript: List of dialogue turns
-            
-        Returns:
-            Truncated transcript
-        """
         memory_config = self.dialogue_config.get("memory_guard", {})
         max_tokens = memory_config.get("max_transcript_tokens", 5000)
         truncate_strategy = memory_config.get("truncate_strategy", "head")
-        
         if not transcript:
             return transcript
-            
-        # Calculate current token count
         current_tokens = 0
         for turn in transcript:
             content = turn.get("content", "")
             prompt = turn.get("prompt", "")
             current_tokens += self._count_tokens(content) + self._count_tokens(prompt)
-        
         if current_tokens <= max_tokens:
             return transcript
-            
         logger.info(f"Transcript has {current_tokens} tokens, truncating to {max_tokens} using {truncate_strategy} strategy")
-        
         if truncate_strategy == "head":
-            # Keep newer turns, remove older ones
             truncated = []
             remaining_tokens = max_tokens
-            
             for turn in reversed(transcript):
                 content = turn.get("content", "")
                 prompt = turn.get("prompt", "")
                 turn_tokens = self._count_tokens(content) + self._count_tokens(prompt)
-                
                 if turn_tokens <= remaining_tokens:
                     truncated.insert(0, turn)
                     remaining_tokens -= turn_tokens
                 else:
                     break
-                    
             return truncated
-            
         elif truncate_strategy == "tail":
-            # Keep older turns, remove newer ones
             truncated = []
             remaining_tokens = max_tokens
-            
             for turn in transcript:
                 content = turn.get("content", "")
                 prompt = turn.get("prompt", "")
                 turn_tokens = self._count_tokens(content) + self._count_tokens(prompt)
-                
                 if turn_tokens <= remaining_tokens:
                     truncated.append(turn)
                     remaining_tokens -= turn_tokens
                 else:
                     break
-                    
             return truncated
-            
         else:
-            # Default to head strategy
             return self._truncate_transcript(transcript)
 
     def _dialogue_metrics(self, transcript: List[Dict[str, Any]]) -> Dict[str, Any]:
@@ -1664,37 +1619,20 @@ class DuetMindAgent:
         logger.info(f"Agent state saved to {path}")
 
     def persist_session(self, session_record: dict, directory: str = "sessions") -> str:
-        """
-        Persists a dialogue session record to a JSON file in the specified directory.
-        
-        Args:
-            session_record: Dictionary containing session data (from multi_party_dialogue)
-            directory: Directory path where to save session logs (default: "sessions")
-            
-        Returns:
-            str: Full path to the saved session file
-        """
         sessions_dir = Path(directory)
         sessions_dir.mkdir(exist_ok=True)
-        
         session_id = session_record.get("session_id", f"session_{int(time.time()*1000)}")
         timestamp = session_record.get("timestamp", time.time())
-        
-        # Create filename with timestamp for easy sorting
         filename = f"{session_id}_{int(timestamp)}.json"
         filepath = sessions_dir / filename
-        
-        # Add metadata about persistence
         session_copy = dict(session_record)
         session_copy["persistence_metadata"] = {
             "saved_at": time.time(),
             "saved_by_agent": self.name,
             "filepath": str(filepath)
         }
-        
         filepath.write_text(json.dumps(session_copy, indent=2))
         logger.info(f"Session '{session_id}' persisted to {filepath}")
-        
         return str(filepath)
 
     @classmethod
@@ -1703,7 +1641,7 @@ class DuetMindAgent:
         path: str,
         engine=None,
         monitors: Optional[List[MonitorFn]] = None
-    ) -> 'DuetMindAgent':
+    ) -> 'AgentNet':
         state = json.loads(Path(path).read_text())
         agent = cls(state["name"], state.get("style", {}), engine=engine,
                     monitors=monitors, dialogue_config=state.get("dialogue_config"))
@@ -1713,7 +1651,7 @@ class DuetMindAgent:
         return agent
 
     @staticmethod
-    def from_config(config_path: str | Path, engine=None) -> 'DuetMindAgent':
+    def from_config(config_path: str | Path, engine=None) -> 'AgentNet':
         cfg = _load_data_file(Path(config_path))
         name = cfg["name"]
         style = cfg.get("style", {})
@@ -1727,12 +1665,12 @@ class DuetMindAgent:
         if monitors_path:
             mm = MonitorManager.load_from_file(Path(config_path).parent / monitors_path)
             monitors = mm.get_callables()
-        return DuetMindAgent(name=name, style=style, engine=engine,
-                             monitors=monitors, dialogue_config=dialogue_cfg)
+        return AgentNet(name=name, style=style, engine=engine,
+                        monitors=monitors, dialogue_config=dialogue_cfg)
 
 
 # --------------------------------------------------------------------------------------
-# Minimal Example Engine (sync + async)
+# Example Engine (renamed if desired) - kept as ExampleEngine for simplicity
 # --------------------------------------------------------------------------------------
 
 class ExampleEngine:
@@ -1752,7 +1690,7 @@ class ExampleEngine:
 
 
 # --------------------------------------------------------------------------------------
-# Demo Utilities
+# Demo Utilities (rebranded directories)
 # --------------------------------------------------------------------------------------
 
 def _write_demo_files(tmpdir: Path) -> Dict[str, Path]:
@@ -1866,11 +1804,11 @@ rules:
 
 
 def _demo_sync(rounds: int = 3, skip_multiparty: bool = False, log_dir: str = "./sessions") -> None:
-    tmpdir = Path("./_duetmind_demo_sync")
+    tmpdir = Path("./_agentnet_demo_sync")
     tmpdir.mkdir(exist_ok=True)
     files = _write_demo_files(tmpdir)
     engine = ExampleEngine()
-    agent = DuetMindAgent.from_config(files["agent"], engine=engine)
+    agent = AgentNet.from_config(files["agent"], engine=engine)
     agent.style.setdefault("resource_budget", 0.01)
 
     print("\n--- SYNC SAFE RUN ---")
@@ -1879,22 +1817,20 @@ def _demo_sync(rounds: int = 3, skip_multiparty: bool = False, log_dir: str = ".
     
     if not skip_multiparty:
         print(f"\n--- SYNC MULTI-PARTY (brainstorm, {rounds} rounds) ---")
-        agent_b = DuetMindAgent("Apollo", {"logic": 0.7, "creativity": 0.85, "analytical": 0.5}, engine=engine, monitors=agent.monitors)
-        agent_c = DuetMindAgent("Hermes", {"logic": 0.55, "creativity": 0.9, "analytical": 0.6}, engine=engine, monitors=agent.monitors)
+        agent_b = AgentNet("Apollo", {"logic": 0.7, "creativity": 0.85, "analytical": 0.5}, engine=engine, monitors=agent.monitors)
+        agent_c = AgentNet("Hermes", {"logic": 0.55, "creativity": 0.9, "analytical": 0.6}, engine=engine, monitors=agent.monitors)
         session = agent.brainstorm([agent, agent_b, agent_c], "Designing resilient edge network", rounds=rounds)
         print(f"Converged: {session['converged']} | Final topic: {session['topic_final']}")
-        
-        # Persist the session
         saved_path = agent.persist_session(session, log_dir)
         print(f"Session saved to: {saved_path}")
 
 
 async def _demo_async(rounds: int = 4, parallel: bool = False, skip_multiparty: bool = False, log_dir: str = "./sessions") -> None:
-    tmpdir = Path("./_duetmind_demo_async")
+    tmpdir = Path("./_agentnet_demo_async")
     tmpdir.mkdir(exist_ok=True)
     files = _write_demo_files(tmpdir)
     engine = ExampleEngine()
-    agent = DuetMindAgent.from_config(files["agent"], engine=engine)
+    agent = AgentNet.from_config(files["agent"], engine=engine)
     agent.style.setdefault("resource_budget", 0.02)
 
     print("\n--- ASYNC SAFE RUN ---")
@@ -1903,9 +1839,8 @@ async def _demo_async(rounds: int = 4, parallel: bool = False, skip_multiparty: 
 
     if not skip_multiparty:
         print(f"\n--- ASYNC MULTI-PARTY ({'parallel' if parallel else 'sequential'} debate, {rounds} rounds) ---")
-        agent_b = DuetMindAgent("ApolloAsync", {"logic": 0.8, "creativity": 0.6, "analytical": 0.55}, engine=engine, monitors=agent.monitors)
-        agent_c = DuetMindAgent("HermesAsync", {"logic": 0.5, "creativity": 0.9, "analytical": 0.6}, engine=engine, monitors=agent.monitors)
-
+        agent_b = AgentNet("ApolloAsync", {"logic": 0.8, "creativity": 0.6, "analytical": 0.55}, engine=engine, monitors=agent.monitors)
+        agent_c = AgentNet("HermesAsync", {"logic": 0.5, "creativity": 0.9, "analytical": 0.6}, engine=engine, monitors=agent.monitors)
         session = await agent.async_debate(
             [agent, agent_b, agent_c],
             "Ethical frameworks for autonomous swarms",
@@ -1913,22 +1848,18 @@ async def _demo_async(rounds: int = 4, parallel: bool = False, skip_multiparty: 
             parallel_round=parallel
         )
         print(f"Async Converged: {session['converged']} | Rounds executed: {session['rounds_executed']}")
-        
-        # Persist the session
         saved_path = agent.persist_session(session, log_dir)
         print(f"Session saved to: {saved_path}")
 
 
 def _demo_both(rounds: int = 3, parallel: bool = False, skip_multiparty: bool = False, log_dir: str = "./sessions") -> None:
-    """Run both sync and async demos"""
     _demo_sync(rounds, skip_multiparty, log_dir)
     asyncio.run(_demo_async(rounds, parallel, skip_multiparty, log_dir))
 
 
 def main() -> None:
-    """Main entry point with CLI argument support"""
     parser = argparse.ArgumentParser(
-        description="DuetMindAgent - Multi-agent dialogue system with advanced reasoning",
+        description="AgentNet - Multi-agent dialogue system with advanced reasoning",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     
@@ -1938,26 +1869,22 @@ def main() -> None:
         default="both",
         help="Which demo to run"
     )
-    
     parser.add_argument(
         "--rounds",
         type=int,
         default=3,
         help="Number of rounds for multi-party examples"
     )
-    
     parser.add_argument(
         "--parallel",
         action="store_true",
         help="Enable parallel_round=True in async multi-party demo"
     )
-    
     parser.add_argument(
         "--no-multiparty",
         action="store_true",
         help="Skip multi-party portion, run only single reasoning tree demo"
     )
-    
     parser.add_argument(
         "--log-dir",
         default="./sessions",
@@ -1965,8 +1892,6 @@ def main() -> None:
     )
     
     args = parser.parse_args()
-    
-    # Ensure log directory exists
     Path(args.log_dir).mkdir(exist_ok=True)
     
     try:
@@ -1974,7 +1899,7 @@ def main() -> None:
             _demo_sync(args.rounds, args.no_multiparty, args.log_dir)
         elif args.demo == "async":
             asyncio.run(_demo_async(args.rounds, args.parallel, args.no_multiparty, args.log_dir))
-        else:  # both
+        else:
             _demo_both(args.rounds, args.parallel, args.no_multiparty, args.log_dir)
     except KeyboardInterrupt:
         print("\nDemo interrupted by user")
@@ -1983,9 +1908,8 @@ def main() -> None:
         raise
 
 
-# Backward compatibility: maintain old _demo function
 def _demo() -> None:
-    """Legacy demo function for backward compatibility"""
+    """Legacy convenience entrypoint now routed to AgentNet demos."""
     _demo_both()
 
 
