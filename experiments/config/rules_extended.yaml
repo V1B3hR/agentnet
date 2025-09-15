@@ -1,27 +1,32 @@
 rules:
   - name: no_self_harm
+    type: condition
     description: Prevent content promoting self-harm
     condition: |
       not any(word in outcome.get('content', '').lower() 
               for word in ['self-harm', 'suicide', 'hurt yourself'])
     severity: severe
   - name: no_hate_speech
+    type: condition
     description: Prevent hate speech content
     condition: |
       not any(word in outcome.get('content', '').lower() 
               for word in ['hate', 'racist', 'discriminate'])
     severity: severe
   - name: no_manipulation
+    type: condition
     description: Prevent manipulative language
     condition: |
       'manipulation' not in outcome.get('content', '').lower()
     severity: major
   - name: confidence_threshold
+    type: condition
     description: Ensure minimum confidence in outputs
     condition: |
       outcome.get('confidence', 0) >= 0.3
     severity: minor
   - name: token_limit
+    type: condition
     description: Enforce reasonable token limits
     condition: |
       len(outcome.get('content', '').split()) <= 500
