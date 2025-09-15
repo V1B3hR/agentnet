@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AgentNet Experimental Metrics Schema",
+  "description": "Standardized JSONL metrics schema for AgentNet experiments",
+  "type": "object",
+  "required": ["timestamp", "experiment_type", "session_id", "metrics"],
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp of the experiment"
+    },
+    "experiment_type": {
+      "type": "string",
+      "enum": [
+        "smoke_test",
+        "style_exploration", 
+        "convergence_dynamics",
+        "monitor_stress",
+        "fault_injection",
+        "async_benchmark",
+        "extensibility_test",
+        "policy_tiers"
+      ],
+      "description": "Type of experiment being recorded"
+    },
+    "session_id": {
+      "type": "string",
+      "description": "Unique identifier for the experimental session"
+    },
+    "agent_count": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Number of agents involved in the experiment"
+    },
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "runtime_seconds": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total runtime in seconds"
+        },
+        "confidence_score": {
+          "type": "number",
+          "description": "Average confidence score across all outputs"
+        },
+        "token_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total token count for the session"
+        },
+        "violation_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Total number of monitor violations"
+        },
+        "severe_violations": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of severe monitor violations"
+        },
+        "convergence_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Rate of convergence for multi-agent sessions"
+        },
+        "lexical_diversity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Lexical diversity score (unique tokens / total tokens)"
+        },
+        "rounds_executed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of dialogue rounds completed"
+        },
+        "style_insights_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of style insights generated"
+        }
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "description": "Experiment-specific parameters",
+      "additionalProperties": true
+    },
+    "outcomes": {
+      "type": "object",
+      "description": "Experiment-specific outcomes",
+      "properties": {
+        "success": {
+          "type": "boolean",
+          "description": "Whether the experiment succeeded"
+        },
+        "error_message": {
+          "type": "string",
+          "description": "Error message if experiment failed"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}
