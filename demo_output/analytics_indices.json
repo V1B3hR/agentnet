@@ -1,0 +1,152 @@
+{
+  "indices": [
+    {
+      "session_id": "demo_session_123",
+      "timestamp": 1758005455.41869,
+      "agents": [
+        "TestAgent",
+        "AnalyticsAgent"
+      ],
+      "topics": [
+        "AI system optimization",
+        "Advanced optimization strategies"
+      ],
+      "keywords": [
+        "focus",
+        "performance",
+        "optimization",
+        "scalability",
+        "improvements",
+        "systems",
+        "advanced",
+        "caching",
+        "mechanisms",
+        "distributed"
+      ],
+      "sentiment_score": 0.5,
+      "complexity_score": 0.1305,
+      "interaction_patterns": {
+        "dialogue_mode": "unknown",
+        "convergence_achieved": false,
+        "participant_balance": {},
+        "round_dynamics": [
+          {
+            "round": 1,
+            "avg_confidence": 0.5,
+            "confidence_variance": 0.0
+          }
+        ]
+      },
+      "content_summary": "We should focus on performance optimization and scalability improvements for AI systems. Advanced caching mechanisms and distributed processing would enhance system efficiency"
+    }
+  ],
+  "aggregated_analytics": {
+    "summary": {
+      "total_sessions": 1,
+      "avg_sentiment": 0.5,
+      "avg_complexity": 0.1305,
+      "date_range": {
+        "earliest": 1758005455.41869,
+        "latest": 1758005455.41869
+      }
+    },
+    "top_agents": [
+      [
+        "TestAgent",
+        1
+      ],
+      [
+        "AnalyticsAgent",
+        1
+      ]
+    ],
+    "top_topics": [
+      [
+        "AI system optimization",
+        1
+      ],
+      [
+        "Advanced optimization strategies",
+        1
+      ]
+    ],
+    "top_keywords": [
+      [
+        "focus",
+        1
+      ],
+      [
+        "performance",
+        1
+      ],
+      [
+        "optimization",
+        1
+      ],
+      [
+        "scalability",
+        1
+      ],
+      [
+        "improvements",
+        1
+      ],
+      [
+        "systems",
+        1
+      ],
+      [
+        "advanced",
+        1
+      ],
+      [
+        "caching",
+        1
+      ],
+      [
+        "mechanisms",
+        1
+      ],
+      [
+        "distributed",
+        1
+      ]
+    ],
+    "topic_clusters": {
+      "AI system optimization": {
+        "count": 1,
+        "related_keywords": [
+          "scalability",
+          "focus",
+          "optimization",
+          "systems",
+          "caching",
+          "advanced",
+          "improvements",
+          "distributed",
+          "mechanisms",
+          "performance"
+        ],
+        "avg_sentiment": 0.5,
+        "avg_complexity": 0.1305
+      },
+      "Advanced optimization strategies": {
+        "count": 1,
+        "related_keywords": [
+          "scalability",
+          "focus",
+          "optimization",
+          "systems",
+          "caching",
+          "advanced",
+          "improvements",
+          "distributed",
+          "mechanisms",
+          "performance"
+        ],
+        "avg_sentiment": 0.5,
+        "avg_complexity": 0.1305
+      }
+    }
+  }
+}
