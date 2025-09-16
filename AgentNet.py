@@ -652,11 +652,24 @@ class AgentNet:
         engine=None,
         monitors: Optional[List[MonitorFn]] = None,
         dialogue_config: Optional[Dict[str, Any]] = None,
+        pre_monitors: Optional[List[MonitorFn]] = None,
     ):
+        """
+        Initialize AgentNet instance.
+        
+        Args:
+            name: Agent name
+            style: Style weights dictionary
+            engine: Inference engine
+            monitors: Post-style monitors (executed after style influence)
+            dialogue_config: Dialogue configuration
+            pre_monitors: Pre-style monitors (executed before style influence)
+        """
         self.name = name
         self.style = style
         self.engine = engine
         self.monitors = monitors or []
+        self.pre_monitors = pre_monitors or []
         self.knowledge_graph: Dict[str, Any] = {}
         self.interaction_history: List[Dict[str, Any]] = []
         self.dialogue_config = dialogue_config or {
@@ -675,8 +688,33 @@ class AgentNet:
         
         logger.info(
             f"AgentNet instance '{name}' initialized with style {style}, "
-            f"{len(self.monitors)} monitors, dialogue config={self.dialogue_config}"
+            f"{len(self.monitors)} monitors, {len(self.pre_monitors)} pre-monitors, dialogue config={self.dialogue_config}"
         )
+
+    def register_monitor(self, monitor_fn: MonitorFn, pre_style: bool = False) -> None:
+        """
+        Register an additional monitor at runtime.
+        
+        Args:
+            monitor_fn: Monitor function to register
+            pre_style: If True, add to pre_monitors (run before style influence).
+                      If False, add to monitors (run after style influence).
+        """
+        if pre_style:
+            self.pre_monitors.append(monitor_fn)
+        else:
+            self.monitors.append(monitor_fn)
+
+    def register_monitors(self, monitor_fns: List[MonitorFn], pre_style: bool = False) -> None:
+        """
+        Register multiple monitors at runtime.
+        
+        Args:
+            monitor_fns: List of monitor functions to register
+            pre_style: If True, add to pre_monitors. If False, add to monitors.
+        """
+        for monitor_fn in monitor_fns:
+            self.register_monitor(monitor_fn, pre_style)
 
     # ---------------- Normalization Helpers ----------------
     @staticmethod
@@ -796,10 +834,65 @@ class AgentNet:
         base["measured_runtime"] = runtime
 
         monitor_trace: List[Dict[str, Any]] = []
+        
+        # Run pre-style monitors first (before style influence)
+        try:
+            for pre_monitor in self.pre_monitors:
+                before = time.perf_counter()
+                pre_monitor(self, task, base)
+                after = time.perf_counter()
+                if include_monitor_trace:
+                    monitor_trace.append({
+                        "monitor": f"pre_{getattr(pre_monitor, '__name__', 'anonymous_monitor')}",
+                        "elapsed": after - before
+                    })
+        except CognitiveFault as cf:
+            if record_fault:
+                node_key = f"{self.name}_pre_fault_{len(self.knowledge_graph)}"
+                fault_record = {
+                    "task": task,
+                    "result": {
+                        "error": "CognitiveFault (pre-style)",
+                        "message": str(cf),
+                        "violations": cf.violations,
+                        "severity": cf.severity.value,
+                        "runtime": runtime
+                    },
+                    "style": self.style,
+                    "timestamp": len(self.knowledge_graph),
+                }
+                self.knowledge_graph[node_key] = fault_record
+                self.interaction_history.append({
+                    "task": task,
+                    "node": node_key,
+                    "fault": True,
+                    "severity": cf.severity.value,
+                    "violations": cf.violations,
+                    "monitor_phase": "pre_style"
+                })
+            if re_raise_fault:
+                raise
+            return {
+                "root": node_key,
+                "result": fault_record["result"],
+                "agent": self.name,
+                "fault": True,
+                "severity": cf.severity.value,
+                "violations": cf.violations,
+                "runtime_seconds": runtime,
+                "schema_version": 2,
+                "monitor_phase": "pre_style",
+                **({"monitors": monitor_trace} if include_monitor_trace else {})
+            }
+
+        # Apply style influence after pre-monitors pass
+        styled_result = self._apply_style_influence(base, task)
+        
+        # Run post-style monitors
         try:
             for monitor in self.monitors:
                 before = time.perf_counter()
-                monitor(self, task, base)
+                monitor(self, task, styled_result)
                 after = time.perf_counter()
                 if include_monitor_trace:
                     monitor_trace.append({

@@ -2,20 +2,84 @@
 _agentnet_demo_*
 sessions/
 
-# Python cache
+# ==============================
+# Python bytecode / caches
+# ==============================
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-*.so
+*.py[cod]
+*$py.class
 
+# Shared object / compiled extensions
+*.so
+.Python
+
+# ==============================
+# Packaging / build artifacts
+# (from main branch list)
+# ==============================
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ==============================
 # Virtual environments
+# (combined from both sides)
+# ==============================
 .venv/
 venv/
 ENV/
+env/
+.env/
+.python_env/
 
-# IDEs
+# ==============================
+# Experimental / data artifacts
+# (from main branch additions)
+# ==============================
+experiments/data/raw_sessions/
+experiments/data/analytics/
+
+# ==============================
+# Tool / test caches (standard; safe)
+# ==============================
+.pytest_cache/
+.mypy_cache/
+.pyre/
+.pytype/
+coverage.xml
+htmlcov/
+.coverage*
+.cache/
+
+# ==============================
+# IDE / Editor
+# (present conceptually on both sides—explicit names optional)
+# Add specifics if you use them (examples commented out)
+# ==============================
+# .idea/
+# .vscode/
+# *.code-workspace
+
+# ==============================
+# Misc (optional common patterns—commented for opt-in)
+# ==============================
+# *.log
+# .DS_Store
 .vscode/
 .idea/
 *.swp
