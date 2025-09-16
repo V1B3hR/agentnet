@@ -1,0 +1,16 @@
+name: Athena
+style:
+  logic: 0.9
+  creativity: 0.4
+  analytical: 0.8
+monitors:
+  file: monitors.yaml
+dialogue_config:
+  default_rounds: 4
+  max_rounds: 25
+  convergence_window: 4
+  convergence_min_overlap: 0.5
+  convergence_min_conf: 0.75
+  memory_guard:
+    max_transcript_tokens: 6000
+    truncate_strategy: head

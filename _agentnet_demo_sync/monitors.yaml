@@ -1,0 +1,20 @@
+monitors:
+  - name: policy_rcd
+    type: rcd_policy
+    severity: severe
+    description: Policy rules check on final outcome
+    params:
+      rules_file: /home/runner/work/agentnet/agentnet/_agentnet_demo_sync/rules.yaml
+  - name: keyword_guard
+    type: keyword
+    severity: severe
+    description: Block certain tokens
+    params:
+      keywords: ["manipulation", "hate", "racist"]
+  - name: resource_guard
+    type: resource
+    severity: minor
+    description: Flag overruns beyond 20%
+    params:
+      budget_key: resource_budget
+      tolerance: 0.2
