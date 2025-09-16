@@ -670,6 +670,9 @@ class AgentNet:
                 "truncate_strategy": "head"
             }
         }
+        # Initialize resilience manager for fault tolerance
+        self.resilience_manager = ResilienceManager()
+        
         logger.info(
             f"AgentNet instance '{name}' initialized with style {style}, "
             f"{len(self.monitors)} monitors, dialogue config={self.dialogue_config}"
@@ -1028,6 +1031,63 @@ class AgentNet:
         if include_monitor_trace:
             response["monitors"] = monitor_trace
         return response
+
+    # ---------------- Resilience Methods ----------------
+    def generate_reasoning_tree_with_resilience(self, task: str, include_monitor_trace: bool = False) -> Dict[str, Any]:
+        """Generate reasoning tree with resilience patterns."""
+        operation_name = f"reasoning_tree_{self.name}"
+        
+        def operation() -> Dict[str, Any]:
+            # Capture the task and include_monitor_trace in closure
+            return self.generate_reasoning_tree(task, include_monitor_trace=include_monitor_trace)
+        
+        result = self.resilience_manager.execute_with_resilience(operation_name, operation)
+        
+        if result["success"]:
+            return result["result"]
+        else:
+            # Return a fallback response on persistent failure
+            return {
+                "root": f"{self.name}_fallback",
+                "result": {
+                    "content": f"[{self.name}] Fallback response due to resilience failure: {result['error']}",
+                    "confidence": 0.1,
+                    "fallback": True,
+                    "resilience_attempts": result["attempts"]
+                },
+                "agent": self.name,
+                "fault": True,
+                "schema_version": 2
+            }
+    
+    async def async_generate_reasoning_tree_with_resilience(self, task: str, include_monitor_trace: bool = False) -> Dict[str, Any]:
+        """Async generate reasoning tree with resilience patterns."""
+        operation_name = f"async_reasoning_tree_{self.name}"
+        
+        async def operation() -> Dict[str, Any]:
+            return await self.async_generate_reasoning_tree(task, include_monitor_trace=include_monitor_trace)
+        
+        result = await self.resilience_manager.execute_with_resilience_async(operation_name, operation)
+        
+        if result["success"]:
+            return result["result"]
+        else:
+            return {
+                "root": f"{self.name}_async_fallback",
+                "result": {
+                    "content": f"[{self.name}] Async fallback response due to resilience failure: {result['error']}",
+                    "confidence": 0.1,
+                    "fallback": True,
+                    "resilience_attempts": result["attempts"]
+                },
+                "agent": self.name,
+                "fault": True,
+                "schema_version": 2
+            }
+    
+    def get_resilience_metrics(self) -> Dict[str, Any]:
+        """Get resilience metrics for this agent."""
+        return self.resilience_manager.get_metrics()
 
     # ---------------- Style Influence ----------------
     def _apply_style_influence(self, base_result: Dict[str, Any], task: str) -> Dict[str, Any]:
@@ -1690,6 +1750,1746 @@ class ExampleEngine:
 
 
 # --------------------------------------------------------------------------------------
+# Fault Injection & Resilience Experiments
+# --------------------------------------------------------------------------------------
+
+class FaultType(str, Enum):
+    """Types of faults that can be injected for resilience testing."""
+    NETWORK_TIMEOUT = "network_timeout"
+    PROCESSING_ERROR = "processing_error"
+    MEMORY_PRESSURE = "memory_pressure"
+    RATE_LIMIT = "rate_limit"
+    RANDOM_FAILURE = "random_failure"
+
+
+@dataclass
+class FaultConfig:
+    """Configuration for fault injection."""
+    fault_type: FaultType
+    probability: float = 0.1  # 0.0 to 1.0
+    delay_ms: int = 0
+    error_message: str = ""
+    recovery_attempts: int = 3
+
+
+class FaultInjectionMonitor:
+    """Monitor that injects faults for resilience testing."""
+    
+    def __init__(self, name: str, fault_configs: List[FaultConfig], 
+                 severity: Severity = Severity.MINOR):
+        self.name = name
+        self.severity = severity
+        self.fault_configs = fault_configs
+        self.fault_stats = {
+            "injected_count": 0,
+            "recovered_count": 0,
+            "failed_count": 0,
+            "fault_types": {}
+        }
+    
+    def evaluate(self, outcome: Dict[str, Any]) -> Tuple[bool, Optional[str], float]:
+        start_time = time.perf_counter()
+        
+        # Inject faults based on configuration
+        for config in self.fault_configs:
+            if self._should_inject_fault(config):
+                self._inject_fault(config, outcome)
+        
+        elapsed = time.perf_counter() - start_time
+        return True, None, elapsed
+    
+    def _should_inject_fault(self, config: FaultConfig) -> bool:
+        """Determine if a fault should be injected based on probability."""
+        import random
+        return random.random() < config.probability
+    
+    def _inject_fault(self, config: FaultConfig, outcome: Dict[str, Any]) -> None:
+        """Inject a specific type of fault."""
+        self.fault_stats["injected_count"] += 1
+        fault_type = config.fault_type.value
+        self.fault_stats["fault_types"][fault_type] = self.fault_stats["fault_types"].get(fault_type, 0) + 1
+        
+        logger.warning(f"[FAULT_INJECTION] Injecting {fault_type} fault")
+        
+        if config.delay_ms > 0:
+            time.sleep(config.delay_ms / 1000.0)
+        
+        if config.fault_type == FaultType.PROCESSING_ERROR:
+            # Simulate processing error by modifying outcome
+            outcome["fault_injected"] = {
+                "type": fault_type,
+                "message": config.error_message or "Simulated processing error",
+                "recoverable": True
+            }
+        elif config.fault_type == FaultType.NETWORK_TIMEOUT:
+            # Simulate network timeout
+            outcome["network_fault"] = {
+                "type": "timeout",
+                "duration_ms": config.delay_ms,
+                "recoverable": True
+            }
+        elif config.fault_type == FaultType.MEMORY_PRESSURE:
+            # Simulate memory pressure
+            outcome["memory_fault"] = {
+                "type": "pressure",
+                "severity": "high",
+                "suggested_action": "reduce_batch_size"
+            }
+
+
+class ResilienceManager:
+    """Manages resilience strategies for agent operations."""
+    
+    def __init__(self, max_retries: int = 3, backoff_factor: float = 1.5,
+                 circuit_breaker_threshold: int = 5):
+        self.max_retries = max_retries
+        self.backoff_factor = backoff_factor
+        self.circuit_breaker_threshold = circuit_breaker_threshold
+        self.failure_counts = {}
+        self.circuit_breakers = {}
+        self.resilience_metrics = {
+            "total_operations": 0,
+            "failed_operations": 0,
+            "recovered_operations": 0,
+            "circuit_breaker_trips": 0
+        }
+    
+    def execute_with_resilience(self, operation_name: str, 
+                              operation: Callable[[], Any]) -> Dict[str, Any]:
+        """Execute an operation with resilience patterns."""
+        self.resilience_metrics["total_operations"] += 1
+        
+        # Check circuit breaker
+        if self._is_circuit_open(operation_name):
+            logger.warning(f"[RESILIENCE] Circuit breaker open for {operation_name}")
+            return {
+                "success": False,
+                "error": "circuit_breaker_open",
+                "result": None,
+                "attempts": 0
+            }
+        
+        last_exception = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                result = operation()
+                
+                # Reset failure count on success
+                self.failure_counts[operation_name] = 0
+                if attempt > 0:
+                    self.resilience_metrics["recovered_operations"] += 1
+                    logger.info(f"[RESILIENCE] Operation {operation_name} recovered after {attempt} attempts")
+                
+                return {
+                    "success": True,
+                    "result": result,
+                    "attempts": attempt + 1,
+                    "recovered": attempt > 0
+                }
+                
+            except Exception as e:
+                last_exception = e
+                self.failure_counts[operation_name] = self.failure_counts.get(operation_name, 0) + 1
+                
+                if attempt < self.max_retries:
+                    delay = self.backoff_factor ** attempt
+                    logger.warning(f"[RESILIENCE] Attempt {attempt + 1} failed for {operation_name}, retrying in {delay:.2f}s")
+                    time.sleep(delay)
+                else:
+                    logger.error(f"[RESILIENCE] All attempts failed for {operation_name}")
+        
+        # Check if circuit breaker should be triggered
+        if self.failure_counts.get(operation_name, 0) >= self.circuit_breaker_threshold:
+            self._trip_circuit_breaker(operation_name)
+        
+        self.resilience_metrics["failed_operations"] += 1
+        return {
+            "success": False,
+            "error": str(last_exception),
+            "result": None,
+            "attempts": self.max_retries + 1
+        }
+    
+    async def execute_with_resilience_async(self, operation_name: str,
+                                          operation: Callable[[], Awaitable[Any]]) -> Dict[str, Any]:
+        """Async version of execute_with_resilience."""
+        self.resilience_metrics["total_operations"] += 1
+        
+        if self._is_circuit_open(operation_name):
+            logger.warning(f"[RESILIENCE] Circuit breaker open for {operation_name}")
+            return {
+                "success": False,
+                "error": "circuit_breaker_open",
+                "result": None,
+                "attempts": 0
+            }
+        
+        last_exception = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                result = await operation()
+                
+                self.failure_counts[operation_name] = 0
+                if attempt > 0:
+                    self.resilience_metrics["recovered_operations"] += 1
+                    logger.info(f"[RESILIENCE] Async operation {operation_name} recovered after {attempt} attempts")
+                
+                return {
+                    "success": True,
+                    "result": result,
+                    "attempts": attempt + 1,
+                    "recovered": attempt > 0
+                }
+                
+            except Exception as e:
+                last_exception = e
+                self.failure_counts[operation_name] = self.failure_counts.get(operation_name, 0) + 1
+                
+                if attempt < self.max_retries:
+                    delay = self.backoff_factor ** attempt
+                    logger.warning(f"[RESILIENCE] Async attempt {attempt + 1} failed for {operation_name}, retrying in {delay:.2f}s")
+                    await asyncio.sleep(delay)
+        
+        if self.failure_counts.get(operation_name, 0) >= self.circuit_breaker_threshold:
+            self._trip_circuit_breaker(operation_name)
+        
+        self.resilience_metrics["failed_operations"] += 1
+        return {
+            "success": False,
+            "error": str(last_exception),
+            "result": None,
+            "attempts": self.max_retries + 1
+        }
+    
+    def _is_circuit_open(self, operation_name: str) -> bool:
+        """Check if circuit breaker is open for an operation."""
+        breaker_info = self.circuit_breakers.get(operation_name)
+        if not breaker_info:
+            return False
+        
+        # Simple time-based circuit breaker (resets after 60 seconds)
+        if time.time() - breaker_info["tripped_at"] > 60:
+            del self.circuit_breakers[operation_name]
+            self.failure_counts[operation_name] = 0
+            logger.info(f"[RESILIENCE] Circuit breaker reset for {operation_name}")
+            return False
+        
+        return True
+    
+    def _trip_circuit_breaker(self, operation_name: str) -> None:
+        """Trip the circuit breaker for an operation."""
+        self.circuit_breakers[operation_name] = {
+            "tripped_at": time.time(),
+            "failure_count": self.failure_counts.get(operation_name, 0)
+        }
+        self.resilience_metrics["circuit_breaker_trips"] += 1
+        logger.error(f"[RESILIENCE] Circuit breaker tripped for {operation_name}")
+    
+    def get_metrics(self) -> Dict[str, Any]:
+        """Get resilience metrics."""
+        return {
+            **self.resilience_metrics,
+            "failure_counts": dict(self.failure_counts),
+            "active_circuit_breakers": list(self.circuit_breakers.keys()),
+            "success_rate": (
+                (self.resilience_metrics["total_operations"] - self.resilience_metrics["failed_operations"]) 
+                / max(self.resilience_metrics["total_operations"], 1)
+            )
+        }
+
+
+# --------------------------------------------------------------------------------------
+# Async vs Sync Performance Benchmarking
+# --------------------------------------------------------------------------------------
+
+@dataclass
+class BenchmarkResult:
+    """Results from a performance benchmark."""
+    operation_type: str
+    execution_mode: str  # "sync" or "async"
+    total_duration: float
+    avg_duration: float
+    min_duration: float
+    max_duration: float
+    operations_count: int
+    success_count: int
+    error_count: int
+    throughput: float  # operations per second
+    concurrency_level: int = 1
+
+
+class PerformanceBenchmark:
+    """Benchmarking tool for comparing sync vs async performance."""
+    
+    def __init__(self, agent: 'AgentNet'):
+        self.agent = agent
+        self.benchmark_history: List[BenchmarkResult] = []
+    
+    def benchmark_reasoning_tree(self, tasks: List[str], concurrency_levels: List[int] = [1, 5, 10]) -> Dict[str, Any]:
+        """Benchmark reasoning tree generation in both sync and async modes."""
+        results = {
+            "sync_results": [],
+            "async_results": [],
+            "comparison": {}
+        }
+        
+        # Benchmark sync execution
+        for concurrency in concurrency_levels:
+            if concurrency == 1:
+                # Single-threaded sync
+                sync_result = self._benchmark_sync_single(tasks, "reasoning_tree")
+                results["sync_results"].append(sync_result)
+            else:
+                # Multi-threaded sync (simulate concurrent requests)
+                sync_result = self._benchmark_sync_concurrent(tasks, concurrency, "reasoning_tree")
+                results["sync_results"].append(sync_result)
+        
+        # Benchmark async execution
+        for concurrency in concurrency_levels:
+            async_result = asyncio.run(self._benchmark_async(tasks, concurrency, "reasoning_tree"))
+            results["async_results"].append(async_result)
+        
+        # Generate comparison analysis
+        results["comparison"] = self._analyze_performance_comparison(
+            results["sync_results"], results["async_results"]
+        )
+        
+        return results
+    
+    def _benchmark_sync_single(self, tasks: List[str], operation_type: str) -> BenchmarkResult:
+        """Benchmark single-threaded sync execution."""
+        start_time = time.perf_counter()
+        durations = []
+        success_count = 0
+        error_count = 0
+        
+        for task in tasks:
+            task_start = time.perf_counter()
+            try:
+                self.agent.generate_reasoning_tree(task)
+                success_count += 1
+            except Exception as e:
+                logger.warning(f"Benchmark task failed: {e}")
+                error_count += 1
+            task_end = time.perf_counter()
+            durations.append(task_end - task_start)
+        
+        total_duration = time.perf_counter() - start_time
+        
+        result = BenchmarkResult(
+            operation_type=operation_type,
+            execution_mode="sync_single",
+            total_duration=total_duration,
+            avg_duration=sum(durations) / len(durations) if durations else 0,
+            min_duration=min(durations) if durations else 0,
+            max_duration=max(durations) if durations else 0,
+            operations_count=len(tasks),
+            success_count=success_count,
+            error_count=error_count,
+            throughput=success_count / total_duration if total_duration > 0 else 0,
+            concurrency_level=1
+        )
+        
+        self.benchmark_history.append(result)
+        return result
+    
+    def _benchmark_sync_concurrent(self, tasks: List[str], concurrency: int, operation_type: str) -> BenchmarkResult:
+        """Benchmark multi-threaded sync execution."""
+        import concurrent.futures
+        import threading
+        
+        start_time = time.perf_counter()
+        durations = []
+        success_count = 0
+        error_count = 0
+        durations_lock = threading.Lock()
+        
+        def execute_task(task: str) -> None:
+            nonlocal success_count, error_count
+            task_start = time.perf_counter()
+            try:
+                self.agent.generate_reasoning_tree(task)
+                with durations_lock:
+                    success_count += 1
+            except Exception as e:
+                logger.warning(f"Concurrent benchmark task failed: {e}")
+                with durations_lock:
+                    error_count += 1
+            task_end = time.perf_counter()
+            with durations_lock:
+                durations.append(task_end - task_start)
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as executor:
+            futures = [executor.submit(execute_task, task) for task in tasks]
+            concurrent.futures.wait(futures)
+        
+        total_duration = time.perf_counter() - start_time
+        
+        result = BenchmarkResult(
+            operation_type=operation_type,
+            execution_mode=f"sync_concurrent_{concurrency}",
+            total_duration=total_duration,
+            avg_duration=sum(durations) / len(durations) if durations else 0,
+            min_duration=min(durations) if durations else 0,
+            max_duration=max(durations) if durations else 0,
+            operations_count=len(tasks),
+            success_count=success_count,
+            error_count=error_count,
+            throughput=success_count / total_duration if total_duration > 0 else 0,
+            concurrency_level=concurrency
+        )
+        
+        self.benchmark_history.append(result)
+        return result
+    
+    async def _benchmark_async(self, tasks: List[str], concurrency: int, operation_type: str) -> BenchmarkResult:
+        """Benchmark async execution."""
+        start_time = time.perf_counter()
+        durations = []
+        success_count = 0
+        error_count = 0
+        
+        semaphore = asyncio.Semaphore(concurrency)
+        
+        async def execute_task(task: str) -> None:
+            nonlocal success_count, error_count
+            async with semaphore:
+                task_start = time.perf_counter()
+                try:
+                    await self.agent.async_generate_reasoning_tree(task)
+                    success_count += 1
+                except Exception as e:
+                    logger.warning(f"Async benchmark task failed: {e}")
+                    error_count += 1
+                task_end = time.perf_counter()
+                durations.append(task_end - task_start)
+        
+        await asyncio.gather(*[execute_task(task) for task in tasks])
+        
+        total_duration = time.perf_counter() - start_time
+        
+        result = BenchmarkResult(
+            operation_type=operation_type,
+            execution_mode=f"async_concurrent_{concurrency}",
+            total_duration=total_duration,
+            avg_duration=sum(durations) / len(durations) if durations else 0,
+            min_duration=min(durations) if durations else 0,
+            max_duration=max(durations) if durations else 0,
+            operations_count=len(tasks),
+            success_count=success_count,
+            error_count=error_count,
+            throughput=success_count / total_duration if total_duration > 0 else 0,
+            concurrency_level=concurrency
+        )
+        
+        self.benchmark_history.append(result)
+        return result
+    
+    def _analyze_performance_comparison(self, sync_results: List[BenchmarkResult], 
+                                      async_results: List[BenchmarkResult]) -> Dict[str, Any]:
+        """Analyze and compare sync vs async performance."""
+        analysis = {
+            "throughput_comparison": {},
+            "latency_comparison": {},
+            "scalability_analysis": {},
+            "recommendations": []
+        }
+        
+        # Compare throughput at different concurrency levels
+        for sync_result, async_result in zip(sync_results, async_results):
+            concurrency = sync_result.concurrency_level
+            sync_throughput = sync_result.throughput
+            async_throughput = async_result.throughput
+            
+            improvement = ((async_throughput - sync_throughput) / sync_throughput * 100) if sync_throughput > 0 else 0
+            
+            analysis["throughput_comparison"][f"concurrency_{concurrency}"] = {
+                "sync_throughput": sync_throughput,
+                "async_throughput": async_throughput,
+                "improvement_percent": improvement
+            }
+            
+            analysis["latency_comparison"][f"concurrency_{concurrency}"] = {
+                "sync_avg_latency": sync_result.avg_duration,
+                "async_avg_latency": async_result.avg_duration,
+                "sync_max_latency": sync_result.max_duration,
+                "async_max_latency": async_result.max_duration
+            }
+        
+        # Scalability analysis
+        sync_throughputs = [r.throughput for r in sync_results]
+        async_throughputs = [r.throughput for r in async_results]
+        
+        analysis["scalability_analysis"] = {
+            "sync_scalability": sync_throughputs[-1] / sync_throughputs[0] if sync_throughputs[0] > 0 else 0,
+            "async_scalability": async_throughputs[-1] / async_throughputs[0] if async_throughputs[0] > 0 else 0,
+            "async_advantage_at_scale": async_throughputs[-1] / sync_throughputs[-1] if sync_throughputs[-1] > 0 else 0
+        }
+        
+        # Generate recommendations
+        if analysis["scalability_analysis"]["async_advantage_at_scale"] > 1.5:
+            analysis["recommendations"].append("Async execution shows significant advantage at high concurrency")
+        
+        if any(comp["improvement_percent"] > 20 for comp in analysis["throughput_comparison"].values()):
+            analysis["recommendations"].append("Consider async execution for improved throughput")
+        
+        if analysis["scalability_analysis"]["async_scalability"] > analysis["scalability_analysis"]["sync_scalability"]:
+            analysis["recommendations"].append("Async execution scales better with concurrent load")
+        
+        return analysis
+    
+    def export_benchmark_report(self, filepath: str) -> None:
+        """Export benchmark results to a JSON report."""
+        report = {
+            "agent_name": self.agent.name,
+            "timestamp": time.time(),
+            "benchmark_history": [
+                {
+                    "operation_type": r.operation_type,
+                    "execution_mode": r.execution_mode,
+                    "total_duration": r.total_duration,
+                    "avg_duration": r.avg_duration,
+                    "min_duration": r.min_duration,
+                    "max_duration": r.max_duration,
+                    "operations_count": r.operations_count,
+                    "success_count": r.success_count,
+                    "error_count": r.error_count,
+                    "throughput": r.throughput,
+                    "concurrency_level": r.concurrency_level
+                }
+                for r in self.benchmark_history
+            ]
+        }
+        
+        with open(filepath, 'w') as f:
+            json.dump(report, f, indent=2)
+        
+        logger.info(f"Benchmark report exported to {filepath}")
+
+
+# --------------------------------------------------------------------------------------
+# Analytics Index Generation
+# --------------------------------------------------------------------------------------
+
+@dataclass
+class AnalyticsIndex:
+    """Index structure for analytics and search."""
+    session_id: str
+    timestamp: float
+    agents: List[str]
+    topics: List[str]
+    keywords: List[str]
+    sentiment_score: float
+    complexity_score: float
+    interaction_patterns: Dict[str, Any]
+    content_summary: str
+
+
+class AnalyticsIndexer:
+    """Generates searchable indices from agent interactions for analytics."""
+    
+    def __init__(self):
+        self.indices: List[AnalyticsIndex] = []
+        self.keyword_frequency = {}
+        self.topic_clusters = {}
+        self.interaction_patterns = {}
+    
+    def index_session(self, session_data: Dict[str, Any]) -> AnalyticsIndex:
+        """Generate analytics index for a session."""
+        session_id = session_data.get("session_id", f"session_{int(time.time())}")
+        
+        # Extract basic information
+        agents = session_data.get("participants", [])
+        if "agent_contributions" in session_data:
+            agents.extend(session_data["agent_contributions"].keys())
+        agents = list(set(agents))  # Remove duplicates
+        
+        # Extract topics
+        topics = []
+        if "topic_start" in session_data:
+            topics.append(session_data["topic_start"])
+        if "topic_final" in session_data and session_data["topic_final"] not in topics:
+            topics.append(session_data["topic_final"])
+        if "topic_evolution" in session_data:
+            topics.extend([t for t in session_data["topic_evolution"] if t not in topics])
+        
+        # Extract content for analysis
+        content_pieces = []
+        if "transcript" in session_data:
+            for turn in session_data["transcript"]:
+                if "content" in turn:
+                    content_pieces.append(turn["content"])
+        elif "dialogue_history" in session_data:
+            for entry in session_data["dialogue_history"]:
+                if "response" in entry and "result" in entry["response"]:
+                    content_pieces.append(entry["response"]["result"].get("content", ""))
+        
+        all_content = " ".join(content_pieces)
+        
+        # Generate keywords
+        keywords = self._extract_keywords(all_content)
+        
+        # Calculate sentiment and complexity scores
+        sentiment_score = self._calculate_sentiment_score(all_content)
+        complexity_score = self._calculate_complexity_score(all_content, session_data)
+        
+        # Analyze interaction patterns
+        interaction_patterns = self._analyze_interaction_patterns(session_data)
+        
+        # Create content summary
+        content_summary = self._generate_content_summary(all_content, topics)
+        
+        index = AnalyticsIndex(
+            session_id=session_id,
+            timestamp=session_data.get("timestamp", time.time()),
+            agents=agents,
+            topics=topics,
+            keywords=keywords,
+            sentiment_score=sentiment_score,
+            complexity_score=complexity_score,
+            interaction_patterns=interaction_patterns,
+            content_summary=content_summary
+        )
+        
+        self.indices.append(index)
+        self._update_aggregated_analytics(index)
+        
+        return index
+    
+    def _extract_keywords(self, content: str) -> List[str]:
+        """Extract important keywords from content."""
+        # Simple keyword extraction (can be enhanced with NLP libraries)
+        import string
+        
+        # Remove punctuation and convert to lowercase
+        content_clean = content.translate(str.maketrans('', '', string.punctuation)).lower()
+        words = content_clean.split()
+        
+        # Filter out common stop words
+        stop_words = {
+            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+            'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+            'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+            'should', 'may', 'might', 'can', 'this', 'that', 'these', 'those',
+            'i', 'you', 'he', 'she', 'it', 'we', 'they', 'me', 'him', 'her', 'us', 'them'
+        }
+        
+        # Count word frequencies
+        word_freq = {}
+        for word in words:
+            if len(word) > 2 and word not in stop_words:
+                word_freq[word] = word_freq.get(word, 0) + 1
+        
+        # Return top keywords
+        keywords = sorted(word_freq.items(), key=lambda x: x[1], reverse=True)[:10]
+        return [keyword for keyword, count in keywords]
+    
+    def _calculate_sentiment_score(self, content: str) -> float:
+        """Calculate sentiment score (simplified implementation)."""
+        positive_words = {
+            'good', 'great', 'excellent', 'positive', 'success', 'effective',
+            'efficient', 'beneficial', 'advantage', 'improvement', 'optimal',
+            'valuable', 'useful', 'helpful', 'innovative', 'creative'
+        }
+        
+        negative_words = {
+            'bad', 'poor', 'terrible', 'negative', 'failure', 'ineffective',
+            'inefficient', 'harmful', 'disadvantage', 'problem', 'issue',
+            'risk', 'danger', 'difficult', 'complex', 'challenging'
+        }
+        
+        words = content.lower().split()
+        positive_count = sum(1 for word in words if word in positive_words)
+        negative_count = sum(1 for word in words if word in negative_words)
+        
+        if positive_count + negative_count == 0:
+            return 0.5  # Neutral
+        
+        return positive_count / (positive_count + negative_count)
+    
+    def _calculate_complexity_score(self, content: str, session_data: Dict[str, Any]) -> float:
+        """Calculate complexity score based on various factors."""
+        factors = []
+        
+        # Content length factor
+        content_length = len(content.split())
+        length_score = min(content_length / 1000, 1.0)  # Normalize to 0-1
+        factors.append(length_score)
+        
+        # Number of participants factor
+        participants = len(session_data.get("participants", []))
+        participant_score = min(participants / 5, 1.0)  # Normalize to 0-1
+        factors.append(participant_score)
+        
+        # Number of rounds factor
+        rounds = session_data.get("rounds_executed", 1)
+        rounds_score = min(rounds / 10, 1.0)  # Normalize to 0-1
+        factors.append(rounds_score)
+        
+        # Topic evolution factor
+        topic_evolution = len(session_data.get("topic_evolution", []))
+        evolution_score = min(topic_evolution / 5, 1.0)  # Normalize to 0-1
+        factors.append(evolution_score)
+        
+        return sum(factors) / len(factors)
+    
+    def _analyze_interaction_patterns(self, session_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze interaction patterns in the session."""
+        patterns = {
+            "dialogue_mode": session_data.get("mode", "unknown"),
+            "convergence_achieved": session_data.get("converged", False),
+            "participant_balance": {},
+            "round_dynamics": []
+        }
+        
+        # Analyze participant balance
+        if "agent_contributions" in session_data:
+            total_contributions = sum(
+                contrib.get("rounds", 0) 
+                for contrib in session_data["agent_contributions"].values()
+            )
+            
+            for agent, contrib in session_data["agent_contributions"].items():
+                patterns["participant_balance"][agent] = {
+                    "contribution_ratio": contrib.get("rounds", 0) / max(total_contributions, 1),
+                    "insights_count": len(contrib.get("insights", []))
+                }
+        
+        # Analyze round dynamics (if transcript available)
+        if "transcript" in session_data:
+            round_confidences = {}
+            for turn in session_data["transcript"]:
+                round_num = turn.get("round", 1)
+                confidence = turn.get("confidence", 0.5)
+                
+                if round_num not in round_confidences:
+                    round_confidences[round_num] = []
+                round_confidences[round_num].append(confidence)
+            
+            for round_num, confidences in round_confidences.items():
+                patterns["round_dynamics"].append({
+                    "round": round_num,
+                    "avg_confidence": sum(confidences) / len(confidences),
+                    "confidence_variance": self._calculate_variance(confidences)
+                })
+        
+        return patterns
+    
+    def _generate_content_summary(self, content: str, topics: List[str]) -> str:
+        """Generate a concise summary of the content."""
+        # Simple extractive summarization
+        sentences = content.split('.')
+        sentences = [s.strip() for s in sentences if len(s.strip()) > 10]
+        
+        if not sentences:
+            return f"Discussion about: {', '.join(topics)}"
+        
+        # Score sentences based on keyword presence
+        keyword_topics = ' '.join(topics).lower().split()
+        scored_sentences = []
+        
+        for sentence in sentences[:10]:  # Limit to first 10 sentences
+            score = sum(1 for word in keyword_topics if word in sentence.lower())
+            scored_sentences.append((sentence, score))
+        
+        # Select top sentences
+        scored_sentences.sort(key=lambda x: x[1], reverse=True)
+        top_sentences = [s[0] for s in scored_sentences[:3]]
+        
+        summary = '. '.join(top_sentences)
+        if len(summary) > 200:
+            summary = summary[:200] + "..."
+        
+        return summary or f"Discussion about: {', '.join(topics)}"
+    
+    def _calculate_variance(self, values: List[float]) -> float:
+        """Calculate variance of a list of values."""
+        if not values:
+            return 0.0
+        
+        mean = sum(values) / len(values)
+        variance = sum((x - mean) ** 2 for x in values) / len(values)
+        return variance
+    
+    def _update_aggregated_analytics(self, index: AnalyticsIndex) -> None:
+        """Update aggregated analytics with new index."""
+        # Update keyword frequency
+        for keyword in index.keywords:
+            self.keyword_frequency[keyword] = self.keyword_frequency.get(keyword, 0) + 1
+        
+        # Update topic clusters (simple clustering by similar keywords)
+        for topic in index.topics:
+            if topic not in self.topic_clusters:
+                self.topic_clusters[topic] = {
+                    "count": 0,
+                    "related_keywords": set(),
+                    "avg_sentiment": 0.0,
+                    "avg_complexity": 0.0
+                }
+            
+            cluster = self.topic_clusters[topic]
+            cluster["count"] += 1
+            cluster["related_keywords"].update(index.keywords)
+            cluster["avg_sentiment"] = (
+                (cluster["avg_sentiment"] * (cluster["count"] - 1) + index.sentiment_score) 
+                / cluster["count"]
+            )
+            cluster["avg_complexity"] = (
+                (cluster["avg_complexity"] * (cluster["count"] - 1) + index.complexity_score) 
+                / cluster["count"]
+            )
+    
+    def search_sessions(self, query: str, filters: Optional[Dict[str, Any]] = None) -> List[AnalyticsIndex]:
+        """Search sessions based on query and filters."""
+        results = []
+        query_lower = query.lower()
+        filters = filters or {}
+        
+        for index in self.indices:
+            # Text matching
+            matches_query = (
+                query_lower in index.content_summary.lower() or
+                any(query_lower in topic.lower() for topic in index.topics) or
+                any(query_lower in keyword.lower() for keyword in index.keywords)
+            )
+            
+            if not matches_query:
+                continue
+            
+            # Apply filters
+            if "agents" in filters and not any(agent in index.agents for agent in filters["agents"]):
+                continue
+            
+            if "min_sentiment" in filters and index.sentiment_score < filters["min_sentiment"]:
+                continue
+            
+            if "max_complexity" in filters and index.complexity_score > filters["max_complexity"]:
+                continue
+            
+            if "date_range" in filters:
+                start, end = filters["date_range"]
+                if not (start <= index.timestamp <= end):
+                    continue
+            
+            results.append(index)
+        
+        return results
+    
+    def generate_analytics_report(self) -> Dict[str, Any]:
+        """Generate comprehensive analytics report."""
+        if not self.indices:
+            return {"error": "No indexed sessions available"}
+        
+        total_sessions = len(self.indices)
+        
+        # Calculate aggregate metrics
+        avg_sentiment = sum(idx.sentiment_score for idx in self.indices) / total_sessions
+        avg_complexity = sum(idx.complexity_score for idx in self.indices) / total_sessions
+        
+        # Most active agents
+        agent_activity = {}
+        for index in self.indices:
+            for agent in index.agents:
+                agent_activity[agent] = agent_activity.get(agent, 0) + 1
+        
+        top_agents = sorted(agent_activity.items(), key=lambda x: x[1], reverse=True)[:10]
+        
+        # Most discussed topics
+        topic_frequency = {}
+        for index in self.indices:
+            for topic in index.topics:
+                topic_frequency[topic] = topic_frequency.get(topic, 0) + 1
+        
+        top_topics = sorted(topic_frequency.items(), key=lambda x: x[1], reverse=True)[:10]
+        
+        # Top keywords
+        top_keywords = sorted(self.keyword_frequency.items(), key=lambda x: x[1], reverse=True)[:20]
+        
+        return {
+            "summary": {
+                "total_sessions": total_sessions,
+                "avg_sentiment": avg_sentiment,
+                "avg_complexity": avg_complexity,
+                "date_range": {
+                    "earliest": min(idx.timestamp for idx in self.indices),
+                    "latest": max(idx.timestamp for idx in self.indices)
+                }
+            },
+            "top_agents": top_agents,
+            "top_topics": top_topics,
+            "top_keywords": top_keywords,
+            "topic_clusters": {
+                topic: {
+                    **data,
+                    "related_keywords": list(data["related_keywords"])
+                }
+                for topic, data in self.topic_clusters.items()
+            }
+        }
+    
+    def export_indices(self, filepath: str) -> None:
+        """Export analytics indices to JSON file."""
+        export_data = {
+            "indices": [
+                {
+                    "session_id": idx.session_id,
+                    "timestamp": idx.timestamp,
+                    "agents": idx.agents,
+                    "topics": idx.topics,
+                    "keywords": idx.keywords,
+                    "sentiment_score": idx.sentiment_score,
+                    "complexity_score": idx.complexity_score,
+                    "interaction_patterns": idx.interaction_patterns,
+                    "content_summary": idx.content_summary
+                }
+                for idx in self.indices
+            ],
+            "aggregated_analytics": self.generate_analytics_report()
+        }
+        
+        with open(filepath, 'w') as f:
+            json.dump(export_data, f, indent=2)
+        
+        logger.info(f"Analytics indices exported to {filepath}")
+
+
+# --------------------------------------------------------------------------------------
+# Extensibility Experiments (Custom Monitors)
+# --------------------------------------------------------------------------------------
+
+class MonitorTemplate:
+    """Base template for creating custom monitors."""
+    
+    def __init__(self, name: str, severity: Severity = Severity.MINOR, 
+                 config: Optional[Dict[str, Any]] = None):
+        self.name = name
+        self.severity = severity
+        self.config = config or {}
+        self.metrics = {
+            "evaluations": 0,
+            "violations": 0,
+            "total_time": 0.0
+        }
+    
+    def evaluate(self, outcome: Dict[str, Any]) -> Tuple[bool, Optional[str], float]:
+        """Override this method to implement custom monitoring logic."""
+        raise NotImplementedError("Custom monitors must implement evaluate method")
+    
+    def reset_metrics(self) -> None:
+        """Reset monitor metrics."""
+        self.metrics = {
+            "evaluations": 0,
+            "violations": 0,
+            "total_time": 0.0
+        }
+    
+    def get_metrics(self) -> Dict[str, Any]:
+        """Get monitor performance metrics."""
+        return {
+            **self.metrics,
+            "avg_evaluation_time": (
+                self.metrics["total_time"] / max(self.metrics["evaluations"], 1)
+            ),
+            "violation_rate": (
+                self.metrics["violations"] / max(self.metrics["evaluations"], 1)
+            )
+        }
+
+
+class SentimentMonitor(MonitorTemplate):
+    """Monitor for sentiment analysis of agent outputs."""
+    
+    def __init__(self, name: str = "sentiment_monitor", 
+                 min_sentiment: float = 0.3, max_sentiment: float = 0.8,
+                 severity: Severity = Severity.MINOR):
+        super().__init__(name, severity, {
+            "min_sentiment": min_sentiment,
+            "max_sentiment": max_sentiment
+        })
+        self.min_sentiment = min_sentiment
+        self.max_sentiment = max_sentiment
+    
+    def evaluate(self, outcome: Dict[str, Any]) -> Tuple[bool, Optional[str], float]:
+        start_time = time.perf_counter()
+        self.metrics["evaluations"] += 1
+        
+        content = outcome.get("result", {}).get("content", "")
+        sentiment_score = self._analyze_sentiment(content)
+        
+        # Store sentiment score in outcome for potential use by other monitors
+        outcome.setdefault("monitoring_data", {})["sentiment_score"] = sentiment_score
+        
+        passed = self.min_sentiment <= sentiment_score <= self.max_sentiment
+        rationale = None
+        
+        if not passed:
+            self.metrics["violations"] += 1
+            if sentiment_score < self.min_sentiment:
+                rationale = f"Sentiment too negative: {sentiment_score:.2f} < {self.min_sentiment}"
+            else:
+                rationale = f"Sentiment too positive: {sentiment_score:.2f} > {self.max_sentiment}"
+        
+        elapsed = time.perf_counter() - start_time
+        self.metrics["total_time"] += elapsed
+        
+        return passed, rationale, elapsed
+    
+    def _analyze_sentiment(self, content: str) -> float:
+        """Simple sentiment analysis (can be enhanced with ML models)."""
+        positive_words = {
+            'good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic',
+            'positive', 'beneficial', 'helpful', 'useful', 'effective', 'successful',
+            'innovative', 'creative', 'valuable', 'optimal', 'efficient'
+        }
+        
+        negative_words = {
+            'bad', 'terrible', 'awful', 'horrible', 'negative', 'harmful',
+            'useless', 'ineffective', 'failed', 'problematic', 'dangerous',
+            'risky', 'difficult', 'impossible', 'wrong', 'broken'
+        }
+        
+        words = content.lower().split()
+        positive_count = sum(1 for word in words if word in positive_words)
+        negative_count = sum(1 for word in words if word in negative_words)
+        
+        if positive_count + negative_count == 0:
+            return 0.5  # Neutral
+        
+        return positive_count / (positive_count + negative_count)
+
+
+class ComplexityMonitor(MonitorTemplate):
+    """Monitor for content complexity analysis."""
+    
+    def __init__(self, name: str = "complexity_monitor",
+                 max_complexity: float = 0.8, severity: Severity = Severity.MINOR):
+        super().__init__(name, severity, {"max_complexity": max_complexity})
+        self.max_complexity = max_complexity
+    
+    def evaluate(self, outcome: Dict[str, Any]) -> Tuple[bool, Optional[str], float]:
+        start_time = time.perf_counter()
+        self.metrics["evaluations"] += 1
+        
+        content = outcome.get("result", {}).get("content", "")
+        complexity_score = self._calculate_complexity(content)
+        
+        outcome.setdefault("monitoring_data", {})["complexity_score"] = complexity_score
+        
+        passed = complexity_score <= self.max_complexity
+        rationale = None
+        
+        if not passed:
+            self.metrics["violations"] += 1
+            rationale = f"Content too complex: {complexity_score:.2f} > {self.max_complexity}"
+        
+        elapsed = time.perf_counter() - start_time
+        self.metrics["total_time"] += elapsed
+        
+        return passed, rationale, elapsed
+    
+    def _calculate_complexity(self, content: str) -> float:
+        """Calculate content complexity based on various factors."""
+        if not content.strip():
+            return 0.0
+        
+        factors = []
+        
+        # Sentence length factor
+        sentences = content.split('.')
+        sentences = [s.strip() for s in sentences if s.strip()]
+        if sentences:
+            avg_sentence_length = sum(len(s.split()) for s in sentences) / len(sentences)
+            length_factor = min(avg_sentence_length / 20, 1.0)  # Normalize
+            factors.append(length_factor)
+        
+        # Vocabulary complexity factor
+        words = content.lower().split()
+        unique_words = set(words)
+        vocab_complexity = len(unique_words) / max(len(words), 1)
+        factors.append(vocab_complexity)
+        
+        # Technical terms factor (simple heuristic)
+        technical_indicators = ['algorithm', 'framework', 'implementation', 'optimization',
+                              'architecture', 'methodology', 'analysis', 'evaluation']
+        technical_score = sum(1 for word in words if word in technical_indicators)
+        technical_factor = min(technical_score / 5, 1.0)
+        factors.append(technical_factor)
+        
+        return sum(factors) / len(factors) if factors else 0.0
+
+
+class DomainSpecificMonitor(MonitorTemplate):
+    """Monitor for domain-specific content validation."""
+    
+    def __init__(self, name: str, domain_keywords: List[str],
+                 required_keywords: List[str] = None,
+                 forbidden_keywords: List[str] = None,
+                 severity: Severity = Severity.MINOR):
+        super().__init__(name, severity, {
+            "domain_keywords": domain_keywords,
+            "required_keywords": required_keywords or [],
+            "forbidden_keywords": forbidden_keywords or []
+        })
+        self.domain_keywords = set(word.lower() for word in domain_keywords)
+        self.required_keywords = set(word.lower() for word in (required_keywords or []))
+        self.forbidden_keywords = set(word.lower() for word in (forbidden_keywords or []))
+    
+    def evaluate(self, outcome: Dict[str, Any]) -> Tuple[bool, Optional[str], float]:
+        start_time = time.perf_counter()
+        self.metrics["evaluations"] += 1
+        
+        content = outcome.get("result", {}).get("content", "").lower()
+        words = set(content.split())
+        
+        # Check domain relevance
+        domain_matches = len(words.intersection(self.domain_keywords))
+        domain_score = domain_matches / max(len(self.domain_keywords), 1)
+        
+        # Check required keywords
+        required_matches = words.intersection(self.required_keywords)
+        required_satisfied = len(required_matches) == len(self.required_keywords)
+        
+        # Check forbidden keywords
+        forbidden_matches = words.intersection(self.forbidden_keywords)
+        forbidden_violated = len(forbidden_matches) > 0
+        
+        # Store domain analysis in outcome
+        outcome.setdefault("monitoring_data", {})["domain_analysis"] = {
+            "domain_score": domain_score,
+            "required_satisfied": required_satisfied,
+            "forbidden_violated": forbidden_violated,
+            "domain_matches": domain_matches,
+            "missing_required": list(self.required_keywords - required_matches),
+            "forbidden_found": list(forbidden_matches)
+        }
+        
+        passed = required_satisfied and not forbidden_violated
+        rationale = None
+        
+        if not passed:
+            self.metrics["violations"] += 1
+            reasons = []
+            if not required_satisfied:
+                missing = list(self.required_keywords - required_matches)
+                reasons.append(f"Missing required keywords: {missing}")
+            if forbidden_violated:
+                reasons.append(f"Contains forbidden keywords: {list(forbidden_matches)}")
+            rationale = "; ".join(reasons)
+        
+        elapsed = time.perf_counter() - start_time
+        self.metrics["total_time"] += elapsed
+        
+        return passed, rationale, elapsed
+
+
+class MonitorChain:
+    """Chain multiple monitors together for complex evaluation."""
+    
+    def __init__(self, monitors: List[MonitorTemplate], 
+                 chain_strategy: str = "all_pass"):  # "all_pass", "any_pass", "majority_pass"
+        self.monitors = monitors
+        self.chain_strategy = chain_strategy
+        self.chain_metrics = {
+            "evaluations": 0,
+            "chain_violations": 0,
+            "individual_violations": {}
+        }
+    
+    def evaluate(self, outcome: Dict[str, Any]) -> Tuple[bool, List[str], float]:
+        """Evaluate outcome through monitor chain."""
+        start_time = time.perf_counter()
+        self.chain_metrics["evaluations"] += 1
+        
+        results = []
+        violations = []
+        
+        for monitor in self.monitors:
+            passed, rationale, _ = monitor.evaluate(outcome)
+            results.append(passed)
+            
+            if not passed and rationale:
+                violations.append(f"{monitor.name}: {rationale}")
+                monitor_name = monitor.name
+                self.chain_metrics["individual_violations"][monitor_name] = (
+                    self.chain_metrics["individual_violations"].get(monitor_name, 0) + 1
+                )
+        
+        # Apply chain strategy
+        if self.chain_strategy == "all_pass":
+            chain_passed = all(results)
+        elif self.chain_strategy == "any_pass":
+            chain_passed = any(results)
+        elif self.chain_strategy == "majority_pass":
+            chain_passed = sum(results) > len(results) / 2
+        else:
+            raise ValueError(f"Unknown chain strategy: {self.chain_strategy}")
+        
+        if not chain_passed:
+            self.chain_metrics["chain_violations"] += 1
+        
+        elapsed = time.perf_counter() - start_time
+        return chain_passed, violations, elapsed
+    
+    def get_chain_metrics(self) -> Dict[str, Any]:
+        """Get metrics for the monitor chain."""
+        individual_metrics = {
+            monitor.name: monitor.get_metrics() 
+            for monitor in self.monitors
+        }
+        
+        return {
+            "chain_strategy": self.chain_strategy,
+            "chain_metrics": self.chain_metrics,
+            "individual_metrics": individual_metrics,
+            "chain_violation_rate": (
+                self.chain_metrics["chain_violations"] / 
+                max(self.chain_metrics["evaluations"], 1)
+            )
+        }
+
+
+class MonitorPlugin:
+    """Plugin system for loading custom monitors dynamically."""
+    
+    def __init__(self):
+        self.registered_monitors = {}
+        self.plugin_instances = {}
+    
+    def register_monitor_class(self, name: str, monitor_class: type) -> None:
+        """Register a custom monitor class."""
+        if not issubclass(monitor_class, MonitorTemplate):
+            raise ValueError(f"Monitor class {monitor_class} must inherit from MonitorTemplate")
+        
+        self.registered_monitors[name] = monitor_class
+        logger.info(f"Registered custom monitor class: {name}")
+    
+    def create_monitor_instance(self, name: str, config: Dict[str, Any]) -> MonitorTemplate:
+        """Create an instance of a registered monitor."""
+        if name not in self.registered_monitors:
+            raise ValueError(f"Monitor class {name} not registered")
+        
+        monitor_class = self.registered_monitors[name]
+        instance = monitor_class(**config)
+        
+        instance_id = f"{name}_{id(instance)}"
+        self.plugin_instances[instance_id] = instance
+        
+        return instance
+    
+    def load_monitor_from_config(self, config: Dict[str, Any]) -> MonitorTemplate:
+        """Load monitor from configuration dictionary."""
+        monitor_type = config.get("type", "").lower()
+        
+        # Built-in monitors
+        if monitor_type == "sentiment":
+            return SentimentMonitor(
+                name=config.get("name", "sentiment_monitor"),
+                min_sentiment=config.get("min_sentiment", 0.3),
+                max_sentiment=config.get("max_sentiment", 0.8),
+                severity=_parse_severity(config.get("severity", "minor"))
+            )
+        elif monitor_type == "complexity":
+            return ComplexityMonitor(
+                name=config.get("name", "complexity_monitor"),
+                max_complexity=config.get("max_complexity", 0.8),
+                severity=_parse_severity(config.get("severity", "minor"))
+            )
+        elif monitor_type == "domain_specific":
+            return DomainSpecificMonitor(
+                name=config.get("name", "domain_monitor"),
+                domain_keywords=config.get("domain_keywords", []),
+                required_keywords=config.get("required_keywords", []),
+                forbidden_keywords=config.get("forbidden_keywords", []),
+                severity=_parse_severity(config.get("severity", "minor"))
+            )
+        elif monitor_type in self.registered_monitors:
+            # Custom registered monitor
+            monitor_config = {k: v for k, v in config.items() if k not in ["type"]}
+            return self.create_monitor_instance(monitor_type, monitor_config)
+        else:
+            raise ValueError(f"Unknown monitor type: {monitor_type}")
+    
+    def get_available_monitors(self) -> Dict[str, str]:
+        """Get list of available monitor types."""
+        built_in = {
+            "sentiment": "Sentiment analysis monitor",
+            "complexity": "Content complexity monitor", 
+            "domain_specific": "Domain-specific keyword monitor"
+        }
+        
+        custom = {
+            name: f"Custom monitor: {cls.__name__}" 
+            for name, cls in self.registered_monitors.items()
+        }
+        
+        return {**built_in, **custom}
+
+
+# --------------------------------------------------------------------------------------
+# Policy/Safety Modeling Extensions
+# --------------------------------------------------------------------------------------
+
+class PolicyLevel(str, Enum):
+    """Hierarchical policy levels for organizational governance."""
+    ORGANIZATIONAL = "organizational"
+    TEAM = "team"
+    INDIVIDUAL = "individual"
+    SESSION = "session"
+
+
+@dataclass
+class PolicyVersion:
+    """Versioned policy configuration."""
+    version: str
+    timestamp: float
+    rules: List[ConstraintRule]
+    metadata: Dict[str, Any]
+    active: bool = True
+
+
+class HierarchicalPolicyEngine(PolicyEngine):
+    """Extended policy engine with hierarchical rule management."""
+    
+    def __init__(self):
+        super().__init__()
+        self.policy_hierarchy = {level: [] for level in PolicyLevel}
+        self.policy_versions = {}
+        self.policy_inheritance = {
+            PolicyLevel.SESSION: [PolicyLevel.INDIVIDUAL, PolicyLevel.TEAM, PolicyLevel.ORGANIZATIONAL],
+            PolicyLevel.INDIVIDUAL: [PolicyLevel.TEAM, PolicyLevel.ORGANIZATIONAL],
+            PolicyLevel.TEAM: [PolicyLevel.ORGANIZATIONAL],
+            PolicyLevel.ORGANIZATIONAL: []
+        }
+        self.policy_metrics = {
+            "evaluations_by_level": {level.value: 0 for level in PolicyLevel},
+            "violations_by_level": {level.value: 0 for level in PolicyLevel},
+            "rule_effectiveness": {}
+        }
+    
+    def add_policy_level(self, level: PolicyLevel, rules: List[ConstraintRule]) -> None:
+        """Add rules at a specific policy level."""
+        self.policy_hierarchy[level].extend(rules)
+        logger.info(f"Added {len(rules)} rules at {level.value} level")
+    
+    def evaluate_hierarchical(self, outcome: Dict[str, Any], 
+                            context_level: PolicyLevel = PolicyLevel.SESSION) -> List[Dict[str, Any]]:
+        """Evaluate outcome against hierarchical policies."""
+        violations = []
+        
+        # Collect rules from hierarchy
+        applicable_rules = []
+        for level in [context_level] + self.policy_inheritance[context_level]:
+            applicable_rules.extend(self.policy_hierarchy[level])
+        
+        # Evaluate rules by level
+        for level in [context_level] + self.policy_inheritance[context_level]:
+            level_rules = self.policy_hierarchy[level]
+            if not level_rules:
+                continue
+                
+            self.policy_metrics["evaluations_by_level"][level.value] += 1
+            
+            for rule in level_rules:
+                passed, rationale, exception = rule.run(outcome)
+                
+                # Track rule effectiveness
+                rule_id = f"{level.value}:{rule.name}"
+                if rule_id not in self.policy_metrics["rule_effectiveness"]:
+                    self.policy_metrics["rule_effectiveness"][rule_id] = {
+                        "evaluations": 0, "violations": 0, "errors": 0
+                    }
+                
+                metrics = self.policy_metrics["rule_effectiveness"][rule_id]
+                metrics["evaluations"] += 1
+                
+                if not passed:
+                    self.policy_metrics["violations_by_level"][level.value] += 1
+                    metrics["violations"] += 1
+                    
+                    violation = {
+                        "rule_name": rule.name,
+                        "policy_level": level.value,
+                        "severity": rule.severity.value,
+                        "description": rule.description,
+                        "rationale": rationale,
+                        "timestamp": time.time()
+                    }
+                    
+                    if exception:
+                        violation["exception"] = str(exception)
+                        metrics["errors"] += 1
+                    
+                    violations.append(violation)
+        
+        return violations
+    
+    def version_policy(self, level: PolicyLevel, version_name: str, 
+                      metadata: Optional[Dict[str, Any]] = None) -> None:
+        """Create a versioned snapshot of policies at a specific level."""
+        version_key = f"{level.value}:{version_name}"
+        
+        if version_key in self.policy_versions:
+            # Deactivate previous version
+            self.policy_versions[version_key].active = False
+        
+        policy_version = PolicyVersion(
+            version=version_name,
+            timestamp=time.time(),
+            rules=list(self.policy_hierarchy[level]),  # Create copy
+            metadata=metadata or {},
+            active=True
+        )
+        
+        self.policy_versions[version_key] = policy_version
+        logger.info(f"Created policy version {version_key}")
+    
+    def rollback_policy(self, level: PolicyLevel, version_name: str) -> bool:
+        """Rollback to a specific policy version."""
+        version_key = f"{level.value}:{version_name}"
+        
+        if version_key not in self.policy_versions:
+            logger.error(f"Policy version {version_key} not found")
+            return False
+        
+        policy_version = self.policy_versions[version_key]
+        self.policy_hierarchy[level] = list(policy_version.rules)
+        policy_version.active = True
+        
+        logger.info(f"Rolled back to policy version {version_key}")
+        return True
+    
+    def get_policy_metrics(self) -> Dict[str, Any]:
+        """Get comprehensive policy metrics."""
+        total_evaluations = sum(self.policy_metrics["evaluations_by_level"].values())
+        total_violations = sum(self.policy_metrics["violations_by_level"].values())
+        
+        rule_effectiveness_summary = {}
+        for rule_id, metrics in self.policy_metrics["rule_effectiveness"].items():
+            if metrics["evaluations"] > 0:
+                rule_effectiveness_summary[rule_id] = {
+                    **metrics,
+                    "violation_rate": metrics["violations"] / metrics["evaluations"],
+                    "error_rate": metrics["errors"] / metrics["evaluations"]
+                }
+        
+        return {
+            "overall_metrics": {
+                "total_evaluations": total_evaluations,
+                "total_violations": total_violations,
+                "overall_violation_rate": total_violations / max(total_evaluations, 1)
+            },
+            "level_metrics": self.policy_metrics,
+            "rule_effectiveness": rule_effectiveness_summary,
+            "active_versions": {
+                key: version.version for key, version in self.policy_versions.items() 
+                if version.active
+            }
+        }
+
+
+class PolicyABTesting:
+    """A/B testing framework for policy configurations."""
+    
+    def __init__(self):
+        self.experiments = {}
+        self.experiment_results = {}
+    
+    def create_experiment(self, experiment_id: str, 
+                         policy_a: List[ConstraintRule], 
+                         policy_b: List[ConstraintRule],
+                         traffic_split: float = 0.5,
+                         metadata: Optional[Dict[str, Any]] = None) -> None:
+        """Create a new A/B test experiment."""
+        self.experiments[experiment_id] = {
+            "policy_a": policy_a,
+            "policy_b": policy_b,
+            "traffic_split": traffic_split,
+            "metadata": metadata or {},
+            "created_at": time.time(),
+            "active": True
+        }
+        
+        self.experiment_results[experiment_id] = {
+            "a_evaluations": 0,
+            "b_evaluations": 0,
+            "a_violations": 0,
+            "b_violations": 0,
+            "a_performance": [],
+            "b_performance": []
+        }
+        
+        logger.info(f"Created A/B test experiment: {experiment_id}")
+    
+    def evaluate_with_experiment(self, experiment_id: str, outcome: Dict[str, Any]) -> Dict[str, Any]:
+        """Evaluate outcome using A/B test policies."""
+        if experiment_id not in self.experiments or not self.experiments[experiment_id]["active"]:
+            raise ValueError(f"Experiment {experiment_id} not found or inactive")
+        
+        experiment = self.experiments[experiment_id]
+        results = self.experiment_results[experiment_id]
+        
+        # Determine which policy to use (simple hash-based split)
+        import hashlib
+        hash_input = f"{experiment_id}:{outcome.get('agent', '')}:{time.time()}"
+        hash_value = int(hashlib.md5(hash_input.encode()).hexdigest(), 16)
+        use_policy_a = (hash_value % 100) < (experiment["traffic_split"] * 100)
+        
+        start_time = time.perf_counter()
+        
+        if use_policy_a:
+            policy_rules = experiment["policy_a"]
+            results["a_evaluations"] += 1
+            policy_variant = "A"
+        else:
+            policy_rules = experiment["policy_b"]
+            results["b_evaluations"] += 1
+            policy_variant = "B"
+        
+        # Evaluate using selected policy
+        violations = []
+        for rule in policy_rules:
+            passed, rationale, exception = rule.run(outcome)
+            if not passed:
+                violations.append({
+                    "rule_name": rule.name,
+                    "severity": rule.severity.value,
+                    "rationale": rationale,
+                    "exception": str(exception) if exception else None
+                })
+        
+        evaluation_time = time.perf_counter() - start_time
+        
+        # Record results
+        if use_policy_a:
+            results["a_violations"] += len(violations)
+            results["a_performance"].append(evaluation_time)
+        else:
+            results["b_violations"] += len(violations)
+            results["b_performance"].append(evaluation_time)
+        
+        return {
+            "experiment_id": experiment_id,
+            "policy_variant": policy_variant,
+            "violations": violations,
+            "evaluation_time": evaluation_time,
+            "passed": len(violations) == 0
+        }
+    
+    def get_experiment_results(self, experiment_id: str) -> Dict[str, Any]:
+        """Get A/B test experiment results."""
+        if experiment_id not in self.experiment_results:
+            raise ValueError(f"Experiment {experiment_id} not found")
+        
+        results = self.experiment_results[experiment_id]
+        experiment = self.experiments[experiment_id]
+        
+        # Calculate statistics
+        a_violation_rate = (
+            results["a_violations"] / max(results["a_evaluations"], 1)
+        )
+        b_violation_rate = (
+            results["b_violations"] / max(results["b_evaluations"], 1)
+        )
+        
+        a_avg_performance = (
+            sum(results["a_performance"]) / max(len(results["a_performance"]), 1)
+        )
+        b_avg_performance = (
+            sum(results["b_performance"]) / max(len(results["b_performance"]), 1)
+        )
+        
+        # Statistical significance (simple t-test approximation)
+        significance_threshold = 0.05
+        sample_size_adequate = (
+            results["a_evaluations"] >= 30 and results["b_evaluations"] >= 30
+        )
+        
+        return {
+            "experiment_id": experiment_id,
+            "experiment_metadata": experiment["metadata"],
+            "duration_hours": (time.time() - experiment["created_at"]) / 3600,
+            "traffic_split": experiment["traffic_split"],
+            "sample_sizes": {
+                "policy_a": results["a_evaluations"],
+                "policy_b": results["b_evaluations"]
+            },
+            "violation_rates": {
+                "policy_a": a_violation_rate,
+                "policy_b": b_violation_rate,
+                "difference": abs(a_violation_rate - b_violation_rate),
+                "winner": "A" if a_violation_rate < b_violation_rate else "B"
+            },
+            "performance": {
+                "policy_a_avg_time": a_avg_performance,
+                "policy_b_avg_time": b_avg_performance,
+                "performance_winner": "A" if a_avg_performance < b_avg_performance else "B"
+            },
+            "statistical_confidence": {
+                "sample_size_adequate": sample_size_adequate,
+                "significant_difference": sample_size_adequate and abs(a_violation_rate - b_violation_rate) > significance_threshold
+            }
+        }
+    
+    def stop_experiment(self, experiment_id: str) -> Dict[str, Any]:
+        """Stop an A/B test experiment and return final results."""
+        if experiment_id in self.experiments:
+            self.experiments[experiment_id]["active"] = False
+            logger.info(f"Stopped A/B test experiment: {experiment_id}")
+            return self.get_experiment_results(experiment_id)
+        else:
+            raise ValueError(f"Experiment {experiment_id} not found")
+
+
+class SafetyImpactAnalyzer:
+    """Analyzer for measuring policy impact on safety and performance."""
+    
+    def __init__(self):
+        self.baseline_metrics = {}
+        self.policy_impacts = {}
+        self.safety_incidents = []
+    
+    def establish_baseline(self, baseline_id: str, metrics: Dict[str, float]) -> None:
+        """Establish baseline metrics for comparison."""
+        self.baseline_metrics[baseline_id] = {
+            **metrics,
+            "timestamp": time.time()
+        }
+        logger.info(f"Established safety baseline: {baseline_id}")
+    
+    def record_policy_impact(self, policy_id: str, outcome: Dict[str, Any], 
+                           violations: List[Dict[str, Any]]) -> None:
+        """Record the impact of a policy on an outcome."""
+        if policy_id not in self.policy_impacts:
+            self.policy_impacts[policy_id] = {
+                "total_evaluations": 0,
+                "total_violations": 0,
+                "severe_violations": 0,
+                "performance_impact": [],
+                "safety_improvements": 0,
+                "false_positives": 0
+            }
+        
+        impact = self.policy_impacts[policy_id]
+        impact["total_evaluations"] += 1
+        impact["total_violations"] += len(violations)
+        
+        # Count severe violations
+        severe_count = sum(1 for v in violations if v.get("severity") == "severe")
+        impact["severe_violations"] += severe_count
+        
+        # Record performance impact
+        runtime = outcome.get("runtime_seconds", 0)
+        impact["performance_impact"].append(runtime)
+        
+        # Detect potential safety incidents
+        if severe_count > 0:
+            incident = {
+                "timestamp": time.time(),
+                "policy_id": policy_id,
+                "severity": "high" if severe_count > 2 else "medium",
+                "violation_count": len(violations),
+                "severe_violation_count": severe_count,
+                "outcome_summary": outcome.get("result", {}).get("content", "")[:200]
+            }
+            self.safety_incidents.append(incident)
+    
+    def analyze_safety_trends(self, time_window_hours: float = 24) -> Dict[str, Any]:
+        """Analyze safety trends over a specified time window."""
+        cutoff_time = time.time() - (time_window_hours * 3600)
+        recent_incidents = [
+            incident for incident in self.safety_incidents 
+            if incident["timestamp"] > cutoff_time
+        ]
+        
+        # Analyze trends
+        incident_counts = {}
+        severity_distribution = {"high": 0, "medium": 0, "low": 0}
+        
+        for incident in recent_incidents:
+            policy_id = incident["policy_id"]
+            incident_counts[policy_id] = incident_counts.get(policy_id, 0) + 1
+            severity_distribution[incident["severity"]] += 1
+        
+        # Calculate trend direction (simplified)
+        if len(recent_incidents) >= 2:
+            mid_point = len(recent_incidents) // 2
+            first_half = recent_incidents[:mid_point]
+            second_half = recent_incidents[mid_point:]
+            
+            trend = "increasing" if len(second_half) > len(first_half) else "decreasing"
+        else:
+            trend = "stable"
+        
+        return {
+            "time_window_hours": time_window_hours,
+            "total_incidents": len(recent_incidents),
+            "trend": trend,
+            "severity_distribution": severity_distribution,
+            "incidents_by_policy": incident_counts,
+            "recommendations": self._generate_safety_recommendations(recent_incidents)
+        }
+    
+    def _generate_safety_recommendations(self, incidents: List[Dict[str, Any]]) -> List[str]:
+        """Generate safety recommendations based on incident analysis."""
+        recommendations = []
+        
+        if not incidents:
+            recommendations.append("No recent safety incidents detected")
+            return recommendations
+        
+        # High-severity incident recommendations
+        high_severity_count = sum(1 for i in incidents if i["severity"] == "high")
+        if high_severity_count > 0:
+            recommendations.append(f"Review {high_severity_count} high-severity incidents immediately")
+        
+        # Policy-specific recommendations
+        policy_counts = {}
+        for incident in incidents:
+            policy_id = incident["policy_id"]
+            policy_counts[policy_id] = policy_counts.get(policy_id, 0) + 1
+        
+        max_incidents = max(policy_counts.values()) if policy_counts else 0
+        if max_incidents > 5:
+            problematic_policies = [
+                policy for policy, count in policy_counts.items() 
+                if count == max_incidents
+            ]
+            recommendations.append(f"Review policies with high incident rates: {problematic_policies}")
+        
+        # Trend-based recommendations
+        if len(incidents) > 10:
+            recommendations.append("Consider tightening safety policies due to high incident volume")
+        
+        return recommendations
+    
+    def export_safety_report(self, filepath: str) -> None:
+        """Export comprehensive safety analysis report."""
+        report = {
+            "generated_at": time.time(),
+            "baseline_metrics": self.baseline_metrics,
+            "policy_impacts": {
+                policy_id: {
+                    **impact,
+                    "avg_performance_impact": (
+                        sum(impact["performance_impact"]) / 
+                        max(len(impact["performance_impact"]), 1)
+                    ),
+                    "violation_rate": impact["total_violations"] / max(impact["total_evaluations"], 1),
+                    "severe_violation_rate": impact["severe_violations"] / max(impact["total_evaluations"], 1)
+                }
+                for policy_id, impact in self.policy_impacts.items()
+            },
+            "recent_safety_trends": self.analyze_safety_trends(),
+            "all_incidents": self.safety_incidents
+        }
+        
+        with open(filepath, 'w') as f:
+            json.dump(report, f, indent=2)
+        
+        logger.info(f"Safety analysis report exported to {filepath}")
+
+
+# --------------------------------------------------------------------------------------
 # Demo Utilities (rebranded directories)
 # --------------------------------------------------------------------------------------
 
@@ -1857,6 +3657,206 @@ def _demo_both(rounds: int = 3, parallel: bool = False, skip_multiparty: bool = 
     asyncio.run(_demo_async(rounds, parallel, skip_multiparty, log_dir))
 
 
+def _demo_experimental_features(log_dir: str = "./sessions") -> None:
+    """Demonstrate all experimental features."""
+    print("\n" + "="*60)
+    print("EXPERIMENTAL FEATURES DEMONSTRATION")
+    print("="*60)
+    
+    # Setup
+    engine = ExampleEngine()
+    tmpdir = Path("./_agentnet_experimental_demo")
+    tmpdir.mkdir(exist_ok=True)
+    files = _write_demo_files(tmpdir)
+    
+    # 1. Fault Injection & Resilience
+    print("\n--- 1. FAULT INJECTION & RESILIENCE ---")
+    agent = AgentNet.from_config(files["agent"], engine=engine)
+    
+    # Test basic resilience
+    result = agent.generate_reasoning_tree_with_resilience("Test resilience patterns")
+    print(f"Resilience test result: {result.get('result', {}).get('content', '')[:100]}...")
+    
+    # Show resilience metrics
+    metrics = agent.get_resilience_metrics()
+    print(f"Resilience metrics: {metrics['success_rate']:.2f} success rate")
+    
+    # 2. Performance Benchmarking
+    print("\n--- 2. ASYNC vs SYNC PERFORMANCE BENCHMARKING ---")
+    benchmark = PerformanceBenchmark(agent)
+    
+    # Simple benchmark test
+    test_tasks = [
+        "Analyze distributed systems",
+        "Design microservices architecture", 
+        "Evaluate cloud deployment strategies"
+    ]
+    
+    print("Running performance benchmark...")
+    results = benchmark.benchmark_reasoning_tree(test_tasks, concurrency_levels=[1, 3])
+    
+    # Show comparison
+    comparison = results["comparison"]
+    print(f"Throughput improvement at concurrency 3: {comparison['throughput_comparison']['concurrency_3']['improvement_percent']:.1f}%")
+    print(f"Async scalability advantage: {comparison['scalability_analysis']['async_advantage_at_scale']:.2f}x")
+    
+    # 3. Analytics Index Generation
+    print("\n--- 3. ANALYTICS INDEX GENERATION ---")
+    indexer = AnalyticsIndexer()
+    
+    # Create a sample session for indexing
+    sample_session = {
+        "session_id": "demo_session_123",
+        "participants": ["TestAgent", "AnalyticsAgent"],
+        "topic_start": "AI system optimization",
+        "topic_final": "Advanced optimization strategies",
+        "transcript": [
+            {
+                "round": 1,
+                "agent": "TestAgent", 
+                "content": "We should focus on performance optimization and scalability improvements for AI systems."
+            },
+            {
+                "round": 1,
+                "agent": "AnalyticsAgent",
+                "content": "Advanced caching mechanisms and distributed processing would enhance system efficiency."
+            }
+        ]
+    }
+    
+    # Index the session
+    index = indexer.index_session(sample_session)
+    print(f"Indexed session: {index.session_id}")
+    print(f"Extracted keywords: {index.keywords[:5]}")
+    print(f"Sentiment score: {index.sentiment_score:.2f}")
+    print(f"Complexity score: {index.complexity_score:.2f}")
+    
+    # Generate analytics report
+    report = indexer.generate_analytics_report()
+    print(f"Analytics summary: {report['summary']['total_sessions']} sessions analyzed")
+    
+    # 4. Custom Monitors (Extensibility)
+    print("\n--- 4. EXTENSIBILITY: CUSTOM MONITORS ---")
+    plugin = MonitorPlugin()
+    
+    # Create sentiment monitor
+    sentiment_monitor = plugin.load_monitor_from_config({
+        "type": "sentiment",
+        "name": "demo_sentiment",
+        "min_sentiment": 0.4,
+        "max_sentiment": 0.9
+    })
+    
+    # Create complexity monitor  
+    complexity_monitor = plugin.load_monitor_from_config({
+        "type": "complexity",
+        "name": "demo_complexity",
+        "max_complexity": 0.7
+    })
+    
+    # Create domain-specific monitor
+    domain_monitor = plugin.load_monitor_from_config({
+        "type": "domain_specific",
+        "name": "demo_domain",
+        "domain_keywords": ["optimization", "performance", "scalability", "efficiency"],
+        "required_keywords": ["performance"],
+        "forbidden_keywords": ["hack", "bypass"]
+    })
+    
+    # Test monitors
+    test_outcome = {
+        "result": {
+            "content": "Performance optimization requires careful analysis of scalability bottlenecks."
+        }
+    }
+    
+    sentiment_passed, sentiment_reason, _ = sentiment_monitor.evaluate(test_outcome)
+    complexity_passed, complexity_reason, _ = complexity_monitor.evaluate(test_outcome)
+    domain_passed, domain_reason, _ = domain_monitor.evaluate(test_outcome)
+    
+    print(f"Sentiment monitor: {'PASS' if sentiment_passed else 'FAIL'}")
+    print(f"Complexity monitor: {'PASS' if complexity_passed else 'FAIL'}")
+    print(f"Domain monitor: {'PASS' if domain_passed else 'FAIL'}")
+    
+    # Create monitor chain
+    monitor_chain = MonitorChain([sentiment_monitor, complexity_monitor, domain_monitor])
+    chain_passed, violations, _ = monitor_chain.evaluate(test_outcome)
+    print(f"Monitor chain result: {'PASS' if chain_passed else 'FAIL'} with {len(violations)} violations")
+    
+    # 5. Policy/Safety Modeling Extensions
+    print("\n--- 5. POLICY/SAFETY MODELING EXTENSIONS ---")
+    
+    # Hierarchical policy engine
+    hierarchical_policy = HierarchicalPolicyEngine()
+    
+    # Add organizational-level policy
+    org_rule = ConstraintRule(
+        name="no_inappropriate_content",
+        check=lambda outcome: "inappropriate" not in outcome.get("result", {}).get("content", "").lower(),
+        severity=Severity.SEVERE,
+        description="Organizational policy against inappropriate content"
+    )
+    hierarchical_policy.add_policy_level(PolicyLevel.ORGANIZATIONAL, [org_rule])
+    
+    # Add team-level policy
+    team_rule = ConstraintRule(
+        name="technical_accuracy",
+        check=lambda outcome: len(outcome.get("result", {}).get("content", "")) > 20,
+        severity=Severity.MINOR,
+        description="Team policy requiring substantial technical content"
+    )
+    hierarchical_policy.add_policy_level(PolicyLevel.TEAM, [team_rule])
+    
+    # Test hierarchical evaluation
+    violations = hierarchical_policy.evaluate_hierarchical(test_outcome, PolicyLevel.SESSION)
+    print(f"Hierarchical policy evaluation: {len(violations)} violations found")
+    
+    # Policy A/B testing
+    ab_testing = PolicyABTesting()
+    
+    # Create A/B test with different policies
+    policy_a = [org_rule]
+    policy_b = [org_rule, team_rule]
+    
+    ab_testing.create_experiment("policy_test_1", policy_a, policy_b, traffic_split=0.5)
+    
+    # Test A/B evaluation
+    ab_result = ab_testing.evaluate_with_experiment("policy_test_1", test_outcome)
+    print(f"A/B test used policy {ab_result['policy_variant']} with {len(ab_result['violations'])} violations")
+    
+    # Safety impact analysis
+    safety_analyzer = SafetyImpactAnalyzer()
+    safety_analyzer.establish_baseline("demo_baseline", {"violation_rate": 0.1, "performance": 0.5})
+    safety_analyzer.record_policy_impact("demo_policy", test_outcome, violations)
+    
+    trends = safety_analyzer.analyze_safety_trends(time_window_hours=1)
+    print(f"Safety analysis: {trends['total_incidents']} incidents, trend: {trends['trend']}")
+    
+    # Export reports
+    print("\n--- EXPORTING REPORTS ---")
+    Path(log_dir).mkdir(exist_ok=True)
+    
+    # Export benchmark report
+    benchmark.export_benchmark_report(f"{log_dir}/benchmark_report.json")
+    print(f"✓ Benchmark report exported")
+    
+    # Export analytics indices
+    indexer.export_indices(f"{log_dir}/analytics_indices.json")
+    print(f"✓ Analytics indices exported")
+    
+    # Export safety report
+    safety_analyzer.export_safety_report(f"{log_dir}/safety_report.json")
+    print(f"✓ Safety report exported")
+    
+    print(f"\n✓ All experimental features demonstrated successfully!")
+    print(f"Reports saved to: {log_dir}/")
+    
+    # Cleanup
+    import shutil
+    if tmpdir.exists():
+        shutil.rmtree(tmpdir)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="AgentNet - Multi-agent dialogue system with advanced reasoning",
@@ -1865,9 +3865,9 @@ def main() -> None:
     
     parser.add_argument(
         "--demo",
-        choices=["sync", "async", "both"],
+        choices=["sync", "async", "both", "experimental"],
         default="both",
-        help="Which demo to run"
+        help="Which demo to run (experimental showcases all new features)"
     )
     parser.add_argument(
         "--rounds",
@@ -1899,6 +3899,8 @@ def main() -> None:
             _demo_sync(args.rounds, args.no_multiparty, args.log_dir)
         elif args.demo == "async":
             asyncio.run(_demo_async(args.rounds, args.parallel, args.no_multiparty, args.log_dir))
+        elif args.demo == "experimental":
+            _demo_experimental_features(args.log_dir)
         else:
             _demo_both(args.rounds, args.parallel, args.no_multiparty, args.log_dir)
     except KeyboardInterrupt:
