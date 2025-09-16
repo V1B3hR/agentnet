@@ -1,0 +1,36 @@
+monitors:
+  - name: policy_rcd
+    type: rcd_policy
+    severity: severe
+    description: Policy rules check on final outcome
+    params:
+      rules_file: experiments/config/rules_extended.yaml
+  - name: keyword_guard
+    type: keyword
+    severity: severe
+    description: Block certain tokens with high sensitivity
+    params:
+      keywords: ["manipulation", "hate", "racist", "bias", "unfair", "discriminate", "abuse", "harmful"]
+  - name: resource_guard
+    type: resource
+    severity: major
+    description: Flag overruns beyond 10%
+    params:
+      budget_key: resource_budget
+      tolerance: 0.1
+  - name: regex_guard
+    type: regex
+    severity: major
+    description: Pattern-based content filtering
+    params:
+      patterns: 
+        - "\\b(?:attack|exploit|hack)\\b"
+        - "\\b(?:destroy|damage)\\b"
+        - "\\b(?:secret|confidential)\\b"
+  - name: repetition_guard
+    type: custom
+    severity: minor
+    description: Detect repetitive content
+    params:
+      max_similarity: 0.8
+      window_size: 3
