@@ -13,6 +13,7 @@ from ..persistence.agent_state import AgentStateManager
 from ..memory.manager import MemoryManager
 from ..tools.registry import ToolRegistry
 from ..tools.executor import ToolExecutor
+from .cost.recorder import CostRecorder
 
 if TYPE_CHECKING:
     from ..providers.base import ProviderAdapter
@@ -33,6 +34,8 @@ class AgentNet:
         pre_monitors: Optional[List[MonitorFn]] = None,
         memory_config: Optional[Dict[str, Any]] = None,
         tool_registry: Optional[ToolRegistry] = None,
+        cost_recorder: Optional[CostRecorder] = None,
+        tenant_id: Optional[str] = None,
     ):
         """
         Initialize AgentNet instance.
@@ -46,6 +49,8 @@ class AgentNet:
             pre_monitors: Pre-style monitors (executed before style influence)
             memory_config: Memory system configuration
             tool_registry: Tool registry for available tools
+            cost_recorder: Cost recorder for tracking inference costs
+            tenant_id: Tenant ID for multi-tenant cost tracking
         """
         self.name = name
         self.style = style
@@ -76,6 +81,10 @@ class AgentNet:
         self.tool_executor = None
         if tool_registry:
             self.tool_executor = ToolExecutor(tool_registry)
+        
+        # Initialize cost tracking
+        self.cost_recorder = cost_recorder or CostRecorder()
+        self.tenant_id = tenant_id
         
         # Initialize managers
         self.session_manager = SessionManager()
@@ -207,8 +216,34 @@ class AgentNet:
             # Run post-style monitors  
             self._run_post_monitors(task, styled_result)
             
-            # Build reasoning tree
+            # Calculate runtime first
             runtime = time.time() - start_time
+            
+            # Record cost if engine was used
+            cost_record = None
+            if self.engine:
+                try:
+                    # Get cost information from engine
+                    cost_info = self.engine.get_cost_info(raw_result)
+                    
+                    # Record cost with cost recorder
+                    cost_record = self.cost_recorder.record_inference_cost(
+                        provider=cost_info.get("provider", "unknown"),
+                        model=cost_info.get("model", "unknown"),
+                        result=raw_result,
+                        agent_name=self.name,
+                        task_id=task[:50],  # Truncate task for ID
+                        tenant_id=self.tenant_id,
+                        metadata={
+                            "runtime": runtime,
+                            "confidence": styled_result.get("confidence", 0.0),
+                            "style": self.style.copy()
+                        }
+                    )
+                except Exception as e:
+                    logger.warning(f"Failed to record cost: {e}")
+            
+            # Build reasoning tree
             reasoning_tree = {
                 "root": f"{self.name}_reasoning",
                 "result": styled_result,
@@ -217,7 +252,13 @@ class AgentNet:
                 "runtime": runtime,
                 "timestamp": time.time(),
                 "style": self.style.copy(),
-                "monitor_trace": [] if include_monitor_trace else None
+                "monitor_trace": [] if include_monitor_trace else None,
+                "cost_record": {
+                    "total_cost": cost_record.total_cost if cost_record else 0.0,
+                    "provider": cost_record.provider if cost_record else None,
+                    "tokens_input": cost_record.tokens_input if cost_record else 0,
+                    "tokens_output": cost_record.tokens_output if cost_record else 0
+                } if cost_record else None
             }
             
             # Record in interaction history

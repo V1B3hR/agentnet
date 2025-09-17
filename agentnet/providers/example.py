@@ -74,8 +74,12 @@ class ExampleEngine(ProviderAdapter):
     
     def get_cost_info(self, result: Dict[str, Any]) -> Dict[str, Any]:
         """Get cost information for the example engine."""
+        tokens = len(result.get("content", "").split())
         return {
             "cost": 0.001,  # Example cost
-            "tokens": len(result.get("content", "").split()),
-            "provider": "ExampleEngine"
+            "tokens": tokens,
+            "tokens_input": tokens // 2,  # Rough split
+            "tokens_output": tokens - (tokens // 2),
+            "provider": "example",  # Use lowercase for provider matching
+            "model": "example-model"
         }
