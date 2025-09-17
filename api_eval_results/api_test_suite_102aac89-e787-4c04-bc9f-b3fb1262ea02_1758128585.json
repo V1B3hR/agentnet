@@ -1,0 +1,345 @@
+{
+  "suite_name": "api_test_suite",
+  "execution_id": "102aac89-e787-4c04-bc9f-b3fb1262ea02",
+  "scenario_results": [
+    {
+      "scenario_name": "quick_brainstorm",
+      "execution_id": "0cdbdde9-cee1-4046-88be-59f6ab1c8f65",
+      "status": "completed",
+      "metrics": {
+        "scenario_name": "quick_brainstorm",
+        "total_score": 1.0,
+        "max_possible_score": 1.0,
+        "success_rate": 1.0,
+        "coverage_score": 0.18382352941176472,
+        "novelty_score": 0.96,
+        "coherence_score": 1.0,
+        "rule_violations_count": 0,
+        "execution_time": null,
+        "response_time": null,
+        "criteria_results": [
+          {
+            "criteria_name": "brainstorm_keywords",
+            "criteria_type": "keyword_presence",
+            "passed": true,
+            "score": 1.0,
+            "weight": 1.0,
+            "weighted_score": 1.0,
+            "details": {
+              "required_keywords": [
+                "idea",
+                "think"
+              ],
+              "found_keywords": [
+                "idea",
+                "think"
+              ],
+              "missing_keywords": [],
+              "case_sensitive": false
+            },
+            "error": null
+          }
+        ],
+        "metadata": {
+          "scenario_name": "quick_brainstorm",
+          "scenario_mode": "brainstorm",
+          "agents": [
+            "Thinker1",
+            "Thinker2"
+          ],
+          "converged": true,
+          "rounds": 2,
+          "violations": [],
+          "confidence": 0.7280000000000001
+        }
+      },
+      "session_data": {
+        "transcript": [
+          {
+            "session_id": "adlg_1758128584812_0",
+            "round": 1,
+            "agent": "Thinker1",
+            "prompt": "Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker1): Supportive contributor - expand on emerging ideas.\nRecent Context:\nNo prior turns.\nRespond with reasoning, avoid repetition, add value.",
+            "content": "[Thinker1] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker1): Supportive contributor - expand on emerging ideas.\nRecent Context:\nNo prior turns.\nRespond with reasoning, avoid repetition, add value.",
+            "confidence": 0.7280000000000001,
+            "raw": {
+              "root": "Thinker1_reasoning_0",
+              "result": {
+                "content": "[Thinker1] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker1): Supportive contributor - expand on emerging ideas.\nRecent Context:\nNo prior turns.\nRespond with reasoning, avoid repetition, add value.",
+                "confidence": 0.7280000000000001,
+                "runtime": 0.02011657399998512,
+                "measured_runtime": 0.02011657399998512,
+                "original_confidence": 0.65,
+                "style_insights": [
+                  "Applying rigorous logical validation",
+                  "Conducting systematic decomposition"
+                ],
+                "style_signature": "Thinker1"
+              },
+              "agent": "Thinker1",
+              "style_applied": true,
+              "schema_version": 2,
+              "runtime_seconds": 0.02011657399998512
+            }
+          },
+          {
+            "session_id": "adlg_1758128584812_0",
+            "round": 1,
+            "agent": "Thinker2",
+            "prompt": "Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker2): Supportive contributor - expand on emerging ideas.\nRecent Context:\nNo prior turns.\nRespond with reasoning, avoid repetition, add value.",
+            "content": "[Thinker2] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker2): Supportive contributor - expand on emerging ideas.\nRecent Context:\nNo prior turns.\nRespond with reasoning, avoid repetition, add value.",
+            "confidence": 0.7280000000000001,
+            "raw": {
+              "root": "Thinker2_reasoning_0",
+              "result": {
+                "content": "[Thinker2] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker2): Supportive contributor - expand on emerging ideas.\nRecent Context:\nNo prior turns.\nRespond with reasoning, avoid repetition, add value.",
+                "confidence": 0.7280000000000001,
+                "runtime": 0.020157842000116943,
+                "measured_runtime": 0.020157842000116943,
+                "original_confidence": 0.65,
+                "style_insights": [
+                  "Applying rigorous logical validation",
+                  "Conducting systematic decomposition"
+                ],
+                "style_signature": "Thinker2"
+              },
+              "agent": "Thinker2",
+              "style_applied": true,
+              "schema_version": 2,
+              "runtime_seconds": 0.020157842000116943
+            }
+          },
+          {
+            "session_id": "adlg_1758128584812_0",
+            "round": 2,
+            "agent": "Thinker1",
+            "prompt": "Round 2 | Topic: Expand ideas around: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker1): Supportive contributor - expand on emerging ideas.\nRecent Context:\nThinker1 (r1): [Thinker1] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker1): Sup\nThinker2 (r1): [Thinker2] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker2): Sup\nRespond with reasoning, avoid repetition, add value.",
+            "content": "[Thinker1] (async) Thoughts about: Round 2 | Topic: Expand ideas around: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker1): Supportive contributor - expand on emerging ideas.\nRecent Context:\nThinker1 (r1): [Thinker1] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker1): Sup\nThinker2 (r1): [Thinker2] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker2): Sup\nRespond with reasoning, avoid repetition, add value.",
+            "confidence": 0.7280000000000001,
+            "raw": {
+              "root": "Thinker1_reasoning_2",
+              "result": {
+                "content": "[Thinker1] (async) Thoughts about: Round 2 | Topic: Expand ideas around: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker1): Supportive contributor - expand on emerging ideas.\nRecent Context:\nThinker1 (r1): [Thinker1] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker1): Sup\nThinker2 (r1): [Thinker2] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker2): Sup\nRespond with reasoning, avoid repetition, add value.",
+                "confidence": 0.7280000000000001,
+                "runtime": 0.02015288200004761,
+                "measured_runtime": 0.02015288200004761,
+                "original_confidence": 0.65,
+                "style_insights": [
+                  "Applying rigorous logical validation",
+                  "Conducting systematic decomposition"
+                ],
+                "style_signature": "Thinker1"
+              },
+              "agent": "Thinker1",
+              "style_applied": true,
+              "schema_version": 2,
+              "runtime_seconds": 0.02015288200004761
+            }
+          },
+          {
+            "session_id": "adlg_1758128584812_0",
+            "round": 2,
+            "agent": "Thinker2",
+            "prompt": "Round 2 | Topic: Expand ideas around: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker2): Supportive contributor - expand on emerging ideas.\nRecent Context:\nThinker1 (r1): [Thinker1] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker1): Sup\nThinker2 (r1): [Thinker2] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker2): Sup\nRespond with reasoning, avoid repetition, add value.",
+            "content": "[Thinker2] (async) Thoughts about: Round 2 | Topic: Expand ideas around: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker2): Supportive contributor - expand on emerging ideas.\nRecent Context:\nThinker1 (r1): [Thinker1] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker1): Sup\nThinker2 (r1): [Thinker2] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker2): Sup\nRespond with reasoning, avoid repetition, add value.",
+            "confidence": 0.7280000000000001,
+            "raw": {
+              "root": "Thinker2_reasoning_1",
+              "result": {
+                "content": "[Thinker2] (async) Thoughts about: Round 2 | Topic: Expand ideas around: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker2): Supportive contributor - expand on emerging ideas.\nRecent Context:\nThinker1 (r1): [Thinker1] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker1): Sup\nThinker2 (r1): [Thinker2] (async) Thoughts about: Round 1 | Topic: Quick brainstorming session\nMode Directive: Generate diverse, novel ideas without judging prematurely.\nRole Hint (Thinker2): Sup\nRespond with reasoning, avoid repetition, add value.",
+                "confidence": 0.7280000000000001,
+                "runtime": 0.020157540999889534,
+                "measured_runtime": 0.020157540999889534,
+                "original_confidence": 0.65,
+                "style_insights": [
+                  "Applying rigorous logical validation",
+                  "Conducting systematic decomposition"
+                ],
+                "style_signature": "Thinker2"
+              },
+              "agent": "Thinker2",
+              "style_applied": true,
+              "schema_version": 2,
+              "runtime_seconds": 0.020157540999889534
+            }
+          }
+        ],
+        "converged": true,
+        "rounds": 2,
+        "violations": []
+      },
+      "error": null,
+      "start_time": 1758128584.812249,
+      "end_time": 1758128584.9543743,
+      "execution_time": null
+    },
+    {
+      "scenario_name": "simple_debate",
+      "execution_id": "39be4ff4-4dad-445f-a5a7-1f4d8f12e03b",
+      "status": "completed",
+      "metrics": {
+        "scenario_name": "simple_debate",
+        "total_score": 1.0,
+        "max_possible_score": 1.0,
+        "success_rate": 1.0,
+        "coverage_score": 0.17857142857142858,
+        "novelty_score": 0.94,
+        "coherence_score": 1.0,
+        "rule_violations_count": 0,
+        "execution_time": null,
+        "response_time": null,
+        "criteria_results": [
+          {
+            "criteria_name": "substantive_response",
+            "criteria_type": "length_check",
+            "passed": true,
+            "score": 1.0,
+            "weight": 1.0,
+            "weighted_score": 1.0,
+            "details": {
+              "content_length": 1952,
+              "min_length": 30,
+              "max_length": null
+            },
+            "error": null
+          }
+        ],
+        "metadata": {
+          "scenario_name": "simple_debate",
+          "scenario_mode": "debate",
+          "agents": [
+            "Advocate",
+            "Critic"
+          ],
+          "converged": true,
+          "rounds": 2,
+          "violations": [],
+          "confidence": 0.7280000000000001
+        }
+      },
+      "session_data": {
+        "transcript": [
+          {
+            "session_id": "adlg_1758128584954_0",
+            "round": 1,
+            "agent": "Advocate",
+            "prompt": "Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Advocate): Construct rigorous arguments and rebuttals.\nRecent Context:\nNo prior turns.\nRespond with reasoning, avoid repetition, add value.",
+            "content": "[Advocate] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Advocate): Construct rigorous arguments and rebuttals.\nRecent Context:\nNo prior turns.\nRespond with reasoning, avoid repetition, add value.",
+            "confidence": 0.7280000000000001,
+            "raw": {
+              "root": "Advocate_reasoning_0",
+              "result": {
+                "content": "[Advocate] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Advocate): Construct rigorous arguments and rebuttals.\nRecent Context:\nNo prior turns.\nRespond with reasoning, avoid repetition, add value.",
+                "confidence": 0.7280000000000001,
+                "runtime": 0.020116046999874015,
+                "measured_runtime": 0.020116046999874015,
+                "original_confidence": 0.65,
+                "style_insights": [
+                  "Applying rigorous logical validation",
+                  "Conducting systematic decomposition"
+                ],
+                "style_signature": "Advocate"
+              },
+              "agent": "Advocate",
+              "style_applied": true,
+              "schema_version": 2,
+              "runtime_seconds": 0.020116046999874015
+            }
+          },
+          {
+            "session_id": "adlg_1758128584954_0",
+            "round": 1,
+            "agent": "Critic",
+            "prompt": "Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Critic): Construct rigorous arguments and rebuttals.\nRecent Context:\nNo prior turns.\nRespond with reasoning, avoid repetition, add value.",
+            "content": "[Critic] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Critic): Construct rigorous arguments and rebuttals.\nRecent Context:\nNo prior turns.\nRespond with reasoning, avoid repetition, add value.",
+            "confidence": 0.7280000000000001,
+            "raw": {
+              "root": "Critic_reasoning_0",
+              "result": {
+                "content": "[Critic] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Critic): Construct rigorous arguments and rebuttals.\nRecent Context:\nNo prior turns.\nRespond with reasoning, avoid repetition, add value.",
+                "confidence": 0.7280000000000001,
+                "runtime": 0.020162941000080536,
+                "measured_runtime": 0.020162941000080536,
+                "original_confidence": 0.65,
+                "style_insights": [
+                  "Applying rigorous logical validation",
+                  "Conducting systematic decomposition"
+                ],
+                "style_signature": "Critic"
+              },
+              "agent": "Critic",
+              "style_applied": true,
+              "schema_version": 2,
+              "runtime_seconds": 0.020162941000080536
+            }
+          },
+          {
+            "session_id": "adlg_1758128584954_0",
+            "round": 2,
+            "agent": "Advocate",
+            "prompt": "Round 2 | Topic: Explore: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Advocate): Construct rigorous arguments and rebuttals.\nRecent Context:\nAdvocate (r1): [Advocate] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Advocate): Construct r\nCritic (r1): [Critic] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Critic): Construct rigor\nRespond with reasoning, avoid repetition, add value.",
+            "content": "[Advocate] (async) Thoughts about: Round 2 | Topic: Explore: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Advocate): Construct rigorous arguments and rebuttals.\nRecent Context:\nAdvocate (r1): [Advocate] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Advocate): Construct r\nCritic (r1): [Critic] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Critic): Construct rigor\nRespond with reasoning, avoid repetition, add value.",
+            "confidence": 0.7280000000000001,
+            "raw": {
+              "root": "Advocate_reasoning_2",
+              "result": {
+                "content": "[Advocate] (async) Thoughts about: Round 2 | Topic: Explore: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Advocate): Construct rigorous arguments and rebuttals.\nRecent Context:\nAdvocate (r1): [Advocate] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Advocate): Construct r\nCritic (r1): [Critic] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Critic): Construct rigor\nRespond with reasoning, avoid repetition, add value.",
+                "confidence": 0.7280000000000001,
+                "runtime": 0.0201408990001255,
+                "measured_runtime": 0.0201408990001255,
+                "original_confidence": 0.65,
+                "style_insights": [
+                  "Applying rigorous logical validation",
+                  "Conducting systematic decomposition"
+                ],
+                "style_signature": "Advocate"
+              },
+              "agent": "Advocate",
+              "style_applied": true,
+              "schema_version": 2,
+              "runtime_seconds": 0.0201408990001255
+            }
+          },
+          {
+            "session_id": "adlg_1758128584954_0",
+            "round": 2,
+            "agent": "Critic",
+            "prompt": "Round 2 | Topic: Explore: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Critic): Construct rigorous arguments and rebuttals.\nRecent Context:\nAdvocate (r1): [Advocate] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Advocate): Construct r\nCritic (r1): [Critic] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Critic): Construct rigor\nRespond with reasoning, avoid repetition, add value.",
+            "content": "[Critic] (async) Thoughts about: Round 2 | Topic: Explore: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Critic): Construct rigorous arguments and rebuttals.\nRecent Context:\nAdvocate (r1): [Advocate] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Advocate): Construct r\nCritic (r1): [Critic] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Critic): Construct rigor\nRespond with reasoning, avoid repetition, add value.",
+            "confidence": 0.7280000000000001,
+            "raw": {
+              "root": "Critic_reasoning_1",
+              "result": {
+                "content": "[Critic] (async) Thoughts about: Round 2 | Topic: Explore: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Critic): Construct rigorous arguments and rebuttals.\nRecent Context:\nAdvocate (r1): [Advocate] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Advocate): Construct r\nCritic (r1): [Critic] (async) Thoughts about: Round 1 | Topic: Simple debate topic\nMode Directive: Provide a position, defend it, then critique prior points.\nRole Hint (Critic): Construct rigor\nRespond with reasoning, avoid repetition, add value.",
+                "confidence": 0.7280000000000001,
+                "runtime": 0.020148434000020643,
+                "measured_runtime": 0.020148434000020643,
+                "original_confidence": 0.65,
+                "style_insights": [
+                  "Applying rigorous logical validation",
+                  "Conducting systematic decomposition"
+                ],
+                "style_signature": "Critic"
+              },
+              "agent": "Critic",
+              "style_applied": true,
+              "schema_version": 2,
+              "runtime_seconds": 0.020148434000020643
+            }
+          }
+        ],
+        "converged": true,
+        "rounds": 2,
+        "violations": []
+      },
+      "error": null,
+      "start_time": 1758128584.9543977,
+      "end_time": 1758128585.0965946,
+      "execution_time": null
+    }
+  ],
+  "start_time": 1758128584.812106,
+  "end_time": 1758128585.0966516,
+  "total_time": null,
+  "summary": {}
+}

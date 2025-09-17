@@ -26,7 +26,11 @@ from .tools.executor import ToolExecutor
 from .tools.base import Tool, ToolResult, ToolSpec, ToolStatus
 from .tools.examples import WebSearchTool, CalculatorTool, FileWriteTool, StatusCheckTool
 
-__version__ = "0.2.0"
+# Import P3 features: DAG & Eval
+from .core.orchestration import DAGPlanner, TaskNode, TaskGraph, TaskScheduler, ExecutionResult
+from .core.eval import EvaluationRunner, EvaluationScenario, EvaluationSuite, MetricsCalculator, EvaluationMetrics, SuccessCriteria
+
+__version__ = "0.3.0"
 __all__ = [
     # Core
     "AgentNet",
@@ -58,4 +62,16 @@ __all__ = [
     "CalculatorTool",
     "FileWriteTool",
     "StatusCheckTool",
+    # P3: DAG & Eval
+    "DAGPlanner",
+    "TaskNode",
+    "TaskGraph", 
+    "TaskScheduler",
+    "ExecutionResult",
+    "EvaluationRunner",
+    "EvaluationScenario",
+    "EvaluationSuite",
+    "MetricsCalculator",
+    "EvaluationMetrics",
+    "SuccessCriteria",
 ]

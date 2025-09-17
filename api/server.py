@@ -23,6 +23,13 @@ sys.path.append(str(Path(__file__).parent.parent))
 from AgentNet import AgentNet, ExampleEngine
 from .models import DialogueMode, AgentConfig
 
+# P3: Import DAG and Evaluation components
+from agentnet import (
+    DAGPlanner, TaskNode, TaskGraph, TaskScheduler, ExecutionResult,
+    EvaluationRunner, EvaluationScenario, EvaluationSuite, 
+    MetricsCalculator, EvaluationMetrics, SuccessCriteria
+)
+
 logger = logging.getLogger("agentnet.api")
 
 
@@ -92,6 +99,15 @@ class AgentNetAPIHandler(BaseHTTPRequestHandler):
                 session_id = path.split("/")[2]
                 response = asyncio.run(self.api_server.run_session(session_id))
                 self._send_json_response(response)
+            elif path == "/tasks/plan":
+                response = self.api_server.plan_task_graph(request_data)
+                self._send_json_response(response)
+            elif path == "/tasks/execute":
+                response = asyncio.run(self.api_server.execute_task_graph(request_data))
+                self._send_json_response(response)
+            elif path == "/eval/run":
+                response = asyncio.run(self.api_server.run_evaluation(request_data))
+                self._send_json_response(response)
             else:
                 self._send_error_response(404, "Not found")
         except json.JSONDecodeError as e:
@@ -130,6 +146,92 @@ class AgentNetAPI:
         # Session storage
         self.sessions: Dict[str, Dict[str, Any]] = {}
         self.session_agents: Dict[str, List[AgentNet]] = {}
+        
+        # P3: DAG and Evaluation components
+        self.dag_planner = DAGPlanner()
+        self.task_scheduler = TaskScheduler(max_retries=3, parallel_execution=True)
+        self.evaluation_runner = EvaluationRunner(results_dir="api_eval_results")
+        
+        # Set up task executor for scheduler
+        self.task_scheduler.set_task_executor(self._agentnet_task_executor)
+        
+        # Set up evaluation executors
+        self.evaluation_runner.set_dialogue_executor(self._evaluation_dialogue_executor)
+        self.evaluation_runner.set_workflow_executor(self._evaluation_workflow_executor)
+    
+    async def _agentnet_task_executor(self, task_id: str, prompt: str, agent_name: str, context: dict) -> dict:
+        """Task executor that uses AgentNet instances."""
+        # Create agent for this task
+        agent = AgentNet(
+            name=agent_name,
+            style={"logic": 0.8, "creativity": 0.6, "analytical": 0.8},
+            engine=self.engine
+        )
+        
+        # Add context to prompt
+        enhanced_prompt = prompt
+        if context.get("dependency_results"):
+            dep_summary = "\n".join([
+                f"From {dep_id}: {result.get('content', 'No content')}" 
+                for dep_id, result in context["dependency_results"].items()
+            ])
+            enhanced_prompt = f"{prompt}\n\nContext from dependencies:\n{dep_summary}"
+        
+        # Execute with AgentNet
+        result = agent.generate_reasoning_tree(enhanced_prompt)
+        
+        return {
+            "content": result["result"]["content"],
+            "confidence": result["result"]["confidence"],
+            "agent": agent_name,
+            "task_id": task_id,
+            "meta_insights": result["result"].get("meta_insights", [])
+        }
+    
+    async def _evaluation_dialogue_executor(self, agents: List[str], topic: str, config: dict) -> dict:
+        """Dialogue executor for evaluation scenarios."""
+        # Create session for evaluation
+        session_data = {
+            "agents": [{"name": name, "style": {"logic": 0.8, "creativity": 0.6, "analytical": 0.8}} for name in agents],
+            "topic": topic,
+            "mode": config.get("mode", "general"),
+            "max_rounds": config.get("max_rounds", 3),
+            "convergence": config.get("convergence", True),
+            "parallel_round": config.get("parallel_round", False)
+        }
+        
+        # Create and run session
+        session_result = self.create_session(session_data)
+        session_id = session_result["session_id"]
+        
+        # Run the session
+        result = await self.run_session(session_id)
+        
+        # Get full session data
+        session_full = self.get_session(session_id)
+        
+        return {
+            "transcript": session_full.get("transcript", []),
+            "converged": session_full.get("converged", False),
+            "rounds": session_full.get("rounds_executed", 0),
+            "violations": []  # TODO: Add violations from monitors
+        }
+    
+    async def _evaluation_workflow_executor(self, task_graph: dict, config: dict) -> dict:
+        """Workflow executor for evaluation scenarios."""
+        # Create TaskGraph from dict
+        graph = self.dag_planner.create_graph_from_dict(task_graph)
+        if not graph.is_valid:
+            raise ValueError(f"Invalid task graph: {graph.validation_errors}")
+        
+        # Execute the graph
+        result = await self.task_scheduler.execute_graph(graph, config)
+        
+        return {
+            "status": result.status,
+            "task_results": result.task_results,
+            "execution_time": result.total_time
+        }
     
     def create_session(self, request_data: dict) -> dict:
         """Create a new multi-agent dialogue session."""
@@ -260,6 +362,106 @@ class AgentNetAPI:
             "participants": session_data["agents"],
             "last_speaker": last_speaker
         }
+    
+    # P3: DAG & Evaluation endpoints
+    
+    def plan_task_graph(self, request_data: dict) -> dict:
+        """POST /tasks/plan - Generate task DAG."""
+        try:
+            # Create task graph from request
+            graph = self.dag_planner.create_graph_from_dict(request_data)
+            
+            if not graph.is_valid:
+                return {
+                    "error": "Invalid task graph",
+                    "validation_errors": graph.validation_errors,
+                    "graph_id": graph.graph_id
+                }
+            
+            # Analyze the graph
+            analysis = self.dag_planner.analyze_graph(graph)
+            execution_order = self.dag_planner.get_execution_order(graph)
+            
+            return {
+                "graph_id": graph.graph_id,
+                "valid": graph.is_valid,
+                "analysis": analysis,
+                "execution_order": execution_order,
+                "graph_data": graph.to_dict()
+            }
+            
+        except Exception as e:
+            return {"error": str(e)}
+    
+    async def execute_task_graph(self, request_data: dict) -> dict:
+        """POST /tasks/execute - Execute DAG."""
+        try:
+            # Create task graph
+            graph = self.dag_planner.create_graph_from_dict(request_data.get("task_graph", {}))
+            
+            if not graph.is_valid:
+                return {
+                    "error": "Invalid task graph",
+                    "validation_errors": graph.validation_errors
+                }
+            
+            # Execute the graph
+            context = request_data.get("context", {})
+            result = await self.task_scheduler.execute_graph(graph, context)
+            
+            return {
+                "execution_id": result.execution_id,
+                "status": result.status,
+                "completed_tasks": result.get_completed_tasks(),
+                "failed_tasks": result.get_failed_tasks(),
+                "total_time": result.total_time,
+                "task_results": result.to_dict()["task_results"]
+            }
+            
+        except Exception as e:
+            return {"error": str(e)}
+    
+    async def run_evaluation(self, request_data: dict) -> dict:
+        """POST /eval/run - Trigger evaluation suite."""
+        try:
+            # Parse evaluation request
+            if "suite" in request_data:
+                # Run complete suite
+                suite = EvaluationSuite.from_dict(request_data["suite"])
+                result = await self.evaluation_runner.run_suite(
+                    suite, 
+                    context=request_data.get("context", {}),
+                    parallel=request_data.get("parallel", False)
+                )
+                
+                return {
+                    "suite_name": result.suite_name,
+                    "execution_id": result.execution_id,
+                    "summary": result.summary,
+                    "total_time": result.total_time,
+                    "scenario_count": len(result.scenario_results)
+                }
+                
+            elif "scenario" in request_data:
+                # Run single scenario
+                scenario = EvaluationScenario.from_dict(request_data["scenario"])
+                result = await self.evaluation_runner.run_scenario(
+                    scenario,
+                    context=request_data.get("context", {})
+                )
+                
+                return {
+                    "scenario_name": result.scenario_name,
+                    "execution_id": result.execution_id,
+                    "status": result.status,
+                    "metrics": result.metrics.to_dict() if result.metrics else None,
+                    "execution_time": result.execution_time
+                }
+            else:
+                return {"error": "Must specify either 'suite' or 'scenario'"}
+                
+        except Exception as e:
+            return {"error": str(e)}
     
     def run(self, host: str = "127.0.0.1", port: int = 8000):
         """Run the API server."""

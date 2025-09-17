@@ -30,6 +30,11 @@ class SessionRecord:
     timestamp: float
     parallel_round: bool = False
     
+    # P3: Workflow mode support
+    task_graph: Optional[Dict[str, Any]] = None
+    execution_result: Optional[Dict[str, Any]] = None
+    task_results: Optional[Dict[str, Any]] = None
+    
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary."""
         return asdict(self)
