@@ -1,0 +1,48 @@
+{
+  "episodes": [
+    {
+      "id": "ep_1758126525614_0",
+      "content": "System status: 72.5h uptime, 0.8 load average",
+      "metadata": {
+        "type": "system_status"
+      },
+      "timestamp": 1758126525.6147318,
+      "agent_name": "IntegratedAgent",
+      "tags": [
+        "system",
+        "performance"
+      ]
+    },
+    {
+      "id": "ep_1758126525616_1",
+      "content": "System uptime: 3.0 days (72.5 hours)",
+      "metadata": {
+        "type": "calculation"
+      },
+      "timestamp": 1758126525.6163397,
+      "agent_name": "IntegratedAgent",
+      "tags": [
+        "uptime",
+        "metrics"
+      ]
+    },
+    {
+      "id": "ep_1758126525637_2",
+      "content": "[IntegratedAgent] Thoughts about: Provide a system performance analysis based on recent status checks\n\nRelevant memory context:\n- System status: 72.5h uptime, 0.8 load average...\n- System uptime: 3.0 days (72.5 hours)...",
+      "metadata": {
+        "task": "Provide a system performance analysis based on recent status checks",
+        "confidence": 1.0
+      },
+      "timestamp": 1758126525.637768,
+      "agent_name": "IntegratedAgent",
+      "tags": [
+        "reasoning",
+        "high_confidence",
+        "system",
+        "performance",
+        "metrics"
+      ]
+    }
+  ],
+  "saved_at": 1758126525.6377797
+}

@@ -1,0 +1,29 @@
+{
+  "memory": {
+    "short_term": {
+      "enabled": true,
+      "max_entries": 50,
+      "max_tokens": 5000,
+      "truncate_strategy": "head"
+    },
+    "episodic": {
+      "enabled": true,
+      "storage_path": "sessions/episodic_memory.json",
+      "max_episodes": 1000
+    },
+    "semantic": {
+      "enabled": true,
+      "storage_path": "sessions/semantic_memory.json",
+      "similarity_threshold": 0.7,
+      "max_entries": 500
+    }
+  },
+  "retrieval": {
+    "max_total_tokens": 8000,
+    "summarize_threshold": 6000,
+    "short_term_count": 10,
+    "semantic_count": 5,
+    "semantic_threshold": 0.7,
+    "episodic_count": 3
+  }
+}

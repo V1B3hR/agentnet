@@ -15,8 +15,20 @@ from .persistence.session import SessionManager
 from .providers.base import ProviderAdapter
 from .providers.example import ExampleEngine
 
-__version__ = "0.1.0"
+# Import P2 features: Memory & Tools
+from .memory.manager import MemoryManager
+from .memory.base import MemoryLayer, MemoryEntry, MemoryRetrieval, MemoryType
+from .memory.short_term import ShortTermMemory
+from .memory.episodic import EpisodicMemory
+from .memory.semantic import SemanticMemory
+from .tools.registry import ToolRegistry
+from .tools.executor import ToolExecutor
+from .tools.base import Tool, ToolResult, ToolSpec, ToolStatus
+from .tools.examples import WebSearchTool, CalculatorTool, FileWriteTool, StatusCheckTool
+
+__version__ = "0.2.0"
 __all__ = [
+    # Core
     "AgentNet",
     "Severity", 
     "CognitiveFault",
@@ -26,4 +38,24 @@ __all__ = [
     "SessionManager",
     "ProviderAdapter", 
     "ExampleEngine",
+    # Memory
+    "MemoryManager",
+    "MemoryLayer",
+    "MemoryEntry", 
+    "MemoryRetrieval",
+    "MemoryType",
+    "ShortTermMemory",
+    "EpisodicMemory", 
+    "SemanticMemory",
+    # Tools
+    "ToolRegistry",
+    "ToolExecutor",
+    "Tool",
+    "ToolResult",
+    "ToolSpec",
+    "ToolStatus",
+    "WebSearchTool",
+    "CalculatorTool",
+    "FileWriteTool",
+    "StatusCheckTool",
 ]
