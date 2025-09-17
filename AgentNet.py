@@ -1345,7 +1345,7 @@ class AgentNet:
             topic = self._multi_topic_evolution(topic, round_turns, mode)
             topic_evolution.append(topic)
 
-            if convergence and self._check_convergence(last_contents):
+            if convergence and self._check_convergence(last_contents, agents[0].dialogue_config):
                 convergence_hit = True
                 logger.info(f"[Dialogue:{session_id}] Convergence criteria met at round {round_index}.")
                 break
@@ -1474,8 +1474,70 @@ class AgentNet:
                 return payload
 
             if parallel_round:
+                # Enhanced parallel execution with monitoring and timeouts
+                start_time = time.perf_counter()
                 tasks = [asyncio.create_task(run_turn(ag)) for ag in ordered_agents]
-                turn_payloads = await asyncio.gather(*tasks)
+                
+                try:
+                    # Add timeout for parallel execution
+                    timeout = self.dialogue_config.get("parallel_timeout", 30.0)
+                    turn_payloads = await asyncio.wait_for(
+                        asyncio.gather(*tasks, return_exceptions=True), 
+                        timeout=timeout
+                    )
+                    
+                    # Handle any exceptions in parallel execution
+                    valid_payloads = []
+                    failed_agents = []
+                    for i, payload in enumerate(turn_payloads):
+                        if isinstance(payload, Exception):
+                            logger.warning(f"Agent {ordered_agents[i].name} failed in parallel round {round_index}: {payload}")
+                            failed_agents.append(ordered_agents[i].name)
+                            # Create a failure payload
+                            failure_payload = {
+                                "session_id": session_id,
+                                "round": round_index,
+                                "agent": ordered_agents[i].name,
+                                "prompt": "Failed execution",
+                                "content": f"Agent failed: {str(payload)[:100]}",
+                                "confidence": 0.0,
+                                "raw": {"error": str(payload), "failed": True}
+                            }
+                            valid_payloads.append(failure_payload)
+                        else:
+                            valid_payloads.append(payload)
+                    
+                    turn_payloads = valid_payloads
+                    parallel_duration = time.perf_counter() - start_time
+                    
+                    # Log parallel execution statistics
+                    logger.info(f"[AsyncDialogue:{session_id}] Parallel round {round_index} completed: "
+                              f"{len(ordered_agents)} agents in {parallel_duration:.2f}s, "
+                              f"failures: {len(failed_agents)}")
+                    
+                    if failed_agents:
+                        logger.warning(f"Failed agents in round {round_index}: {failed_agents}")
+                        
+                except asyncio.TimeoutError:
+                    logger.error(f"[AsyncDialogue:{session_id}] Parallel round {round_index} timed out after {timeout}s")
+                    # Cancel remaining tasks
+                    for task in tasks:
+                        task.cancel()
+                    
+                    # Create timeout payloads for all agents
+                    turn_payloads = []
+                    for ag in ordered_agents:
+                        timeout_payload = {
+                            "session_id": session_id,
+                            "round": round_index,
+                            "agent": ag.name,
+                            "prompt": "Timed out",
+                            "content": f"Agent timed out after {timeout}s",
+                            "confidence": 0.0,
+                            "raw": {"error": "timeout", "timeout": timeout}
+                        }
+                        turn_payloads.append(timeout_payload)
+                        
             else:
                 turn_payloads = []
                 for ag in ordered_agents:
@@ -1491,7 +1553,7 @@ class AgentNet:
             topic = self._multi_topic_evolution(topic, round_turns, mode)
             topic_evolution.append(topic)
 
-            if convergence and self._check_convergence(last_contents):
+            if convergence and self._check_convergence(last_contents, agents[0].dialogue_config):
                 convergence_hit = True
                 logger.info(f"[AsyncDialogue:{session_id}] Convergence at round {round_index}")
                 break
@@ -1674,12 +1736,49 @@ class AgentNet:
             "mode": mode
         }
 
-    def _check_convergence(self, last_contents: List[str]) -> bool:
-        window = self.dialogue_config.get("convergence_window", 3)
+    def _check_convergence(self, last_contents: List[str], dialogue_config: Optional[Dict[str, Any]] = None) -> bool:
+        config = dialogue_config or self.dialogue_config
+        window = config.get("convergence_window", 3)
         if len(last_contents) < window:
             return False
+        
         recent = last_contents[-window:]
-        sets = [set(self._tokenize(c)) for c in recent]
+        
+        # Primary lexical convergence check
+        lexical_converged = self._check_lexical_convergence(recent, config)
+        
+        # Semantic convergence check (if enabled)
+        semantic_converged = True  # Default to True if not checking semantic
+        if config.get("use_semantic_convergence", False):
+            semantic_converged = self._check_semantic_convergence(recent, config)
+        
+        # Confidence-based convergence check
+        confidence_converged = self._check_confidence_convergence(recent, config)
+        
+        # Combined convergence decision
+        convergence_strategy = config.get("convergence_strategy", "lexical_only")
+        
+        if convergence_strategy == "lexical_only":
+            result = lexical_converged
+        elif convergence_strategy == "semantic_only":
+            result = semantic_converged
+        elif convergence_strategy == "lexical_and_semantic":
+            result = lexical_converged and semantic_converged
+        elif convergence_strategy == "lexical_or_semantic":
+            result = lexical_converged or semantic_converged
+        elif convergence_strategy == "confidence_gated":
+            result = confidence_converged and (lexical_converged or semantic_converged)
+        else:
+            result = lexical_converged
+        
+        logger.debug(f"Convergence check: lexical={lexical_converged}, semantic={semantic_converged}, "
+                    f"confidence={confidence_converged}, strategy={convergence_strategy}, result={result}")
+        
+        return result
+        
+    def _check_lexical_convergence(self, recent_contents: List[str], config: Dict[str, Any]) -> bool:
+        """Check convergence using lexical overlap (Jaccard similarity)."""
+        sets = [set(self._tokenize(c)) for c in recent_contents]
         if not sets:
             return False
         intersection = set.intersection(*sets)
@@ -1687,9 +1786,60 @@ class AgentNet:
         if not union:
             return False
         overlap = len(intersection) / max(1, len(union))
-        if overlap >= self.dialogue_config.get("convergence_min_overlap", 0.55):
-            return True
-        return False
+        min_overlap = config.get("convergence_min_overlap", 0.55)
+        return overlap >= min_overlap
+    
+    def _check_semantic_convergence(self, recent_contents: List[str], config: Dict[str, Any]) -> bool:
+        """Check convergence using semantic similarity (simplified approach)."""
+        # For now, use length and keyword similarity as a proxy for semantic similarity
+        # In a full implementation, this would use embeddings/cosine similarity
+        
+        if len(recent_contents) < 2:
+            return False
+            
+        # Check if content lengths are similar (indicating similar depth of reasoning)
+        lengths = [len(content.split()) for content in recent_contents]
+        avg_length = sum(lengths) / len(lengths)
+        length_variance = sum((l - avg_length) ** 2 for l in lengths) / len(lengths)
+        length_converged = length_variance < config.get("semantic_length_variance_threshold", 25.0)
+        
+        # Check for shared key concepts
+        key_concept_sets = []
+        for content in recent_contents:
+            # Extract potential key concepts (longer words, capitalized terms)
+            concepts = set(re.findall(r'\b[A-Z][a-z]{3,}|[a-z]{5,}\b', content))
+            key_concept_sets.append(concepts)
+        
+        if key_concept_sets:
+            concept_intersection = set.intersection(*key_concept_sets)
+            concept_union = set.union(*key_concept_sets)
+            concept_overlap = len(concept_intersection) / max(1, len(concept_union)) if concept_union else 0
+            concept_converged = concept_overlap >= config.get("semantic_concept_overlap", 0.3)
+        else:
+            concept_converged = True
+            
+        return length_converged and concept_converged
+    
+    def _check_confidence_convergence(self, recent_contents: List[str], config: Dict[str, Any]) -> bool:
+        """Check if confidence levels are sufficiently high for meaningful convergence."""
+        # Extract confidence from the last entries in transcript
+        # This is a simplified approach - in full implementation would track confidence properly
+        min_confidence = config.get("convergence_min_confidence", 0.6)
+        
+        # For now, assume confidence based on content quality indicators
+        quality_scores = []
+        for content in recent_contents:
+            # Simple heuristics for content quality/confidence
+            word_count = len(content.split())
+            sentence_count = len([s for s in content.split('.') if s.strip()])
+            avg_sentence_length = word_count / max(1, sentence_count)
+            
+            # Higher confidence for well-structured content
+            quality_score = min(1.0, (word_count / 50) * 0.3 + (avg_sentence_length / 15) * 0.7)
+            quality_scores.append(quality_score)
+        
+        avg_quality = sum(quality_scores) / len(quality_scores) if quality_scores else 0
+        return avg_quality >= min_confidence
 
     @staticmethod
     def _tokenize(text: str) -> List[str]:
