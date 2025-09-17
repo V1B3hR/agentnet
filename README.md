@@ -443,7 +443,7 @@ Planned stages and mitigations:
 
 | Phase | Focus | Highlights |
 |-------|-------|-----------|
-| P0 | Stabilize core | Refactor agent, monitors v1, session persistence |
+| P0 | Stabilize core | Refactor agent, monitors v1, session persistence | DONE!
 | P1 | Multi-agent polish | Async parallel rounds, improved convergence, basic API |
 | P2 | Memory & Tools | Vector store integration, tool registry |
 | P3 | DAG & Eval | Task graph planner, evaluation harness |
