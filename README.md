@@ -1,7 +1,6 @@
 # AgentNet
 
-> A governed multi‑agent reasoning platform: policy‑aware LLM orchestration, dialogue strategies (debate / brainstorm / consensus), 
-  task graph execution, memory layers, monitoring, and extensible tool & provider adapters.
+> A governed multi‑agent reasoning platform: policy‑aware LLM orchestration, dialogue strategies (debate / brainstorm / consensus), task graph execution, memory layers, monitoring, and extensible tool & provider adapters.
 
 ---
 
@@ -26,6 +25,9 @@
 - [Roadmap](#roadmap)
 - [Contributing](#contributing)
 - [License](#license)
+- [Quick Glossary](#quick-glossary)
+- [Status Badges](#status-badges)
+- [Need Help?](#need-help)
 
 ---
 
@@ -37,7 +39,7 @@ Modern AI applications demand:
 - Persistent audit trails of reasoning.
 - Extensibility: integrate new LLM providers, tools, memory backends, and custom guardrails quickly.
 
-AgentNet turns raw model calls into **structured, monitored, reproducible cognitive processes**.
+AgentNet turns raw model calls into structured, monitored, reproducible cognitive processes.
 
 ---
 
@@ -107,12 +109,14 @@ AgentNet turns raw model calls into **structured, monitored, reproducible cognit
 
 ---
 
-## Directory Structure (Proposed / Evolving)
+## Directory Structure
+
+Proposed / evolving layout:
 
 ```
 agentnet/
   core/
-    agent.py              # DuetMindAgent core adaptation
+    agent.py              # DuetMindAgent core
     monitors/             # Monitor implementations
     policy/               # Rule loading & policy engine
     memory/               # Memory abstractions
@@ -139,30 +143,38 @@ agentnet/
 
 ## Quick Start
 
-> Current state: local experimentation (file persistence). DB + full APIs are on the roadmap.
+Current status: local experimentation with file-based persistence. DB + full APIs are on the roadmap.
 
-### 1. Install
+### Prerequisites
+- Python 3.10+ recommended
+- macOS, Linux, or Windows
+
+### 1) Install
 
 ```bash
-git clone https://github.com/your-org/agentnet.git
+git clone https://github.com/V1B3hR/agentnet.git
 cd agentnet
 python -m venv .venv
+# macOS/Linux
 source .venv/bin/activate
+# Windows (PowerShell)
+# .venv\Scripts\Activate.ps1
+
 pip install -r requirements.txt
 ```
 
-### 2. Run Demo
+### 2) Run Demo
 
 ```bash
 python agentnet/core/agent_demo.py --demo both --rounds 3
 ```
 
-Outputs:
+Outputs include:
 - Single-agent reasoning tree with monitor trace
 - Multi-agent session (brainstorm or debate)
 - Persisted session JSON under `./sessions/`
 
-### 3. Minimal Usage
+### 3) Minimal Usage
 
 ```python
 from agentnet.core.agent import DuetMindAgent
@@ -260,7 +272,7 @@ monitors:
 
 ---
 
-## Multi-Agent Dialogue
+## Multi‑Agent Dialogue
 
 Modes:
 - `brainstorm`: idea expansion
@@ -284,7 +296,7 @@ Planned capability:
 - Retry + fallback chain
 - Aggregated final synthesis node
 
-JSON Node Example:
+JSON node example:
 
 ```json
 {
@@ -349,7 +361,7 @@ Adapter goals:
 Initial targets:
 - OpenAI
 - Local engine (ExampleEngine stub)
-- (Future: Anthropic, Azure, vLLM, HuggingFace Inference)
+- Future: Anthropic, Azure, vLLM, HuggingFace Inference
 
 ---
 
@@ -405,14 +417,16 @@ scenarios:
 ```
 
 Outputs:
-- coverage_score
-- novelty_score (embedding divergence)
-- violation_count
-- coherence (LLM grader)
+- `coverage_score`
+- `novelty_score` (embedding divergence)
+- `violation_count`
+- `coherence` (LLM grader)
 
 ---
 
-## Security & Compliance (Planned Stages)
+## Security & Compliance
+
+Planned stages and mitigations:
 
 | Concern | Mitigation |
 |---------|------------|
@@ -449,8 +463,11 @@ Outputs:
    pytest -q
    ```
 3. Add or update docs for new behaviors.
-4. Ensure demo still runs: `python agentnet/core/agent_demo.py --demo sync`
-5. Open PR with summary + design notes if architecture-affecting.
+4. Ensure demo still runs:
+   ```bash
+   python agentnet/core/agent_demo.py --demo sync
+   ```
+5. Open a PR with a summary and design notes if architecture-affecting.
 
 Planned labels: `good-first-issue`, `monitor`, `provider-adapter`, `memory`, `tooling`.
 
@@ -458,11 +475,7 @@ Planned labels: `good-first-issue`, `monitor`, `provider-adapter`, `memory`, `to
 
 ## License
 
-Choose a license (e.g., MIT, Apache 2.0). Example (MIT):
-
-```
-MIT License (c) 2025 YOUR_NAME_OR_ORG
-```
+GPL-v3.0
 
 ---
 
@@ -477,7 +490,7 @@ MIT License (c) 2025 YOUR_NAME_OR_ORG
 
 ---
 
-## Status Badge Placeholder
+## Status Badges
 
 Add badges once services are wired:
 
@@ -491,13 +504,11 @@ Add badges once services are wired:
 
 ## Need Help?
 
-Open a GitHub Issue with:
+Please open a GitHub Issue with:
 - Reproduction steps
 - Agent config (redacted if needed)
 - Monitor bundle (if relevant)
 - Session excerpt
-
----
 
 > AgentNet evolves from a foundation of structured, monitorable multi‑agent reasoning. Your contributions can push it toward a robust ecosystem for governed AI collaboration.
 
