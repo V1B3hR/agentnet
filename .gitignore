@@ -87,4 +87,5 @@ htmlcov/
 
 # OS
 .DS_Store
-Thumbs.db
+Thumbs.dbcost_logs/
+*.jsonl
