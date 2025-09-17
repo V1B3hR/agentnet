@@ -45,6 +45,12 @@ class MonitorFactory:
             return MonitorFactory._resource_monitor(spec)
         if t == "custom":
             return MonitorFactory._custom_monitor(spec)
+        if t == "semantic_similarity":
+            return MonitorFactory._semantic_similarity_monitor(spec)
+        if t == "llm_classifier":
+            return MonitorFactory._llm_classifier_monitor(spec)
+        if t == "numerical_threshold":
+            return MonitorFactory._numerical_threshold_monitor(spec)
         raise ValueError(f"Unknown monitor type: {spec.type}")
 
     @staticmethod
@@ -253,6 +259,234 @@ class MonitorFactory:
                 detail = {"outcome": outcome, "violations": violations}
                 MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
         return monitor
+
+    @staticmethod
+    def _semantic_similarity_monitor(spec: MonitorSpec) -> MonitorFn:
+        """Create a semantic similarity monitor."""
+        max_similarity = float(spec.params.get("max_similarity", 0.9))
+        window_size = int(spec.params.get("window_size", 5))
+        embedding_set = spec.params.get("embedding_set", "restricted_corpora")
+        violation_name = spec.params.get("violation_name", f"{spec.name}_semantic")
+        
+        # Storage for content history per agent-task combination
+        if not hasattr(MonitorFactory, '_semantic_history'):
+            MonitorFactory._semantic_history = {}
+        
+        # Try to import sentence-transformers for semantic similarity
+        try:
+            from sentence_transformers import SentenceTransformer
+            import numpy as np
+            # Try to load model, but handle download failures gracefully
+            try:
+                model = SentenceTransformer('all-MiniLM-L6-v2')
+                use_semantic = True
+            except Exception as model_error:
+                logger.warning(f"Failed to load sentence transformer model: {model_error}")
+                model = None
+                use_semantic = False
+        except ImportError:
+            logger.warning("sentence-transformers not available, falling back to Jaccard similarity")
+            model = None
+            use_semantic = False
+        
+        def semantic_similarity(text1: str, text2: str) -> float:
+            """Compute semantic similarity."""
+            if not use_semantic:
+                # Fallback to Jaccard similarity
+                set1 = set(text1.lower().split())
+                set2 = set(text2.lower().split())
+                if not set1 and not set2:
+                    return 1.0
+                if not set1 or not set2:
+                    return 0.0
+                return len(set1 & set2) / len(set1 | set2)
+            
+            embeddings = model.encode([text1, text2])
+            dot_product = np.dot(embeddings[0], embeddings[1])
+            norm_a = np.linalg.norm(embeddings[0])
+            norm_b = np.linalg.norm(embeddings[1])
+            
+            if norm_a == 0 or norm_b == 0:
+                return 0.0
+            
+            return dot_product / (norm_a * norm_b)
+        
+        def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
+            if MonitorFactory._should_cooldown(spec, task):
+                return
+                
+            content = str(result.get("content", "")) if isinstance(result, dict) else str(result)
+            if not content.strip():
+                return
+            
+            agent_key = f"{agent.name}_{task}_semantic"
+            
+            # Initialize history for this agent-task combination
+            if agent_key not in MonitorFactory._semantic_history:
+                MonitorFactory._semantic_history[agent_key] = []
+            
+            history = MonitorFactory._semantic_history[agent_key]
+            
+            # Check semantic similarity against recent history
+            violations = []
+            for i, historical_content in enumerate(history[-window_size:]):
+                similarity = semantic_similarity(content, historical_content)
+                if similarity > max_similarity:
+                    violations.append(MonitorFactory._build_violation(
+                        name=violation_name,
+                        vtype="semantic_similarity",
+                        severity=spec.severity,
+                        description=spec.description or f"Semantic similarity {similarity:.2f} exceeds threshold",
+                        rationale=f"Current content semantically too similar to content from {len(history)-i} turns ago",
+                        meta={
+                            "similarity_score": similarity,
+                            "threshold": max_similarity,
+                            "historical_index": len(history) - i,
+                            "embedding_set": embedding_set,
+                            "window_size": window_size
+                        }
+                    ))
+            
+            # Add current content to history
+            history.append(content)
+            
+            # Limit history size to prevent unbounded growth
+            if len(history) > window_size * 2:
+                history[:] = history[-window_size:]
+            
+            if violations:
+                detail = {"outcome": {"content": content}, "violations": violations}
+                MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
+                
+        return monitor
+
+    @staticmethod
+    def _llm_classifier_monitor(spec: MonitorSpec) -> MonitorFn:
+        """Create an LLM-based classifier monitor for toxicity, PII, etc."""
+        model_name = spec.params.get("model", "moderation-small")
+        threshold = float(spec.params.get("threshold", 0.78))
+        classifier_type = spec.params.get("classifier_type", "toxicity")
+        violation_name = spec.params.get("violation_name", f"{spec.name}_classifier")
+        
+        def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
+            if MonitorFactory._should_cooldown(spec, task):
+                return
+                
+            content = str(result.get("content", "")) if isinstance(result, dict) else str(result)
+            if not content.strip():
+                return
+            
+            # Simulate LLM classifier - in production, this would call an actual moderation API
+            score = MonitorFactory._simulate_classifier_score(content, classifier_type)
+            
+            if score > threshold:
+                violations = [MonitorFactory._build_violation(
+                    name=violation_name,
+                    vtype="llm_classifier",
+                    severity=spec.severity,
+                    description=spec.description or f"{classifier_type} classifier score {score:.2f} exceeds threshold",
+                    rationale=f"Content classified as {classifier_type} with confidence {score:.2f}",
+                    meta={
+                        "classifier_score": score,
+                        "threshold": threshold,
+                        "classifier_type": classifier_type,
+                        "model": model_name
+                    }
+                )]
+                detail = {"outcome": {"content": content}, "violations": violations}
+                MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
+                
+        return monitor
+
+    @staticmethod
+    def _numerical_threshold_monitor(spec: MonitorSpec) -> MonitorFn:
+        """Create a numerical threshold monitor."""
+        field_name = spec.params.get("field", "confidence")
+        min_value = spec.params.get("min_value")
+        max_value = spec.params.get("max_value")
+        violation_name = spec.params.get("violation_name", f"{spec.name}_threshold")
+        
+        def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
+            if MonitorFactory._should_cooldown(spec, task):
+                return
+                
+            if not isinstance(result, dict):
+                return
+                
+            value = result.get(field_name)
+            if value is None:
+                return
+                
+            try:
+                numeric_value = float(value)
+            except (ValueError, TypeError):
+                return
+            
+            violations = []
+            if min_value is not None and numeric_value < min_value:
+                violations.append(MonitorFactory._build_violation(
+                    name=violation_name,
+                    vtype="numerical_threshold",
+                    severity=spec.severity,
+                    description=spec.description or f"{field_name} value {numeric_value} below minimum threshold",
+                    rationale=f"{field_name} value {numeric_value} is below minimum {min_value}",
+                    meta={
+                        "field": field_name,
+                        "value": numeric_value,
+                        "min_threshold": min_value,
+                        "violation_type": "below_minimum"
+                    }
+                ))
+            
+            if max_value is not None and numeric_value > max_value:
+                violations.append(MonitorFactory._build_violation(
+                    name=violation_name,
+                    vtype="numerical_threshold",
+                    severity=spec.severity,
+                    description=spec.description or f"{field_name} value {numeric_value} above maximum threshold",
+                    rationale=f"{field_name} value {numeric_value} is above maximum {max_value}",
+                    meta={
+                        "field": field_name,
+                        "value": numeric_value,
+                        "max_threshold": max_value,
+                        "violation_type": "above_maximum"
+                    }
+                ))
+            
+            if violations:
+                detail = {"outcome": result, "violations": violations}
+                MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
+                
+        return monitor
+
+    @staticmethod
+    def _simulate_classifier_score(content: str, classifier_type: str) -> float:
+        """Simulate classifier score for demonstration purposes."""
+        # This is a simple simulation - in production, this would call actual ML models
+        content_lower = content.lower()
+        
+        if classifier_type == "toxicity":
+            toxic_keywords = ["hate", "toxic", "harmful", "offensive", "abusive", "racist", "sexist"]
+            score = sum(1 for word in toxic_keywords if word in content_lower) / len(toxic_keywords)
+            return min(score * 2.0, 1.0)  # Scale and cap at 1.0
+            
+        elif classifier_type == "pii":
+            import re
+            # Simple PII detection patterns
+            patterns = [
+                r'\b\d{3}-\d{2}-\d{4}\b',  # SSN
+                r'\b[\w\.-]+@[\w\.-]+\.\w+\b',  # Email
+                r'\b\d{3}-\d{3}-\d{4}\b',  # Phone
+                r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b'  # Credit card
+            ]
+            matches = sum(1 for pattern in patterns if re.search(pattern, content))
+            return min(matches * 0.3, 1.0)  # Scale and cap at 1.0
+            
+        else:
+            # Default random score for other types
+            import hashlib
+            hash_val = int(hashlib.md5(content.encode()).hexdigest()[:8], 16)
+            return (hash_val % 100) / 100.0
 
 
 def register_custom_monitor_func(name: str, func: Any) -> None:

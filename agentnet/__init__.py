@@ -30,7 +30,11 @@ from .tools.examples import WebSearchTool, CalculatorTool, FileWriteTool, Status
 from .core.orchestration import DAGPlanner, TaskNode, TaskGraph, TaskScheduler, ExecutionResult
 from .core.eval import EvaluationRunner, EvaluationScenario, EvaluationSuite, MetricsCalculator, EvaluationMetrics, SuccessCriteria
 
-__version__ = "0.3.0"
+# Import P4 features: Governance++, Cost Engine, RBAC
+from .core.cost import PricingEngine, CostRecorder, CostAggregator, TenantCostTracker
+from .core.auth import Role, Permission, RBACManager, User, AuthMiddleware
+
+__version__ = "0.4.0"
 __all__ = [
     # Core
     "AgentNet",
@@ -74,4 +78,15 @@ __all__ = [
     "MetricsCalculator",
     "EvaluationMetrics",
     "SuccessCriteria",
+    # P4 Cost Engine
+    "PricingEngine",
+    "CostRecorder",
+    "CostAggregator", 
+    "TenantCostTracker",
+    # P4 RBAC
+    "Role",
+    "Permission",
+    "RBACManager",
+    "User",
+    "AuthMiddleware",
 ]
