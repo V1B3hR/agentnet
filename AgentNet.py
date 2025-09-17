@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+# P0 REFACTORED IMPORTS - Core classes now use modular structure
+try:
+    from agentnet import AgentNet as AgentNetCore, ExampleEngine as ExampleEngineCore, Severity as SeverityCore
+    _use_refactored = True
+except ImportError:
+    _use_refactored = False
+
 import argparse
 import asyncio
 import json
