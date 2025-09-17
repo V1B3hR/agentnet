@@ -38,7 +38,12 @@ from .core.auth import Role, Permission, RBACManager, User, AuthMiddleware
 from .observability import MetricsCollector, AgentNetMetrics, TracingManager, create_tracer
 from .observability import setup_structured_logging, get_correlation_logger
 
-__version__ = "0.4.0"
+# Import P6 features: Enterprise Hardening
+from .compliance import ExportControlManager, DataClassifier, ContentRedactor, ComplianceReporter
+from .audit import AuditWorkflow, AuditLogger, AuditStorage, AuditDashboard
+from .plugins import PluginManager, Plugin, PluginInfo, PluginSandbox, SecurityPolicy
+
+__version__ = "0.5.0"
 __all__ = [
     # Core
     "AgentNet",
@@ -100,4 +105,18 @@ __all__ = [
     "create_tracer",
     "setup_structured_logging",
     "get_correlation_logger",
+    # P6 Enterprise Hardening  
+    "ExportControlManager",
+    "DataClassifier",
+    "ContentRedactor",
+    "ComplianceReporter",
+    "AuditWorkflow",
+    "AuditLogger", 
+    "AuditStorage",
+    "AuditDashboard",
+    "PluginManager",
+    "Plugin",
+    "PluginInfo",
+    "PluginSandbox",
+    "SecurityPolicy",
 ]
