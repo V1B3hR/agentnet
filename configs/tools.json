@@ -1,0 +1,112 @@
+{
+  "tools": [
+    {
+      "name": "web_search",
+      "description": "Search the web for information",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query"
+          },
+          "max_results": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20,
+            "default": 5
+          }
+        },
+        "required": ["query"]
+      },
+      "rate_limit_per_min": 30,
+      "auth_required": true,
+      "auth_scope": "web_search",
+      "timeout_seconds": 10.0,
+      "cached": true,
+      "tags": ["search", "web", "information"]
+    },
+    {
+      "name": "calculator",
+      "description": "Perform mathematical calculations",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "expression": {
+            "type": "string",
+            "description": "Mathematical expression to evaluate"
+          }
+        },
+        "required": ["expression"]
+      },
+      "rate_limit_per_min": 100,
+      "auth_required": false,
+      "timeout_seconds": 5.0,
+      "cached": true,
+      "tags": ["math", "calculation", "utility"]
+    },
+    {
+      "name": "file_write",
+      "description": "Write content to a file",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "Name of the file to write"
+          },
+          "content": {
+            "type": "string",
+            "description": "Content to write to the file"
+          },
+          "append": {
+            "type": "boolean",
+            "default": false,
+            "description": "Whether to append to existing file"
+          }
+        },
+        "required": ["filename", "content"]
+      },
+      "rate_limit_per_min": 20,
+      "auth_required": true,
+      "auth_scope": "file_system",
+      "timeout_seconds": 15.0,
+      "cached": false,
+      "tags": ["file", "write", "storage"]
+    },
+    {
+      "name": "status_check",
+      "description": "Check system status and health",
+      "schema": {
+        "type": "object",
+        "properties": {
+          "component": {
+            "type": "string",
+            "enum": ["memory", "disk", "network", "overall"],
+            "default": "overall",
+            "description": "System component to check"
+          }
+        }
+      },
+      "rate_limit_per_min": 60,
+      "auth_required": false,
+      "timeout_seconds": 5.0,
+      "cached": false,
+      "tags": ["system", "monitoring", "health"]
+    }
+  ],
+  "tags": {
+    "search": ["web_search"],
+    "web": ["web_search"],
+    "information": ["web_search"],
+    "math": ["calculator"],
+    "calculation": ["calculator"],
+    "utility": ["calculator"],
+    "file": ["file_write"],
+    "write": ["file_write"],
+    "storage": ["file_write"],
+    "system": ["status_check"],
+    "monitoring": ["status_check"],
+    "health": ["status_check"]
+  }
+}

@@ -1,0 +1,140 @@
+{
+  "episodes": [
+    {
+      "id": "ep_1758126525485_0",
+      "content": "AgentNet is a multi-agent reasoning platform with policy governance",
+      "metadata": {
+        "source": "knowledge_base"
+      },
+      "timestamp": 1758126525.4851217,
+      "agent_name": "MemoryAgent",
+      "tags": [
+        "platform",
+        "architecture"
+      ]
+    },
+    {
+      "id": "ep_1758126525485_1",
+      "content": "P2 phase introduces vector store integration and tool registry",
+      "metadata": {
+        "source": "knowledge_base"
+      },
+      "timestamp": 1758126525.4858835,
+      "agent_name": "MemoryAgent",
+      "tags": [
+        "p2",
+        "features",
+        "implementation"
+      ]
+    },
+    {
+      "id": "ep_1758126525487_2",
+      "content": "Memory system has three layers: short-term, episodic, and semantic",
+      "metadata": {
+        "source": "knowledge_base"
+      },
+      "timestamp": 1758126525.4870312,
+      "agent_name": "MemoryAgent",
+      "tags": [
+        "memory",
+        "architecture"
+      ]
+    },
+    {
+      "id": "ep_1758126525488_3",
+      "content": "Tools are executed with rate limiting and authentication",
+      "metadata": {
+        "source": "knowledge_base"
+      },
+      "timestamp": 1758126525.4885418,
+      "agent_name": "MemoryAgent",
+      "tags": [
+        "tools",
+        "security"
+      ]
+    },
+    {
+      "id": "ep_1758126525490_4",
+      "content": "Semantic memory uses vector similarity for content retrieval",
+      "metadata": {
+        "source": "knowledge_base"
+      },
+      "timestamp": 1758126525.4905133,
+      "agent_name": "MemoryAgent",
+      "tags": [
+        "semantic",
+        "vectors",
+        "search"
+      ]
+    },
+    {
+      "id": "ep_1758126525513_5",
+      "content": "[MemoryAgent] Thoughts about: What are the key features of P2?\n\nRelevant memory context:\n- AgentNet is a multi-agent reasoning platform with policy governance...\n- P2 phase introduces vector store integration and tool registry...\n- Memory system has three layers: short-term, episodic, and semantic...",
+      "metadata": {
+        "task": "What are the key features of P2?",
+        "confidence": 1.0
+      },
+      "timestamp": 1758126525.5132573,
+      "agent_name": "MemoryAgent",
+      "tags": [
+        "reasoning",
+        "high_confidence",
+        "p2",
+        "memory",
+        "tools"
+      ]
+    },
+    {
+      "id": "ep_1758126525536_6",
+      "content": "[MemoryAgent] Thoughts about: How does the memory system work in AgentNet?\n\nRelevant memory context:\n- AgentNet is a multi-agent reasoning platform with policy governance...\n- P2 phase introduces vector store integration and tool registry...\n- Memory system has three layers: short-term, episodic, and semantic...",
+      "metadata": {
+        "task": "How does the memory system work in AgentNet?",
+        "confidence": 1.0
+      },
+      "timestamp": 1758126525.536775,
+      "agent_name": "MemoryAgent",
+      "tags": [
+        "reasoning",
+        "high_confidence",
+        "p2",
+        "memory",
+        "tools"
+      ]
+    },
+    {
+      "id": "ep_1758126525560_7",
+      "content": "[MemoryAgent] Thoughts about: What security measures are implemented for tools?\n\nRelevant memory context:\n- AgentNet is a multi-agent reasoning platform with policy governance...\n- P2 phase introduces vector store integration and tool registry...\n- Memory system has three layers: short-term, episodic, and semantic...",
+      "metadata": {
+        "task": "What security measures are implemented for tools?",
+        "confidence": 1.0
+      },
+      "timestamp": 1758126525.560652,
+      "agent_name": "MemoryAgent",
+      "tags": [
+        "reasoning",
+        "high_confidence",
+        "p2",
+        "memory",
+        "tools"
+      ]
+    },
+    {
+      "id": "ep_1758126525584_8",
+      "content": "[MemoryAgent] Thoughts about: Explain vector similarity in semantic memory\n\nRelevant memory context:\n- AgentNet is a multi-agent reasoning platform with policy governance...\n- P2 phase introduces vector store integration and tool registry...\n- Memory system has three layers: short-term, episodic, and semantic...",
+      "metadata": {
+        "task": "Explain vector similarity in semantic memory",
+        "confidence": 1.0
+      },
+      "timestamp": 1758126525.5849733,
+      "agent_name": "MemoryAgent",
+      "tags": [
+        "reasoning",
+        "high_confidence",
+        "p2",
+        "memory",
+        "tools"
+      ]
+    }
+  ],
+  "saved_at": 1758126525.5849862
+}

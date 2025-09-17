@@ -10,6 +10,9 @@ from .types import CognitiveFault
 from ..monitors.base import MonitorFn
 from ..persistence.session import SessionManager
 from ..persistence.agent_state import AgentStateManager
+from ..memory.manager import MemoryManager
+from ..tools.registry import ToolRegistry
+from ..tools.executor import ToolExecutor
 
 if TYPE_CHECKING:
     from ..providers.base import ProviderAdapter
@@ -28,6 +31,8 @@ class AgentNet:
         monitors: Optional[List[MonitorFn]] = None,
         dialogue_config: Optional[Dict[str, Any]] = None,
         pre_monitors: Optional[List[MonitorFn]] = None,
+        memory_config: Optional[Dict[str, Any]] = None,
+        tool_registry: Optional[ToolRegistry] = None,
     ):
         """
         Initialize AgentNet instance.
@@ -39,6 +44,8 @@ class AgentNet:
             monitors: Post-style monitors (executed after style influence)
             dialogue_config: Dialogue configuration
             pre_monitors: Pre-style monitors (executed before style influence)
+            memory_config: Memory system configuration
+            tool_registry: Tool registry for available tools
         """
         self.name = name
         self.style = style
@@ -59,12 +66,25 @@ class AgentNet:
             }
         }
         
+        # Initialize memory system
+        self.memory_manager = None
+        if memory_config:
+            self.memory_manager = MemoryManager(memory_config)
+        
+        # Initialize tool system
+        self.tool_registry = tool_registry
+        self.tool_executor = None
+        if tool_registry:
+            self.tool_executor = ToolExecutor(tool_registry)
+        
         # Initialize managers
         self.session_manager = SessionManager()
         
         logger.info(
             f"AgentNet instance '{name}' initialized with style {style}, "
-            f"{len(self.monitors)} monitors, {len(self.pre_monitors)} pre-monitors"
+            f"{len(self.monitors)} monitors, {len(self.pre_monitors)} pre-monitors, "
+            f"memory={'enabled' if self.memory_manager else 'disabled'}, "
+            f"tools={'enabled' if self.tool_executor else 'disabled'}"
         )
 
     def register_monitor(self, monitor_fn: MonitorFn, pre_style: bool = False) -> None:
@@ -269,3 +289,264 @@ class AgentNet:
 
     def __repr__(self) -> str:
         return f"AgentNet(name='{self.name}', style={self.style})"
+
+    # Memory system methods
+    def store_memory(self, content: str, metadata: Optional[Dict[str, Any]] = None, tags: Optional[List[str]] = None) -> bool:
+        """Store content in memory system."""
+        if not self.memory_manager:
+            return False
+        
+        return self.memory_manager.store(content, self.name, metadata, tags)
+    
+    def retrieve_memory(self, query: str, context: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+        """Retrieve relevant memories for a query."""
+        if not self.memory_manager:
+            return None
+        
+        retrieval = self.memory_manager.retrieve(query, self.name, context)
+        
+        return {
+            "entries": [
+                {
+                    "content": entry.content,
+                    "metadata": entry.metadata,
+                    "timestamp": entry.timestamp,
+                    "agent_name": entry.agent_name,
+                    "tags": entry.tags
+                }
+                for entry in retrieval.entries
+            ],
+            "total_tokens": retrieval.total_tokens,
+            "retrieval_time": retrieval.retrieval_time,
+            "source_layers": [layer.value for layer in retrieval.source_layers]
+        }
+    
+    def get_memory_stats(self) -> Optional[Dict[str, Any]]:
+        """Get memory system statistics."""
+        if not self.memory_manager:
+            return None
+        
+        return self.memory_manager.get_memory_stats()
+    
+    def clear_memory(self, layer_type: Optional[str] = None) -> bool:
+        """Clear memory (all layers or specific layer)."""
+        if not self.memory_manager:
+            return False
+        
+        if layer_type:
+            from ..memory.base import MemoryType
+            try:
+                memory_type = MemoryType(layer_type)
+                self.memory_manager.clear_layer(memory_type)
+            except ValueError:
+                return False
+        else:
+            self.memory_manager.clear_all()
+        
+        return True
+    
+    # Tool system methods
+    async def execute_tool(
+        self, 
+        tool_name: str, 
+        parameters: Dict[str, Any],
+        context: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Execute a tool and return the result."""
+        if not self.tool_executor:
+            return None
+        
+        result = await self.tool_executor.execute_tool(
+            tool_name, 
+            parameters, 
+            user_id=self.name,
+            context=context
+        )
+        
+        return {
+            "status": result.status.value,
+            "data": result.data,
+            "error_message": result.error_message,
+            "execution_time": result.execution_time,
+            "metadata": result.metadata
+        }
+    
+    def list_available_tools(self, tag: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List available tools."""
+        if not self.tool_registry:
+            return []
+        
+        specs = self.tool_registry.list_tool_specs(tag)
+        return [spec.to_dict() for spec in specs]
+    
+    def search_tools(self, query: str, tags: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+        """Search for tools by name or description."""
+        if not self.tool_registry:
+            return []
+        
+        specs = self.tool_registry.search_tools(query, tags)
+        return [spec.to_dict() for spec in specs]
+    
+    def get_tool_info(self, tool_name: str) -> Optional[Dict[str, Any]]:
+        """Get information about a specific tool."""
+        if not self.tool_registry:
+            return None
+        
+        spec = self.tool_registry.get_tool_spec(tool_name)
+        if not spec:
+            return None
+        
+        return spec.to_dict()
+    
+    # Enhanced reasoning with memory and tools
+    def generate_reasoning_tree_enhanced(
+        self,
+        task: str,
+        include_monitor_trace: bool = False,
+        max_depth: int = 3,
+        confidence_threshold: float = 0.7,
+        style_override: Optional[Dict[str, float]] = None,
+        use_memory: bool = True,
+        memory_context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Generate reasoning tree with memory retrieval integration.
+        
+        Args:
+            task: The task/prompt to reason about
+            include_monitor_trace: Whether to include monitor execution traces
+            max_depth: Maximum reasoning depth
+            confidence_threshold: Minimum confidence threshold
+            style_override: Temporary style override
+            use_memory: Whether to use memory retrieval
+            memory_context: Additional context for memory retrieval
+            
+        Returns:
+            Enhanced reasoning tree with memory context
+        """
+        start_time = time.time()
+        
+        # Retrieve relevant memories if enabled
+        memory_context_str = ""
+        memory_retrieval = None
+        
+        if use_memory and self.memory_manager:
+            memory_retrieval = self.retrieve_memory(task, memory_context)
+            if memory_retrieval and memory_retrieval["entries"]:
+                memory_items = []
+                for entry in memory_retrieval["entries"]:
+                    memory_items.append(f"- {entry['content'][:200]}...")
+                
+                memory_context_str = f"\n\nRelevant memory context:\n" + "\n".join(memory_items[:3])
+        
+        # Enhanced task with memory context
+        enhanced_task = task + memory_context_str
+        
+        try:
+            # Use engine if available, otherwise create simple response
+            if self.engine:
+                raw_result = self.engine.infer(enhanced_task, agent_name=self.name)
+            else:
+                raw_result = {
+                    "content": f"[{self.name}] No engine available for task: {enhanced_task}",
+                    "confidence": 0.5
+                }
+            
+            base_result = self._normalize_engine_result(raw_result)
+            
+            # Run pre-style monitors
+            self._run_pre_monitors(enhanced_task, base_result)
+            
+            # Apply style influence
+            styled_result = self._apply_style_influence(base_result, enhanced_task)
+            
+            # Run post-style monitors  
+            self._run_post_monitors(enhanced_task, styled_result)
+            
+            # Store in memory if significant result
+            if self.memory_manager and styled_result.get("confidence", 0) > 0.7:
+                tags = ["reasoning", "high_confidence"]
+                if memory_context and "tags" in memory_context:
+                    tags.extend(memory_context["tags"])
+                
+                self.store_memory(
+                    styled_result["content"], 
+                    metadata={"task": task, "confidence": styled_result.get("confidence")},
+                    tags=tags
+                )
+            
+            # Build enhanced reasoning tree
+            runtime = time.time() - start_time
+            reasoning_tree = {
+                "root": f"{self.name}_reasoning_enhanced",
+                "result": styled_result,
+                "agent": self.name,
+                "task": task,
+                "enhanced_task": enhanced_task,
+                "runtime": runtime,
+                "timestamp": time.time(),
+                "style": self.style.copy(),
+                "monitor_trace": [] if include_monitor_trace else None,
+                "memory_retrieval": memory_retrieval,
+                "memory_used": bool(memory_context_str)
+            }
+            
+            # Record in interaction history
+            self.interaction_history.append({
+                "type": "reasoning_tree_enhanced",
+                "task": task,
+                "result": styled_result,
+                "runtime": runtime,
+                "memory_used": bool(memory_context_str)
+            })
+            
+            return reasoning_tree
+            
+        except CognitiveFault as cf:
+            # Handle cognitive faults
+            runtime = time.time() - start_time
+            fault_tree = {
+                "root": f"{self.name}_fault_enhanced",
+                "result": {
+                    "content": f"[{self.name}] Cognitive fault: {cf}",
+                    "confidence": 0.1,
+                    "fault": True
+                },
+                "agent": self.name,
+                "task": task,
+                "enhanced_task": enhanced_task,
+                "runtime": runtime,
+                "timestamp": time.time(),
+                "cognitive_fault": cf.to_dict(),
+                "memory_retrieval": memory_retrieval
+            }
+            
+            self.interaction_history.append({
+                "type": "fault_enhanced",
+                "task": task,
+                "fault": cf.to_dict(),
+                "runtime": runtime
+            })
+            
+            return fault_tree
+        
+        except Exception as e:
+            # Handle unexpected errors
+            runtime = time.time() - start_time
+            error_tree = {
+                "root": f"{self.name}_error_enhanced",
+                "result": {
+                    "content": f"[{self.name}] Unexpected error: {e}",
+                    "confidence": 0.0,
+                    "error": True
+                },
+                "agent": self.name,
+                "task": task,
+                "enhanced_task": enhanced_task,
+                "runtime": runtime,
+                "timestamp": time.time(),
+                "error": str(e),
+                "memory_retrieval": memory_retrieval
+            }
+            
+            return error_tree
