@@ -77,9 +77,13 @@ class AgentNetAPIHandler(BaseHTTPRequestHandler):
         path = parsed_path.path
         
         try:
-            content_length = int(self.headers['Content-Length'])
-            post_data = self.rfile.read(content_length)
-            request_data = json.loads(post_data.decode('utf-8'))
+            # Handle POST requests with or without body
+            request_data = {}
+            if 'Content-Length' in self.headers:
+                content_length = int(self.headers['Content-Length'])
+                if content_length > 0:
+                    post_data = self.rfile.read(content_length)
+                    request_data = json.loads(post_data.decode('utf-8'))
             
             if path == "/sessions":
                 response = self.api_server.create_session(request_data)
@@ -90,6 +94,9 @@ class AgentNetAPIHandler(BaseHTTPRequestHandler):
                 self._send_json_response(response)
             else:
                 self._send_error_response(404, "Not found")
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON decode error: {e}")
+            self._send_error_response(400, f"Invalid JSON: {e}")
         except Exception as e:
             logger.error(f"POST error: {e}")
             self._send_error_response(500, str(e))

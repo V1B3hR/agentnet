@@ -282,9 +282,11 @@ Modes:
 
 Features:
 - Topic evolution heuristics (confidence-driven)
-- Convergence detection (lexical Jaccard overlap)
+- Enhanced convergence detection (lexical + semantic + confidence-gated)
 - Rolling & final synthesis prompts
-- Async variant (`parallel_round=True`)
+- Async variant (`parallel_round=True`) with performance monitoring
+- Multiple convergence strategies: lexical_only, semantic_only, lexical_and_semantic, confidence_gated
+- Parallel execution timeout controls and error handling
 
 ---
 
