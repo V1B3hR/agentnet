@@ -1,0 +1,114 @@
+suite: "baseline_design_eval"
+description: "Baseline evaluation suite for design and planning scenarios"
+metadata:
+  version: "1.0"
+  author: "AgentNet P3"
+  created: "2024-01-01"
+
+scenarios:
+  - name: "resilience_planning"
+    mode: "brainstorm"
+    agents: ["Athena", "Apollo"]
+    topic: "Edge network partition recovery"
+    success_criteria:
+      - type: keyword_presence
+        name: "resilience_keywords"
+        must_include: ["redundancy", "failover", "recovery"]
+        weight: 2.0
+      - type: semantic_score
+        name: "relevance_check"
+        reference_text: "Network resilience requires redundant systems, failover mechanisms, and recovery procedures to handle partition scenarios"
+        min_score: 0.3
+        weight: 1.5
+      - type: length_check
+        name: "response_length"
+        min_length: 200
+        max_length: 2000
+        weight: 1.0
+      - type: confidence_threshold
+        name: "min_confidence"
+        min_confidence: 0.6
+        weight: 1.0
+    max_rounds: 5
+    timeout: 60
+
+  - name: "ethical_debate"
+    mode: "debate"
+    agents: ["Athena", "Hermes"]
+    topic: "Autonomous swarm decision hierarchy"
+    success_criteria:
+      - type: keyword_presence
+        name: "ethics_keywords"
+        must_include: ["ethics", "responsibility", "decision"]
+        weight: 1.5
+      - type: keyword_absence
+        name: "avoid_harmful"
+        must_exclude: ["harmful", "dangerous", "unethical"]
+        weight: 1.0
+      - type: length_check
+        name: "substantive_response"
+        min_length: 300
+        weight: 1.0
+      - type: rule_violations_count
+        name: "no_violations"
+        max_violations: 0
+        weight: 2.0
+    max_rounds: 4
+    timeout: 45
+
+  - name: "consensus_building"
+    mode: "consensus"
+    agents: ["Engineer", "Environmentalist", "Economist"]
+    topic: "Sustainable energy transition strategy"
+    success_criteria:
+      - type: keyword_presence
+        name: "sustainability_keywords"
+        must_include: ["sustainable", "renewable", "transition"]
+        weight: 2.0
+      - type: keyword_presence
+        name: "consensus_indicators"
+        must_include: ["agree", "consensus", "balance"]
+        weight: 1.5
+      - type: confidence_threshold
+        name: "high_confidence"
+        min_confidence: 0.75
+        weight: 1.0
+    max_rounds: 6
+    timeout: 90
+
+  - name: "workflow_planning"
+    mode: "workflow" 
+    agents: ["Planner", "Analyst", "Implementer"]
+    topic: "System architecture design workflow"
+    task_graph:
+      nodes:
+        - id: "requirements"
+          prompt: "Define system requirements and constraints"
+          agent: "Planner"
+          deps: []
+        - id: "analysis"
+          prompt: "Analyze requirements and identify key components"
+          agent: "Analyst" 
+          deps: ["requirements"]
+        - id: "design"
+          prompt: "Create detailed system design based on analysis"
+          agent: "Implementer"
+          deps: ["analysis"]
+        - id: "review"
+          prompt: "Review and validate the complete design"
+          agent: "Planner"
+          deps: ["design"]
+    success_criteria:
+      - type: keyword_presence
+        name: "architecture_keywords"
+        must_include: ["architecture", "design", "system", "components"]
+        weight: 2.0
+      - type: length_check
+        name: "comprehensive_output"
+        min_length: 500
+        weight: 1.0
+      - type: confidence_threshold
+        name: "design_confidence"
+        min_confidence: 0.7
+        weight: 1.5
+    timeout: 120
