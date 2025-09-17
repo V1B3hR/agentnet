@@ -6,6 +6,7 @@ import time
 from typing import Any, Dict
 
 from .base import ProviderAdapter
+from .instrumented import InstrumentedProviderMixin
 
 
 class ExampleEngine(ProviderAdapter):
