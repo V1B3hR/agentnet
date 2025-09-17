@@ -34,6 +34,10 @@ from .core.eval import EvaluationRunner, EvaluationScenario, EvaluationSuite, Me
 from .core.cost import PricingEngine, CostRecorder, CostAggregator, TenantCostTracker
 from .core.auth import Role, Permission, RBACManager, User, AuthMiddleware
 
+# Import P5 features: Observability
+from .observability import MetricsCollector, AgentNetMetrics, TracingManager, create_tracer
+from .observability import setup_structured_logging, get_correlation_logger
+
 __version__ = "0.4.0"
 __all__ = [
     # Core
@@ -89,4 +93,11 @@ __all__ = [
     "RBACManager",
     "User",
     "AuthMiddleware",
+    # P5 Observability
+    "MetricsCollector",
+    "AgentNetMetrics",
+    "TracingManager", 
+    "create_tracer",
+    "setup_structured_logging",
+    "get_correlation_logger",
 ]

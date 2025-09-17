@@ -1,0 +1,83 @@
+
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>AgentNet Observability Dashboard</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+                .card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; background: #f9f9f9; }
+                .metric { margin: 10px 0; }
+                .metric-value { font-size: 24px; font-weight: bold; color: #2196F3; }
+                .metric-label { color: #666; }
+                h1 { color: #333; text-align: center; }
+                h2 { color: #555; margin-top: 0; }
+                .error { color: #f44336; }
+                .success { color: #4CAF50; }
+                .warning { color: #ff9800; }
+            </style>
+        </head>
+        <body>
+            <h1>AgentNet Observability Dashboard</h1>
+            <p style="text-align: center; color: #666;">Time Range: 24h | Generated: 2025-09-17 18:53:08</p>
+            
+            <div class="dashboard">
+                <div class="card">
+                    <h2>💰 Cost Summary</h2>
+                    <div class="metric">
+                        <div class="metric-value">$0.0030</div>
+                        <div class="metric-label">Total Cost</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">150</div>
+                        <div class="metric-label">Total Tokens</div>
+                    </div>
+                    <h3>By Provider</h3>
+                    <div>openai: <strong>$0.0030</strong></div>
+                </div>
+                
+                <div class="card">
+                    <h2>⚡ Performance</h2>
+                    <div class="metric">
+                        <div class="metric-value">120.5ms</div>
+                        <div class="metric-label">Avg Latency</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">1</div>
+                        <div class="metric-label">Total Requests</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value success">0.0%</div>
+                        <div class="metric-label">Error Rate</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>🚨 Violations</h2>
+                    <div class="metric">
+                        <div class="metric-value error">1</div>
+                        <div class="metric-label">Total Violations</div>
+                    </div>
+                    <h3>By Severity</h3>
+                    <div>high: <strong>1</strong></div>
+                </div>
+                
+                <div class="card">
+                    <h2>🎯 Sessions</h2>
+                    <div class="metric">
+                        <div class="metric-value">1</div>
+                        <div class="metric-label">Total Sessions</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value success">0</div>
+                        <div class="metric-label">Active Sessions</div>
+                    </div>
+                    <div class="metric">
+                        <div class="metric-value">0.0%</div>
+                        <div class="metric-label">Convergence Rate</div>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        
