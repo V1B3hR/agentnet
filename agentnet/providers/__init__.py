@@ -2,12 +2,16 @@
 
 from .base import ProviderAdapter
 from .example import ExampleEngine
-from .instrumented import InstrumentedProviderAdapter, InstrumentedProviderMixin, instrument_provider
+from .instrumented import (
+    InstrumentedProviderAdapter,
+    InstrumentedProviderMixin,
+    instrument_provider,
+)
 
 __all__ = [
-    "ProviderAdapter", 
+    "ProviderAdapter",
     "ExampleEngine",
     "InstrumentedProviderAdapter",
-    "InstrumentedProviderMixin", 
-    "instrument_provider"
+    "InstrumentedProviderMixin",
+    "instrument_provider",
 ]

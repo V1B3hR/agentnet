@@ -1,28 +1,24 @@
 """Advanced reasoning types for AgentNet."""
 
+from .modulation import ReasoningAwareStyleInfluence, ReasoningStyleModulator
 from .types import (
-    ReasoningType,
-    DeductiveReasoning,
-    InductiveReasoning,
     AbductiveReasoning,
     AnalogicalReasoning,
     CausalReasoning,
-    ReasoningEngine
-)
-
-from .modulation import (
-    ReasoningStyleModulator,
-    ReasoningAwareStyleInfluence
+    DeductiveReasoning,
+    InductiveReasoning,
+    ReasoningEngine,
+    ReasoningType,
 )
 
 __all__ = [
-    'ReasoningType',
-    'DeductiveReasoning',
-    'InductiveReasoning', 
-    'AbductiveReasoning',
-    'AnalogicalReasoning',
-    'CausalReasoning',
-    'ReasoningEngine',
-    'ReasoningStyleModulator',
-    'ReasoningAwareStyleInfluence'
+    "ReasoningType",
+    "DeductiveReasoning",
+    "InductiveReasoning",
+    "AbductiveReasoning",
+    "AnalogicalReasoning",
+    "CausalReasoning",
+    "ReasoningEngine",
+    "ReasoningStyleModulator",
+    "ReasoningAwareStyleInfluence",
 ]

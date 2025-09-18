@@ -1,6 +1,7 @@
 """Example provider implementation for testing."""
 
 from __future__ import annotations
+
 import asyncio
 import time
 from typing import Any, Dict
@@ -11,68 +12,70 @@ from .instrumented import InstrumentedProviderMixin
 
 class ExampleEngine(ProviderAdapter):
     """Example engine implementation for testing and demonstrations."""
-    
+
     def __init__(self, config: Dict[str, Any] = None):
         """Initialize example engine.
-        
+
         Args:
             config: Configuration dictionary
         """
         super().__init__(config)
         self.name = "ExampleEngine"
-    
+
     def infer(self, prompt: str, agent_name: str = "Agent", **kwargs) -> Dict[str, Any]:
         """Synchronous inference with example response.
-        
+
         Args:
             prompt: Input prompt/task
             agent_name: Name of the requesting agent
             **kwargs: Additional parameters
-            
+
         Returns:
             Dictionary with content and confidence
         """
         time.sleep(0.02)  # Simulate processing time
         conf = 0.6 if "Round" in prompt else 0.9
         content = f"[{agent_name}] Thoughts about: {prompt}"
-        
+
         return {
-            "content": content, 
+            "content": content,
             "confidence": conf,
             "runtime": 0.02,
-            "provider": "ExampleEngine"
+            "provider": "ExampleEngine",
         }
-    
-    async def async_infer(self, prompt: str, agent_name: str = "Agent", **kwargs) -> Dict[str, Any]:
+
+    async def async_infer(
+        self, prompt: str, agent_name: str = "Agent", **kwargs
+    ) -> Dict[str, Any]:
         """Asynchronous inference with example response.
-        
+
         Args:
             prompt: Input prompt/task
             agent_name: Name of the requesting agent
             **kwargs: Additional parameters
-            
+
         Returns:
             Dictionary with content and confidence
         """
         await asyncio.sleep(0.02)  # Simulate async processing time
         conf = 0.65 if "Round" in prompt else 0.92
         content = f"[{agent_name}] (async) Thoughts about: {prompt}"
-        
+
         return {
-            "content": content, 
+            "content": content,
             "confidence": conf,
             "runtime": 0.02,
-            "provider": "ExampleEngine"
+            "provider": "ExampleEngine",
         }
-    
+
     def safe_think(self, agent_name: str, task: str) -> Dict[str, Any]:
         """Legacy method for backward compatibility."""
         return self.infer(task, agent_name=agent_name)
-    
+
     async def safe_think_async(self, agent_name: str, task: str) -> Dict[str, Any]:
         """Legacy async method for backward compatibility."""
         return await self.async_infer(task, agent_name=agent_name)
-    
+
     def get_cost_info(self, result: Dict[str, Any]) -> Dict[str, Any]:
         """Get cost information for the example engine."""
         tokens = len(result.get("content", "").split())
@@ -82,5 +85,5 @@ class ExampleEngine(ProviderAdapter):
             "tokens_input": tokens // 2,  # Rough split
             "tokens_output": tokens - (tokens // 2),
             "provider": "example",  # Use lowercase for provider matching
-            "model": "example-model"
+            "model": "example-model",
         }
