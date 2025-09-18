@@ -63,3 +63,6 @@ status:  ## Show AgentNet phase status
 
 demo:  ## Run Phase 0 demo
 	@PYTHONPATH=. python -c "from agentnet import AgentNet, ExampleEngine; engine = ExampleEngine(); agent = AgentNet('Demo', {'logic': 0.8}, engine=engine); result = agent.generate_reasoning_tree('Hello AgentNet!'); print('Demo Result:', result['result']['content'])"
+
+demo-full:  ## Run comprehensive Phase 0 demo
+	@PYTHONPATH=. python examples/phase0_demo.py

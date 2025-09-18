@@ -1,0 +1,31 @@
+[
+  {
+    "event_type": "agent_created",
+    "timestamp": 1758196609.5132887,
+    "agent_name": "PhaseZeroBot",
+    "agent_style": {
+      "logic": 0.8,
+      "creativity": 0.6
+    },
+    "monitors_attached": 1
+  },
+  {
+    "event_type": "reasoning_started",
+    "timestamp": 1758196609.5132902,
+    "task": "Architecture explanation",
+    "max_depth": 2
+  },
+  {
+    "event_type": "monitor_triggered",
+    "timestamp": 1758196609.5132911,
+    "monitor_name": "demo_content_filter",
+    "severity": "minor",
+    "violation": "negative_content"
+  },
+  {
+    "event_type": "session_persisted",
+    "timestamp": 1758196609.5132916,
+    "session_id": "demo_session",
+    "file_path": "sessions/demo.json"
+  }
+]
