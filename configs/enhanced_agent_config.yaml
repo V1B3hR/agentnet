@@ -1,0 +1,191 @@
+# Enhanced AgentNet Configuration Example
+# Shows how to configure agents with new reasoning and dialogue capabilities
+
+# Basic agent configuration (existing format - fully compatible)
+name: "EnhancedAnalyst"
+
+# Style weights for cognitive modulation
+style:
+  logic: 0.8
+  creativity: 0.6
+  analytical: 0.9
+
+# Enhanced reasoning configuration (new)
+reasoning:
+  # Enable advanced reasoning types
+  enabled: true
+  
+  # Default reasoning type (auto-select if not specified)
+  default_type: "auto"  # auto, deductive, inductive, abductive, analogical, causal
+  
+  # Style modulation settings
+  style_modulation:
+    enabled: true
+    strength: 0.5  # 0.0 = no modulation, 1.0 = full modulation
+    
+  # Multi-perspective analysis settings
+  multi_perspective:
+    enabled: true
+    include_all_types: true
+    sort_by_confidence: true
+
+# Enhanced dialogue configuration (new)
+enhanced_dialogue:
+  # Enable enhanced dialogue modes
+  enabled: true
+  
+  # Default dialogue modes to use
+  modes:
+    outer:
+      enabled: true
+      default_pattern: "collaborative"  # collaborative, adversarial, exploratory
+      
+    modulated:
+      enabled: true
+      default_intensity: 0.3
+      max_intensity: 0.9
+      default_strategy: "gradual_build"  # gradual_build, spike, oscillate
+      
+    interpolation:
+      enabled: true
+      default_strategy: "memory_guided"  # memory_guided, reasoning_based, collaborative
+      
+    inner:
+      enabled: true
+      default_depth: "moderate"  # surface, moderate, deep
+      focus_areas: ["reasoning_process", "assumptions", "confidence_assessment"]
+      
+    mapping:
+      enabled: true
+      default_focus: "decision_making"  # decision_making, problem_solving, consensus_building
+      track_arguments: true
+
+# Solution-focused dialogue configuration (new)
+solution_focused:
+  enabled: true
+  
+  # Conversation phase management
+  phases:
+    problem_identification:
+      max_rounds: 3
+      transition_triggers: ["solution_readiness", "sufficient_exploration"]
+      
+    solution_exploration:
+      max_rounds: 4
+      encourage_creativity: true
+      
+    solution_refinement:
+      max_rounds: 3
+      focus_on_feasibility: true
+      
+    action_planning:
+      max_rounds: 2
+      require_specificity: true
+  
+  # Transition management
+  transitions:
+    strategy: "adaptive"  # adaptive, structured, agent_driven
+    auto_detect: true
+    
+  # Question framework
+  constructive_questions:
+    enabled: true
+    types: ["clarifying", "exploring", "scaling", "exception_finding", "future_focused", "resource_identifying"]
+
+# Dialogue mapping configuration (new)
+dialogue_mapping:
+  enabled: true
+  
+  # Visualization settings
+  visualization:
+    layout: "force_directed"  # force_directed, hierarchical, circular
+    color_scheme: "categorical"  # categorical, confidence_based, agent_based
+    show_labels: true
+    show_timestamps: false
+    group_by_agent: true
+    
+  # Export settings
+  export:
+    formats: ["json", "graphml", "dot"]
+    auto_export: false
+    export_path: "dialogue_maps/"
+
+# Existing dialogue configuration (enhanced - fully backward compatible)
+dialogue_config:
+  default_rounds: 3
+  max_rounds: 20
+  convergence_window: 3
+  convergence_min_overlap: 0.55
+  convergence_min_conf: 0.75
+  
+  # Enhanced convergence detection (new)
+  enhanced_convergence:
+    enabled: true
+    reasoning_diversity_weight: 0.3
+    solution_focus_weight: 0.4
+    
+  memory_guard:
+    max_transcript_tokens: 5000
+    truncate_strategy: "head"
+
+# Memory configuration (existing - enhanced for interpolation dialogues)
+memory:
+  short_term:
+    enabled: true
+    max_entries: 15  # increased for interpolation dialogues
+    max_tokens: 1500
+    
+  episodic:
+    enabled: true
+    storage_path: "agent_memories/episodic.json"
+    max_episodes: 100
+    
+  semantic:
+    enabled: true
+    storage_path: "agent_memories/semantic.json"
+    similarity_threshold: 0.5
+    max_entries: 200  # increased for context filling
+
+# Monitor configuration (existing - compatible)
+monitors:
+  file: "monitors/enhanced_monitors.py"
+  
+  # Enhanced monitoring for new features (new)
+  enhanced:
+    track_reasoning_types: true
+    track_dialogue_modes: true
+    track_solution_progression: true
+    track_style_modulation: true
+
+# Example usage scenarios (documentation)
+usage_examples:
+  basic_reasoning_enhancement:
+    description: "Add reasoning capabilities to existing agents"
+    code: |
+      agent.reasoning_engine = ReasoningEngine(agent.style)
+      result = agent.reasoning_engine.reason(task, ReasoningType.CAUSAL)
+      
+  solution_focused_meeting:
+    description: "Conduct solution-focused team dialogue"
+    code: |
+      solution_dialogue = SolutionFocusedDialogue()
+      result = solution_dialogue.conduct_solution_focused_dialogue(agents, problem)
+      
+  multi_perspective_analysis:
+    description: "Analyze complex problems from multiple reasoning perspectives"
+    code: |
+      reasoning_engine = ReasoningEngine(agent.style)
+      perspectives = reasoning_engine.multi_perspective_reasoning(complex_problem)
+      
+  self_reflection:
+    description: "Enable agent self-reflection and improvement"
+    code: |
+      inner_dialogue = InnerDialogue()
+      reflection = inner_dialogue.conduct_dialogue([agent], topic, reflection_depth="deep")
+      
+  dialogue_visualization:
+    description: "Create visualizable maps of agent dialogues"
+    code: |
+      mapper = DialogueMapper()
+      dialogue_map = mapper.create_dialogue_map(dialogue_state)
+      vis_data = mapper.generate_visualization_data(dialogue_map['id'])
