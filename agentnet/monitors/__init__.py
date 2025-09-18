@@ -5,9 +5,9 @@ from .factory import MonitorFactory
 from .manager import MonitorManager
 
 __all__ = [
-    "MonitorFn", 
-    "MonitorSpec", 
+    "MonitorFn",
+    "MonitorSpec",
     "MonitorTemplate",
-    "MonitorFactory", 
-    "MonitorManager"
+    "MonitorFactory",
+    "MonitorManager",
 ]

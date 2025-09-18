@@ -1,0 +1,142 @@
+2025-09-18 11:55:53,565 - phase0_demo - INFO - Starting Phase 0 demonstration
+2025-09-18 11:55:53,565 - phase0_demo - INFO - 🤖 Creating demo agent with monitors...
+2025-09-18 11:55:53,565 - agentnet.cost - INFO - CostRecorder initialized with storage_dir: cost_logs
+2025-09-18 11:55:53,565 - agentnet.persistence - INFO - SessionManager initialized with storage_dir: sessions
+2025-09-18 11:55:53,565 - agentnet.core - INFO - AgentNet instance 'PhaseZeroBot' initialized with style {'logic': 0.8, 'creativity': 0.6, 'analytical': 0.9}, 1 monitors, 0 pre-monitors, memory=disabled, tools=disabled
+2025-09-18 11:55:53,565 - phase0_demo - INFO - ✅ Agent 'PhaseZeroBot' created with style: {'logic': 0.8, 'creativity': 0.6, 'analytical': 0.9}
+2025-09-18 11:55:53,565 - phase0_demo - INFO - 🧠 Demonstrating single agent reasoning...
+2025-09-18 11:55:53,565 - phase0_demo - INFO -   Task 1: Explain the benefits of modular software architecture
+2025-09-18 11:55:53,586 - phase0_demo - INFO -   ✅ Completed in 0.02s
+2025-09-18 11:55:53,586 - phase0_demo - INFO -   📝 Content preview: [PhaseZeroBot] Thoughts about: Explain the benefits of modular software architecture...
+2025-09-18 11:55:53,586 - phase0_demo - INFO -   Task 2: Design a simple monitoring system for distributed applications
+2025-09-18 11:55:53,606 - phase0_demo - INFO -   ✅ Completed in 0.02s
+2025-09-18 11:55:53,606 - phase0_demo - INFO -   📝 Content preview: [PhaseZeroBot] Thoughts about: Design a simple monitoring system for distributed applications...
+2025-09-18 11:55:53,606 - phase0_demo - INFO -   Task 3: What are the key principles of good API design?
+2025-09-18 11:55:53,627 - phase0_demo - INFO -   ✅ Completed in 0.02s
+2025-09-18 11:55:53,627 - phase0_demo - INFO -   📝 Content preview: [PhaseZeroBot] Thoughts about: What are the key principles of good API design?...
+2025-09-18 11:55:53,627 - phase0_demo - INFO - 🔄 Demonstrating linear orchestration...
+2025-09-18 11:55:53,627 - phase0_demo - INFO -   Turn 1: What is a multi-agent system?
+2025-09-18 11:55:53,647 - phase0_demo - INFO -   ✅ Turn 1 completed
+2025-09-18 11:55:53,647 - phase0_demo - INFO -   📝 Response preview: [PhaseZeroBot] Thoughts about: What is a multi-agent system?...
+2025-09-18 11:55:53,647 - phase0_demo - INFO -   Turn 2: How do agents communicate with each other?
+2025-09-18 11:55:53,668 - phase0_demo - INFO -   ✅ Turn 2 completed
+2025-09-18 11:55:53,668 - phase0_demo - INFO -   📝 Response preview: [PhaseZeroBot] Thoughts about: Previous context: 
+Q1: What is a multi-agent syst...
+2025-09-18 11:55:53,668 - phase0_demo - INFO -   Turn 3: What are the challenges in multi-agent coordination?
+2025-09-18 11:55:53,688 - phase0_demo - INFO -   ✅ Turn 3 completed
+2025-09-18 11:55:53,688 - phase0_demo - INFO -   📝 Response preview: [PhaseZeroBot] Thoughts about: Previous context: 
+Q1: What is a multi-agent syst...
+2025-09-18 11:55:53,688 - phase0_demo - INFO -   Turn 4: How can we address these challenges?
+2025-09-18 11:55:53,709 - phase0_demo - INFO -   ✅ Turn 4 completed
+2025-09-18 11:55:53,709 - phase0_demo - INFO -   📝 Response preview: [PhaseZeroBot] Thoughts about: Previous context: 
+Q1: What is a multi-agent syst...
+2025-09-18 11:55:53,709 - phase0_demo - INFO - 💾 Demonstrating session persistence...
+2025-09-18 11:55:53,709 - agentnet.persistence - INFO - Session 'phase0_demo_1758196553' persisted to sessions/phase0_demo_1758196553_1758196553.json
+2025-09-18 11:55:53,709 - phase0_demo - INFO -   ✅ Session persisted to: sessions/phase0_demo_1758196553_1758196553.json
+2025-09-18 11:55:53,709 - phase0_demo - ERROR - Demo failed: 'AgentNet' object has no attribute 'load_session'
+2025-09-18 11:56:27,249 - phase0_demo - INFO - Starting Phase 0 demonstration
+2025-09-18 11:56:27,249 - phase0_demo - INFO - 🤖 Creating demo agent with monitors...
+2025-09-18 11:56:27,249 - agentnet.cost - INFO - CostRecorder initialized with storage_dir: cost_logs
+2025-09-18 11:56:27,249 - agentnet.persistence - INFO - SessionManager initialized with storage_dir: sessions
+2025-09-18 11:56:27,249 - agentnet.core - INFO - AgentNet instance 'PhaseZeroBot' initialized with style {'logic': 0.8, 'creativity': 0.6, 'analytical': 0.9}, 1 monitors, 0 pre-monitors, memory=disabled, tools=disabled
+2025-09-18 11:56:27,249 - phase0_demo - INFO - ✅ Agent 'PhaseZeroBot' created with style: {'logic': 0.8, 'creativity': 0.6, 'analytical': 0.9}
+2025-09-18 11:56:27,249 - phase0_demo - INFO - 🧠 Demonstrating single agent reasoning...
+2025-09-18 11:56:27,249 - phase0_demo - INFO -   Task 1: Explain the benefits of modular software architecture
+2025-09-18 11:56:27,270 - phase0_demo - INFO -   ✅ Completed in 0.02s
+2025-09-18 11:56:27,270 - phase0_demo - INFO -   📝 Content preview: [PhaseZeroBot] Thoughts about: Explain the benefits of modular software architecture...
+2025-09-18 11:56:27,270 - phase0_demo - INFO -   Task 2: Design a simple monitoring system for distributed applications
+2025-09-18 11:56:27,290 - phase0_demo - INFO -   ✅ Completed in 0.02s
+2025-09-18 11:56:27,290 - phase0_demo - INFO -   📝 Content preview: [PhaseZeroBot] Thoughts about: Design a simple monitoring system for distributed applications...
+2025-09-18 11:56:27,291 - phase0_demo - INFO -   Task 3: What are the key principles of good API design?
+2025-09-18 11:56:27,311 - phase0_demo - INFO -   ✅ Completed in 0.02s
+2025-09-18 11:56:27,311 - phase0_demo - INFO -   📝 Content preview: [PhaseZeroBot] Thoughts about: What are the key principles of good API design?...
+2025-09-18 11:56:27,311 - phase0_demo - INFO - 🔄 Demonstrating linear orchestration...
+2025-09-18 11:56:27,311 - phase0_demo - INFO -   Turn 1: What is a multi-agent system?
+2025-09-18 11:56:27,332 - phase0_demo - INFO -   ✅ Turn 1 completed
+2025-09-18 11:56:27,332 - phase0_demo - INFO -   📝 Response preview: [PhaseZeroBot] Thoughts about: What is a multi-agent system?...
+2025-09-18 11:56:27,332 - phase0_demo - INFO -   Turn 2: How do agents communicate with each other?
+2025-09-18 11:56:27,352 - phase0_demo - INFO -   ✅ Turn 2 completed
+2025-09-18 11:56:27,352 - phase0_demo - INFO -   📝 Response preview: [PhaseZeroBot] Thoughts about: Previous context: 
+Q1: What is a multi-agent syst...
+2025-09-18 11:56:27,352 - phase0_demo - INFO -   Turn 3: What are the challenges in multi-agent coordination?
+2025-09-18 11:56:27,373 - phase0_demo - INFO -   ✅ Turn 3 completed
+2025-09-18 11:56:27,373 - phase0_demo - INFO -   📝 Response preview: [PhaseZeroBot] Thoughts about: Previous context: 
+Q1: What is a multi-agent syst...
+2025-09-18 11:56:27,373 - phase0_demo - INFO -   Turn 4: How can we address these challenges?
+2025-09-18 11:56:27,393 - phase0_demo - INFO -   ✅ Turn 4 completed
+2025-09-18 11:56:27,393 - phase0_demo - INFO -   📝 Response preview: [PhaseZeroBot] Thoughts about: Previous context: 
+Q1: What is a multi-agent syst...
+2025-09-18 11:56:27,393 - phase0_demo - INFO - 💾 Demonstrating session persistence...
+2025-09-18 11:56:27,394 - agentnet.persistence - INFO - Session 'phase0_demo_1758196587' persisted to sessions/phase0_demo_1758196587_1758196587.json
+2025-09-18 11:56:27,394 - phase0_demo - INFO -   ✅ Session persisted to: sessions/phase0_demo_1758196587_1758196587.json
+2025-09-18 11:56:27,394 - agentnet.persistence - INFO - SessionManager initialized with storage_dir: sessions
+2025-09-18 11:56:27,394 - agentnet.persistence - WARNING - Session 'sessions/phase0_demo_1758196587_1758196587.json' not found
+2025-09-18 11:56:27,394 - phase0_demo - ERROR - Demo failed: 'NoneType' object is not subscriptable
+2025-09-18 11:56:49,368 - phase0_demo - INFO - Starting Phase 0 demonstration
+2025-09-18 11:56:49,368 - phase0_demo - INFO - 🤖 Creating demo agent with monitors...
+2025-09-18 11:56:49,368 - agentnet.cost - INFO - CostRecorder initialized with storage_dir: cost_logs
+2025-09-18 11:56:49,369 - agentnet.persistence - INFO - SessionManager initialized with storage_dir: sessions
+2025-09-18 11:56:49,369 - agentnet.core - INFO - AgentNet instance 'PhaseZeroBot' initialized with style {'logic': 0.8, 'creativity': 0.6, 'analytical': 0.9}, 1 monitors, 0 pre-monitors, memory=disabled, tools=disabled
+2025-09-18 11:56:49,369 - phase0_demo - INFO - ✅ Agent 'PhaseZeroBot' created with style: {'logic': 0.8, 'creativity': 0.6, 'analytical': 0.9}
+2025-09-18 11:56:49,369 - phase0_demo - INFO - 🧠 Demonstrating single agent reasoning...
+2025-09-18 11:56:49,369 - phase0_demo - INFO -   Task 1: Explain the benefits of modular software architecture
+2025-09-18 11:56:49,389 - phase0_demo - INFO -   ✅ Completed in 0.02s
+2025-09-18 11:56:49,389 - phase0_demo - INFO -   📝 Content preview: [PhaseZeroBot] Thoughts about: Explain the benefits of modular software architecture...
+2025-09-18 11:56:49,389 - phase0_demo - INFO -   Task 2: Design a simple monitoring system for distributed applications
+2025-09-18 11:56:49,410 - phase0_demo - INFO -   ✅ Completed in 0.02s
+2025-09-18 11:56:49,410 - phase0_demo - INFO -   📝 Content preview: [PhaseZeroBot] Thoughts about: Design a simple monitoring system for distributed applications...
+2025-09-18 11:56:49,410 - phase0_demo - INFO -   Task 3: What are the key principles of good API design?
+2025-09-18 11:56:49,430 - phase0_demo - INFO -   ✅ Completed in 0.02s
+2025-09-18 11:56:49,430 - phase0_demo - INFO -   📝 Content preview: [PhaseZeroBot] Thoughts about: What are the key principles of good API design?...
+2025-09-18 11:56:49,430 - phase0_demo - INFO - 🔄 Demonstrating linear orchestration...
+2025-09-18 11:56:49,430 - phase0_demo - INFO -   Turn 1: What is a multi-agent system?
+2025-09-18 11:56:49,451 - phase0_demo - INFO -   ✅ Turn 1 completed
+2025-09-18 11:56:49,451 - phase0_demo - INFO -   📝 Response preview: [PhaseZeroBot] Thoughts about: What is a multi-agent system?...
+2025-09-18 11:56:49,451 - phase0_demo - INFO -   Turn 2: How do agents communicate with each other?
+2025-09-18 11:56:49,471 - phase0_demo - INFO -   ✅ Turn 2 completed
+2025-09-18 11:56:49,471 - phase0_demo - INFO -   📝 Response preview: [PhaseZeroBot] Thoughts about: Previous context: 
+Q1: What is a multi-agent syst...
+2025-09-18 11:56:49,471 - phase0_demo - INFO -   Turn 3: What are the challenges in multi-agent coordination?
+2025-09-18 11:56:49,492 - phase0_demo - INFO -   ✅ Turn 3 completed
+2025-09-18 11:56:49,492 - phase0_demo - INFO -   📝 Response preview: [PhaseZeroBot] Thoughts about: Previous context: 
+Q1: What is a multi-agent syst...
+2025-09-18 11:56:49,492 - phase0_demo - INFO -   Turn 4: How can we address these challenges?
+2025-09-18 11:56:49,512 - phase0_demo - INFO -   ✅ Turn 4 completed
+2025-09-18 11:56:49,512 - phase0_demo - INFO -   📝 Response preview: [PhaseZeroBot] Thoughts about: Previous context: 
+Q1: What is a multi-agent syst...
+2025-09-18 11:56:49,512 - phase0_demo - INFO - 💾 Demonstrating session persistence...
+2025-09-18 11:56:49,513 - agentnet.persistence - INFO - Session 'phase0_demo_1758196609' persisted to sessions/phase0_demo_1758196609_1758196609.json
+2025-09-18 11:56:49,513 - phase0_demo - INFO -   ✅ Session persisted to: sessions/phase0_demo_1758196609_1758196609.json
+2025-09-18 11:56:49,513 - phase0_demo - INFO -   ✅ Session file verified: 685 bytes
+2025-09-18 11:56:49,513 - phase0_demo - INFO - 📊 Demonstrating structured event model...
+2025-09-18 11:56:49,513 - phase0_demo - INFO -   📋 Event: {
+  "event_type": "agent_created",
+  "timestamp": 1758196609.5132887,
+  "agent_name": "PhaseZeroBot",
+  "agent_style": {
+    "logic": 0.8,
+    "creativity": 0.6
+  },
+  "monitors_attached": 1
+}
+2025-09-18 11:56:49,513 - phase0_demo - INFO -   📋 Event: {
+  "event_type": "reasoning_started",
+  "timestamp": 1758196609.5132902,
+  "task": "Architecture explanation",
+  "max_depth": 2
+}
+2025-09-18 11:56:49,513 - phase0_demo - INFO -   📋 Event: {
+  "event_type": "monitor_triggered",
+  "timestamp": 1758196609.5132911,
+  "monitor_name": "demo_content_filter",
+  "severity": "minor",
+  "violation": "negative_content"
+}
+2025-09-18 11:56:49,513 - phase0_demo - INFO -   📋 Event: {
+  "event_type": "session_persisted",
+  "timestamp": 1758196609.5132916,
+  "session_id": "demo_session",
+  "file_path": "sessions/demo.json"
+}
+2025-09-18 11:56:49,513 - phase0_demo - INFO -   ✅ Structured events saved to: demo_output/structured_events.json
+2025-09-18 11:56:49,514 - phase0_demo - INFO - Phase 0 demonstration completed successfully

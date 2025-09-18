@@ -5,18 +5,25 @@ Provides metrics, tracing, and logging infrastructure for comprehensive
 monitoring of agent operations, costs, and performance.
 """
 
+
 # Use lazy imports to avoid pulling in networkx dependency from main package
 def _get_metrics_classes():
-    from .metrics import MetricsCollector, AgentNetMetrics
+    from .metrics import AgentNetMetrics, MetricsCollector
+
     return MetricsCollector, AgentNetMetrics
+
 
 def _get_tracing_classes():
     from .tracing import TracingManager, create_tracer
+
     return TracingManager, create_tracer
 
+
 def _get_logging_classes():
-    from .logging import setup_structured_logging, get_correlation_logger
+    from .logging import get_correlation_logger, setup_structured_logging
+
     return setup_structured_logging, get_correlation_logger
+
 
 # Lazy loading attributes
 def __getattr__(name):
@@ -41,11 +48,12 @@ def __getattr__(name):
     else:
         raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
 
+
 __all__ = [
     "MetricsCollector",
-    "AgentNetMetrics", 
+    "AgentNetMetrics",
     "TracingManager",
     "create_tracer",
     "setup_structured_logging",
-    "get_correlation_logger"
+    "get_correlation_logger",
 ]

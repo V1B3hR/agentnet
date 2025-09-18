@@ -7,14 +7,14 @@ Provides multi-layer memory architecture:
 """
 
 from .base import MemoryLayer, MemoryRetrieval
-from .short_term import ShortTermMemory
 from .episodic import EpisodicMemory
-from .semantic import SemanticMemory
 from .manager import MemoryManager
+from .semantic import SemanticMemory
+from .short_term import ShortTermMemory
 
 __all__ = [
     "MemoryLayer",
-    "MemoryRetrieval", 
+    "MemoryRetrieval",
     "ShortTermMemory",
     "EpisodicMemory",
     "SemanticMemory",

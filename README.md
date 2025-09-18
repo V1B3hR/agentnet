@@ -68,12 +68,24 @@ Framework for policy-governed multi-agent LLM reasoning: dialogue, monitoring, a
 ## Installation (Placeholder)
 
 ```bash
-# (Not yet published to PyPI)
+# Clone repository
 git clone https://github.com/V1B3hR/agentnet
 cd agentnet
-python -m venv .venv
-source .venv/bin/activate  # or on Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
+
+# Phase 0 setup (minimal dependencies)
+make install install-dev
+
+# Or install with pip (core dependencies only)
+pip install pydantic pyyaml typing-extensions
+
+# Development workflow
+make help           # Show available commands
+make quick-check    # Format code and run Phase 0 tests
+make demo-full      # Run comprehensive Phase 0 demo
+make status         # Show phase availability
+
+# For full functionality (later phases)
+make install-full   # Install all dependencies (requires networkx, etc.)
 ```
 
 ---
@@ -97,12 +109,12 @@ print(result.final_resolution)
 
 ## Roadmap
 
-### Phase 0 – Bootstrap & Skeleton
-- [ ] Repository scaffolding (package layout, pyproject, deps)
-- [ ] Core typing & base interfaces (`Agent`, `Policy`, `Tool`, `MemoryAdapter`, `MonitorSink`)
-- [ ] Minimal orchestrator loop (single agent, linear turns)
-- [ ] Basic logging + structured event model
-- [ ] Development utilities: lint, format, test harness
+### Phase 0 – Bootstrap & Skeleton ✅ COMPLETE
+- [x] Repository scaffolding (package layout, pyproject, deps)
+- [x] Core typing & base interfaces (`Agent`, `Policy`, `Tool`, `MemoryAdapter`, `MonitorSink`)
+- [x] Minimal orchestrator loop (single agent, linear turns)
+- [x] Basic logging + structured event model
+- [x] Development utilities: lint, format, test harness
 
 ### Phase 1 – Functional MVP
 - [ ] Multi-agent orchestration (round-robin + configurable strategies)
