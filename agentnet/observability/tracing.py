@@ -1,7 +1,7 @@
 """
 OpenTelemetry Tracing for AgentNet.
 
-Implements distributed tracing with spans as specified in RoadmapAgentNet.md:
+Implements distributed tracing with spans as specified in docs/RoadmapAgentNet.md:
 - session.round.turn
 - agent.inference  
 - monitor.sequence

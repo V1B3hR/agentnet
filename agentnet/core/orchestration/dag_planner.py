@@ -2,7 +2,7 @@
 DAG Planner for Task Graph Execution
 
 Implements the DAG planner component that generates and validates directed acyclic graphs
-for workflow automation. Based on FR7 requirements from RoadmapAgentNet.md.
+for workflow automation. Based on FR7 requirements from docs/RoadmapAgentNet.md.
 """
 
 import json
