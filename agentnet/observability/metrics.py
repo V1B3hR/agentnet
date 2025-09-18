@@ -1,7 +1,7 @@
 """
 Prometheus Metrics Collection for AgentNet.
 
-Implements metrics specified in RoadmapAgentNet.md section 18:
+Implements metrics specified in docs/RoadmapAgentNet.md section 18:
 - inference_latency_ms (model, provider, agent)
 - tokens_consumed_total (model, provider, tenant)  
 - violations_total (severity, rule_name)

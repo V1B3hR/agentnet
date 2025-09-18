@@ -2,7 +2,7 @@
 Evaluation Runner for Scenario Execution
 
 Implements the evaluation harness that executes scenarios and collects metrics.
-Based on FR12 requirements from RoadmapAgentNet.md.
+Based on FR12 requirements from docs/RoadmapAgentNet.md.
 """
 
 import asyncio

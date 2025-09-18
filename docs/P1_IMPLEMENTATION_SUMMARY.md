@@ -149,9 +149,9 @@ session_request = {
 - `api/server.py`: HTTP server implementation
 
 ### Testing & Documentation
-- `test_p1_convergence.py`: Comprehensive convergence testing
-- `test_p1_api.py`: API functionality validation
-- `demo_p1_features.py`: Feature demonstration script
+- `../tests/test_p1_convergence.py`: Comprehensive convergence testing
+- `../tests/test_p1_api.py`: API functionality validation
+- `../demos/demo_p1_features.py`: Feature demonstration script
 - `P1_IMPLEMENTATION_SUMMARY.md`: This summary document
 
 ## Usage Examples

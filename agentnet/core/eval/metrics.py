@@ -2,7 +2,7 @@
 Evaluation Metrics Calculator
 
 Implements various metrics for evaluating agent performance and output quality.
-Based on FR12 requirements from RoadmapAgentNet.md.
+Based on FR12 requirements from docs/RoadmapAgentNet.md.
 """
 
 import json

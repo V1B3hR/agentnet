@@ -2,7 +2,7 @@
 Dashboard Components for AgentNet Observability.
 
 Provides cost aggregation, performance metrics visualization, and violation tracking
-dashboards as specified in RoadmapAgentNet.md P5 requirements.
+dashboards as specified in docs/RoadmapAgentNet.md P5 requirements.
 
 Supports both web-based dashboards and programmatic access to aggregated data.
 """

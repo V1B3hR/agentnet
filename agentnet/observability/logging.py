@@ -2,7 +2,7 @@
 Structured Logging for AgentNet.
 
 Implements JSON structured logging with correlation_id = session_id as specified
-in RoadmapAgentNet.md section 18.
+in docs/RoadmapAgentNet.md section 18.
 
 Provides correlation-aware logging that can be easily parsed and analyzed.
 """
