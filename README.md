@@ -1,215 +1,256 @@
 # AgentNet
 
-Framework for policy-governed multi-agent LLM reasoning: dialogue, monitoring, and persistence. A modular cognitive agent system featuring rule/policy enforcement, multi-party debate, and asynchronous orchestration.
+Policy-governed multi-agent LLM framework for dialogue, debate, tool-use, memory, and observability.  
+Designed for safe, inspectable, and extensible cognitive workflows.
+
+> Status: Early development (scaffolding + initial abstractions). Expect rapid iteration and breaking changes.
 
 ---
 
-## Key Objectives
+## Why AgentNet?
 
-- Provide composable abstractions for multi-agent large language model (LLM) systems.
-- Enforce policies and safety constraints during reasoning and tool interaction.
-- Support multi-party debate / critique / arbitration patterns.
-- Enable persistence of dialogue state, agent memory, and evaluative metadata.
-- Offer monitoring, observability, and auditability (events, traces, policy decisions).
-- Facilitate extension via tools, plugins, and custom policies.
+Modern LLM systems need:
+- Multiple cooperating or adversarial agents (analyst / critic / arbiter / tool-runner).
+- Enforceable policies (redaction, action gating, role-based tool access).
+- Transparent reasoning (event streams, audit trails, reproducible sessions).
+- Memory persistence & retrieval (short-term conversation, semantic vector store, structured / graph memory).
+- Configurable orchestration modes (round-robin, debate, critique-revise, arbitration).
+- Extensibility (new tools, policies, evaluators, memory backends).
 
----
-
-## Core Concepts (Planned Abstractions)
-
-| Concept | Role |
-|--------|------|
-| `Agent` | Encapsulates reasoning + tool invocation policy for a single cognitive unit. |
-| `Policy` | Rule layer governing actions, messages, memory writes, tool access. |
-| `DialogueOrchestrator` | Manages multi-agent turn-taking, debate, arbitration. |
-| `MemoryStore` | Hybrid (structured + vector) store for episodic, semantic, and procedural memory. |
-| `Monitor` | Event bus subscriber producing logs, metrics, traces, and safety reports. |
-| `ToolInterface` | Unified protocol for external function / API / environment calls. |
-| `Evaluator` | Scoring / critique modules for self-reflection or inter-agent assessment. |
+AgentNet aims to offer these as composable, inspectable primitives rather than monolith patterns.
 
 ---
 
-## High-Level Architecture (Intended)
+## Core Concepts
+
+| Component | Purpose |
+|-----------|---------|
+| `Agent` | Encapsulates model interface, role, allowed tools, and policy hooks. |
+| `Orchestrator` | Manages turn-taking, debate modes, arbitration, or async flows. |
+| `Policy` | Rule engine evaluating actions/messages (allow, block, transform, log). |
+| `Tool` | External capability (API call, computation, retrieval). |
+| `Memory` | Pluggable adapters (short-term buffer, vector store, structured / graph). |
+| `Evaluator` | Self or cross-agent critique, scoring, revision triggers. |
+| `Monitor` | Event capture: traces, metrics, violations, tokens, decisions. |
+| `Session` | Persistent container of configuration + evolving state snapshot. |
+
+---
+
+## High-Level Architecture
 
 ```
-          +------------------------------+
-          |        Orchestrator          |
-          | (turn logic, debate modes)   |
-          +---------------+--------------+
-                          |
-        +-----------------+------------------+
-        |                                    |
-   +----v----+                          +----v----+
-   | Agent A |                          | Agent B |   ... (N agents)
-   +----+----+                          +----+----+
-        |                                    |
-        | tool / memory requests             |
-        |                                    |
-   +----v------------------------------------v----+
-   |           Policy Enforcement Layer            |
-   +--------------------+--------------------------+
-                        |
-          +-------------+--------------+
-          |    Tool / Plugin Layer     |
-          +-------------+--------------+
-                        |
-          +-------------v--------------+
-          |   Memory & Persistence     |
-          |  (vector + structured DB)  |
-          +-------------+--------------+
-                        |
-          +-------------v--------------+
-          |  Monitoring & Audit Trail  |
-          +----------------------------+
+User Prompt
+   |
+Orchestrator  <--- config (mode: debate | critique | linear | async)
+   |
+   +---> Agents[] ----> Policies ----> Tools
+   |          |             |            |
+   |          |             |            +--> External Systems / APIs
+   |          |             |
+   |          |             +--> Memory (vector, structured, graph, ephemeral)
+   |          |
+   |          +--> Evaluators (critique, scoring, arbitration)
+   |
+   +---> Event Bus ---> Monitors (logging, telemetry, audit export)
 ```
 
 ---
 
-## Installation (Placeholder)
+## Installation (Early Dev)
 
 ```bash
-# Clone repository
 git clone https://github.com/V1B3hR/agentnet
 cd agentnet
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
+```
 
-# Phase 0 setup (minimal dependencies)
-make install install-dev
+Optional / Planned Extras (some may not yet be active):
+```bash
+# Vector store + embeddings
+pip install ".[vector]"
 
-# Or install with pip (core dependencies only)
-pip install pydantic pyyaml typing-extensions
+# Graph / structured memory (requires networkx)
+pip install ".[graph]"
 
-# Development workflow
-make help           # Show available commands
-make quick-check    # Format code and run Phase 0 tests
-make demo-full      # Run comprehensive Phase 0 demo
-make status         # Show phase availability
+# Monitoring / tracing extras
+pip install ".[obs]"
 
-# For full functionality (later phases)
-make install-full   # Install all dependencies (requires networkx, etc.)
+# Everything (when defined)
+pip install ".[all]"
 ```
 
 ---
 
-## Quick Start (Planned Example)
+## Minimal (Planned) Usage Example
 
 ```python
-from agentnet import Agent, DialogueOrchestrator
+from agentnet import Agent, Orchestrator, load_policy
 
-policy = ...        # define or load policy
-agent_a = Agent(name="Analyst", model="openai:gpt-4o", policy=policy)
-agent_b = Agent(name="Critic", model="openai:gpt-4o", policy=policy)
+policy = load_policy("default")  # placeholder
+analyst = Agent(name="Analyst", model="openai:gpt-4o", tools=["search"], policy=policy)
+critic  = Agent(name="Critic",  model="openai:gpt-4o", tools=[],         policy=policy)
 
-orchestrator = DialogueOrchestrator(agents=[agent_a, agent_b], mode="debate", max_turns=6)
+orch = Orchestrator(
+    agents=[analyst, critic],
+    mode="debate",
+    max_turns=6,
+    evaluators=["consistency", "risk_check"]
+)
 
-result = orchestrator.run(prompt="Evaluate the security posture of system X.")
-print(result.final_resolution)
+session = orch.run(prompt="Assess architectural risks in the proposed data pipeline.")
+print(session.final.output)
 ```
 
 ---
 
-## Roadmap
+## Design Principles
 
-### Phase 0 – Bootstrap & Skeleton ✅ COMPLETE
-- [x] Repository scaffolding (package layout, pyproject, deps)
-- [x] Core typing & base interfaces (`Agent`, `Policy`, `Tool`, `MemoryAdapter`, `MonitorSink`)
-- [x] Minimal orchestrator loop (single agent, linear turns)
-- [x] Basic logging + structured event model
-- [x] Development utilities: lint, format, test harness
-
-### Phase 1 – Functional MVP
-- [ ] Multi-agent orchestration (round-robin + configurable strategies)
-- [ ] Pluggable model backend adapter (OpenAI / local inference shim)
-- [ ] Policy engine (rule matching on: message content, action intents, tool invocations)
-- [ ] Tool interface + sample tools (search, calculator, file read)
-- [ ] Memory layer v1:
-  - [ ] Short-term turn buffer
-  - [ ] Vector embedding store (FAISS / Chroma backend)
-  - [ ] Retrieval gating via policy
-- [ ] Monitoring / event bus
-  - [ ] JSON event emission
-  - [ ] Basic console and file sink
-- [ ] Safety hooks (content moderation placeholder abstraction)
-
-### Phase 2 – Advanced Reasoning & Governance
-- [ ] Debate / critique modes (adversarial, collaborative, arbiter)
-- [ ] Self-reflection & revision loop (agent re-writes answer after critique)
-- [ ] Arbitration strategies (score-based, confidence weighting, majority vote)
-- [ ] Extended policy language (YAML or DSL with conditions + actions)
-- [ ] Role-based tool permission model
-- [ ] Structured memory (key-value / graph) + semantic tagging
-- [ ] Audit trail export (OpenTelemetry or custom schema)
-- [ ] Pluggable evaluation modules (truthfulness, complexity, safety)
-
-### Phase 3 – Persistence, Scaling, Integrations
-- [ ] Async orchestration (task graph / concurrent tool calls)
-- [ ] Checkpoint & resume sessions
-- [ ] Encrypted memory segments or redaction filters
-- [ ] Web dashboard (live conversation + metrics)
-- [ ] CLI utilities (scaffold agent config, run sessions)
-- [ ] Metric collectors (latency, token usage, policy violation counts)
-- [ ] Plugin system (entry points or registry)
-- [ ] Benchmark harness (reproducible scenario packs)
-
-### Phase 4 – Hardening & Ecosystem
-- [ ] PyPI release & versioning policy
-- [ ] Documentation site (mkdocs or sphinx)
-- [ ] Example notebooks:
-  - [ ] Policy-governed debate
-  - [ ] Tool-augmented analysis
-  - [ ] Memory retrieval optimization
-- [ ] Integration tests (multi-agent sessions)
-- [ ] Performance profiling & caching (response + embedding)
-- [ ] Reference deployments (container + minimal infra recipe)
-
-### Stretch / Exploratory
-- [ ] Meta-controller (agent that dynamically reconfigures others)
-- [ ] Human-in-the-loop approval gates
-- [ ] Reward modeling integration
-- [ ] Graph-based memory indexing
-- [ ] Multi-lingual policy enforcement
-- [ ] Streaming agent collaboration with partial outputs
+1. Policy-First: Safety & governance are not add-ons.
+2. Composability: Each cognitive layer is swappable and minimal.
+3. Observability Everywhere: Every non-trivial action emits an event.
+4. Deterministic Surfaces: Inputs and transforms logged for replay where feasible.
+5. Layered Memory: Separate ephemeral, semantic, and structural knowledge.
+6. Extensible Interfaces: Clear protocols for model, tool, memory, evaluator, monitor.
+7. Minimal Hidden State: Session structures explicit and exportable.
 
 ---
 
-## Guiding Principles
+## Clean Roadmap
 
-1. Policy First: Governance embedded, not bolted on.
-2. Composability: Small, swappable components with clean contracts.
-3. Observability: Every significant cognitive action is traceable.
-4. Deterministic Surfaces: Non-determinism localized; reproducibility where feasible.
-5. Extensibility: Easy to add new tools, memory adapters, orchestration strategies.
+Legend:  
+[•] Planned | [WIP] In progress | [✓] Complete | [Δ] Partial / provisional | [R] Research / exploratory
+
+### Phase 0 – Foundation (Bootstrapping)
+- [✓] Repository scaffolding & license
+- [Δ] Core package layout (`agent`, `policy`, `orchestrator`, `memory`, `events`)
+- [WIP] Typed event schema + base monitor
+- [•] Basic CLI entry point
+- [•] Config loader (YAML/py) with validation
+
+### Phase 1 – MVP Orchestration & Policy
+- [WIP] Single + multi-agent synchronous turn engine
+- [•] Round-robin & termination conditions (max turns, consensus, policy stop)
+- [•] Policy rule engine (matchers: regex, role, tool, classification stub)
+- [•] Tool protocol + sample tools (search stub, calc, file read)
+- [•] Memory v1: short-term conversation buffer
+- [•] Vector memory adapter (FAISS/Chroma placeholder)
+- [•] Event bus with console/file sinks
+
+### Phase 2 – Debate, Critique, Evaluation
+- [•] Debate mode (analyst vs critic)
+- [•] Critique-revise loop (agent self-revision)
+- [•] Arbitration strategies (score weighting, majority vote)
+- [•] Evaluators: truthiness (heuristic), complexity, risk tags
+- [•] Policy actions: block, redact, rewrite, require-approval (stub)
+- [•] Structured memory tagging & retrieval filters
+- [•] Policy violation reporting & counters
+
+### Phase 3 – Persistence, Scaling, Graph Memory
+- [Δ] Graph/relational memory (requires `networkx`)
+- [•] Session checkpoint + resume
+- [•] Async orchestration (parallel tool calls / futures)
+- [•] Embedding cache & response caching
+- [•] Memory retention policies (LRU, semantic salience)
+- [•] Multi-modal placeholder (text-first; extensibility hooks)
+
+### Phase 4 – Observability & Ops
+- [•] Token accounting + cost model abstraction
+- [•] OpenTelemetry / OTLP export adapter
+- [•] Rich audit bundle export (JSONL events + memory snapshot + policy config)
+- [•] Web dashboard (live event stream, violation panel)
+- [•] Metrics: latency, tool error rate, policy hit distribution
+
+### Phase 5 – Hardening & Ecosystem
+- [•] Full test matrix (unit + multi-agent integration)
+- [•] Performance harness (turn latency, token utilization)
+- [•] Documentation portal (mkdocs) + example notebooks
+- [•] PyPI packaging & versioning policy (semver w/ 0.x rapid changes)
+- [•] Plugin registry (entry points for tools/policies/evaluators)
+
+### Phase 6 – Advanced / Exploratory (R)
+- [R] Meta-controller agent (dynamic agent graph reconfiguration)
+- [R] Human-in-loop gating (approval & escalation flow)
+- [R] Reward modeling integration / offline evaluation loops
+- [R] Adaptive orchestration via performance feedback
+- [R] Multi-lingual safety policy translation
+- [R] Streaming partial-output collaboration
 
 ---
 
-## Configuration (Planned Pattern)
+## Policy Model (Planned Shape)
 
 ```yaml
-orchestrator:
-  mode: debate
-  max_turns: 8
-agents:
-  - name: Analyst
-    model: openai:gpt-4o
-    tools: [search, retrieve_memory]
-  - name: Critic
-    model: openai:gpt-4o
-    tools: [retrieve_memory]
 policies:
-  - name: disallow_sensitive_leak
-    conditions:
-      - type: regex
-        target: message.content
-        pattern: "(password|api_key|secret)"
-    actions:
-      - block
-      - log_violation
+  - name: redact_secrets
+    rules:
+      - if:
+          any:
+            - regex:
+                target: message.content
+                pattern: "(api[_-]?key|secret|password)"
+        actions: [redact, log]
+
+  - name: restrict_high_risk_tools
+    rules:
+      - if:
+          all:
+            - tool.name: "system_shell"
+            - agent.role != "Supervisor"
+        actions: [block, flag]
+```
+
+Actions (initial set): `allow`, `block`, `redact`, `transform`, `log`, `defer`, `require_human`, `rewrite`.
+
+---
+
+## Event Model (Indicative)
+
+| Event | When |
+|-------|------|
+| `turn.start` / `turn.end` | Orchestrator loop boundaries |
+| `agent.request` | Agent forms model prompt |
+| `model.response` | Raw model output |
+| `policy.violation` | Rule triggered |
+| `tool.invoke` / `tool.result` | External capability usage |
+| `memory.store` / `memory.retrieve` | Memory operations |
+| `evaluator.score` | Critique or scoring module output |
+| `session.checkpoint` | Persistence snapshot written |
+
+---
+
+## Development Workflow (Suggested)
+
+```bash
+# Lint & type check
+ruff check .
+mypy agentnet
+
+# Run tests
+pytest -q
+
+# Regenerate event schema (planned)
+python scripts/gen_schema.py
 ```
 
 ---
 
 ## Contributing
 
-Suggestions, discussions, and lightweight design critiques are welcome. Proposed changes aligning with the roadmap are easier to review. For substantial features, draft a short design note (problem, approach, surface, trade-offs).
+1. Open a lightweight design note (if feature is non-trivial).
+2. Prefer small PRs aligned with an open phase milestone.
+3. Include tests for new adapters / policies / evaluators.
+4. Ensure new events update schema + docs if stabilized.
+5. Avoid silent global state; pass dependencies explicitly.
+
+---
+
+## Security & Safety Notes
+
+- Policies are not a guarantee of compliance—treat as defense-in-depth.
+- Memory redaction must be validated independently for sensitive deployments.
+- External tools should implement explicit allowlists & argument validation.
 
 ---
 
@@ -221,11 +262,23 @@ GPL-3.0 — see [LICENSE](LICENSE).
 
 ## Disclaimer
 
-This framework is experimental and not production-hardened. Policy and safety modules require independent validation before deployment in sensitive contexts.
+Experimental software. Interfaces may change. Do not deploy in production environments handling sensitive data without rigorous review.
 
 ---
 
-## Status
+## Quick Status Snapshot (Live Edit Area)
 
-Early scaffolding phase; README intentionally front-loads the intended direction so contributors can align.
+| Area | State |
+|------|-------|
+| Core orchestration | WIP |
+| Policy engine | Scaffold planned |
+| Vector memory | Pending adapter |
+| Graph memory | Partial (needs `networkx`) |
+| Event bus | Basic in progress |
+| Debate mode | Planned |
+| Evaluators | Stub design |
+| Dashboard | Not started |
 
+---
+
+Suggestions / critiques welcome—open a discussion or issue with concise rationale and desired outcome.
