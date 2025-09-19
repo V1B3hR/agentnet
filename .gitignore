@@ -54,6 +54,16 @@ env/
 experiments/data/raw_sessions/
 experiments/data/analytics/
 
+# ==============================  
+# Kaggle datasets and training artifacts
+# ==============================
+datasets/
+training_output/
+debate_training.log
+*.log
+kaggle.json
+.kaggle/
+
 # ==============================
 # Tool / test caches (standard; safe)
 # ==============================
