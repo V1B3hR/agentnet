@@ -1,6 +1,6 @@
 """
 Custom monitor implementations for AgentNet experiments.
-Includes repetition detection and semantic similarity monitors.
+Uses the refactored monitor system with shared implementations.
 """
 
 import sys
@@ -10,152 +10,57 @@ from typing import Any, Callable, Dict, List
 # Add parent directory to path to import AgentNet
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from AgentNet import MonitorSpec, MonitorFn
-from experiments.utils.analytics import jaccard_similarity
-
-
-# Global storage for repetition monitor state
-_repetition_history: Dict[str, List[str]] = {}
+from agentnet.monitors.base import MonitorSpec, MonitorFn
 
 
 def create_repetition_monitor(spec: MonitorSpec) -> MonitorFn:
-    """Create a repetition detection monitor using Jaccard similarity."""
-    max_similarity = spec.params.get("max_similarity", 0.8)
-    window_size = spec.params.get("window_size", 3)
+    """Create a repetition detection monitor using semantic similarity.
     
-    def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
-        content = result.get("content", "")
-        if not content:
-            return
-        
-        agent_key = f"{agent.name}_{task}"
-        
-        # Initialize history for this agent-task combination
-        if agent_key not in _repetition_history:
-            _repetition_history[agent_key] = []
-        
-        history = _repetition_history[agent_key]
-        
-        # Check similarity against recent history
-        violations = []
-        for i, historical_content in enumerate(history[-window_size:]):
-            similarity = jaccard_similarity(content, historical_content)
-            if similarity > max_similarity:
-                violations.append({
-                    "type": "repetition",
-                    "severity": spec.severity,
-                    "description": f"Content similarity {similarity:.2f} exceeds threshold {max_similarity}",
-                    "rationale": f"Current content too similar to content from {len(history)-i} turns ago",
-                    "meta": {
-                        "similarity_score": similarity,
-                        "threshold": max_similarity,
-                        "historical_index": len(history) - i
-                    }
-                })
-        
-        # Add current content to history
-        history.append(content)
-        
-        # Limit history size to prevent unbounded growth
-        if len(history) > window_size * 2:
-            history.pop(0)
-        
-        # Handle violations if any
-        if violations:
-            from AgentNet import MonitorFactory
-            detail = {
-                "outcome": {"content": content},
-                "violations": violations
-            }
-            MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
+    This is now just a wrapper around the semantic similarity monitor
+    with appropriate default parameters for repetition detection.
+    """
+    # Import from the refactored monitor system
+    from agentnet.monitors.semantic import create_semantic_similarity_monitor
     
-    return monitor
+    # Override parameters for repetition detection defaults
+    repetition_spec = MonitorSpec(
+        name=spec.name,
+        type="semantic_similarity",
+        params={
+            "max_similarity": spec.params.get("max_similarity", 0.8),  # Lower threshold for repetition
+            "window_size": spec.params.get("window_size", 3),          # Smaller window for repetition
+            "violation_name": spec.params.get("violation_name", f"{spec.name}_repetition"),
+            **spec.params  # Allow override of any parameter
+        },
+        severity=spec.severity,
+        description=spec.description or "Repetition detection using semantic similarity",
+        cooldown_seconds=spec.cooldown_seconds
+    )
+    
+    return create_semantic_similarity_monitor(repetition_spec)
 
 
 def create_semantic_similarity_monitor(spec: MonitorSpec) -> MonitorFn:
+    """Create a semantic similarity monitor.
+    
+    This is now just a wrapper around the refactored semantic monitor.
     """
-    Create a semantic similarity monitor.
-    Falls back to Jaccard similarity if sentence-transformers is not available.
-    """
-    max_similarity = spec.params.get("max_similarity", 0.9)
-    window_size = spec.params.get("window_size", 5)
+    # Import from the refactored monitor system
+    from agentnet.monitors.semantic import create_semantic_similarity_monitor as create_semantic
     
-    # Try to import sentence-transformers for semantic similarity
-    try:
-        from sentence_transformers import SentenceTransformer
-        import numpy as np
-        
-        # Use a lightweight model
-        model = SentenceTransformer('all-MiniLM-L6-v2')
-        use_semantic = True
-    except ImportError:
-        model = None
-        use_semantic = False
-    
-    def semantic_similarity(text1: str, text2: str) -> float:
-        """Compute semantic similarity using sentence transformers."""
-        if not use_semantic:
-            return jaccard_similarity(text1, text2)
-        
-        embeddings = model.encode([text1, text2])
-        # Compute cosine similarity
-        dot_product = np.dot(embeddings[0], embeddings[1])
-        norm_a = np.linalg.norm(embeddings[0])
-        norm_b = np.linalg.norm(embeddings[1])
-        
-        if norm_a == 0 or norm_b == 0:
-            return 0.0
-        
-        return dot_product / (norm_a * norm_b)
-    
-    def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
-        content = result.get("content", "")
-        if not content:
-            return
-        
-        agent_key = f"{agent.name}_{task}_semantic"
-        
-        # Initialize history for this agent-task combination
-        if agent_key not in _repetition_history:
-            _repetition_history[agent_key] = []
-        
-        history = _repetition_history[agent_key]
-        
-        # Check semantic similarity against recent history
-        violations = []
-        for i, historical_content in enumerate(history[-window_size:]):
-            similarity = semantic_similarity(content, historical_content)
-            if similarity > max_similarity:
-                violations.append({
-                    "type": "semantic_repetition",
-                    "severity": spec.severity,
-                    "description": f"Semantic similarity {similarity:.2f} exceeds threshold {max_similarity}",
-                    "rationale": f"Current content semantically too similar to content from {len(history)-i} turns ago",
-                    "meta": {
-                        "similarity_score": similarity,
-                        "threshold": max_similarity,
-                        "historical_index": len(history) - i,
-                        "similarity_type": "semantic" if use_semantic else "jaccard"
-                    }
-                })
-        
-        # Add current content to history
-        history.append(content)
-        
-        # Limit history size
-        if len(history) > window_size * 2:
-            history.pop(0)
-        
-        # Handle violations if any
-        if violations:
-            from AgentNet import MonitorFactory
-            detail = {
-                "outcome": {"content": content},
-                "violations": violations
-            }
-            MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
-    
-    return monitor
+    return create_semantic(spec)
+
+
+def create_custom_monitor(spec: MonitorSpec) -> MonitorFn:
+    """Factory function to create custom monitors based on spec type."""
+    if spec.type == "repetition":
+        return create_repetition_monitor(spec)
+    elif spec.type == "semantic_similarity":
+        return create_semantic_similarity_monitor(spec)
+    else:
+        # Delegate to the main monitor factory for other types
+        from agentnet.monitors import MonitorFactory
+        return MonitorFactory.build(spec)
 
 
 def load_monitor_config(config_path: Path) -> List[MonitorSpec]:
@@ -180,13 +85,3 @@ def load_monitor_config(config_path: Path) -> List[MonitorSpec]:
         monitors.append(spec)
     
     return monitors
-
-
-def create_custom_monitor(spec: MonitorSpec) -> MonitorFn:
-    """Factory function to create custom monitors based on spec type."""
-    if spec.type == "repetition":
-        return create_repetition_monitor(spec)
-    elif spec.type == "semantic_similarity":
-        return create_semantic_similarity_monitor(spec)
-    else:
-        raise ValueError(f"Unknown custom monitor type: {spec.type}")
