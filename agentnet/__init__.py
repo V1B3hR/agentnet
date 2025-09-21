@@ -16,6 +16,7 @@ from .providers.base import ProviderAdapter
 from .providers.example import ExampleEngine
 
 # Phase 1+ imports (with graceful degradation for missing dependencies)
+_p1_available = True
 _p2_available = True
 _p3_available = True
 _p4_available = True
@@ -23,7 +24,23 @@ _p5_available = True
 _p6_available = True
 
 try:
-    # Import P2 features: Memory & Tools
+    # Import P1 features: Turn Engine, Policy Engine, Events
+    from .core.orchestration.turn_engine import TurnEngine, TurnMode, TurnResult, SessionResult, TerminationReason
+    from .core.policy.engine import PolicyEngine, PolicyAction, PolicyResult  
+    from .core.policy.rules import ConstraintRule, RuleResult, Severity as PolicySeverity
+    from .events.bus import EventBus, Event, EventType
+    from .events.sinks import ConsoleSink, FileSink, EventSink
+except ImportError:
+    _p1_available = False
+    # Stub classes for P1 functionality
+    TurnEngine = TurnMode = TurnResult = SessionResult = TerminationReason = None
+    PolicyEngine = PolicyAction = PolicyResult = None
+    ConstraintRule = RuleResult = PolicySeverity = None
+    EventBus = Event = EventType = None
+    ConsoleSink = FileSink = EventSink = None
+
+try:
+    # Import P2 features: Memory & Tools & Critique
     from .memory.base import MemoryEntry, MemoryLayer, MemoryRetrieval, MemoryType
     from .memory.episodic import EpisodicMemory
     from .memory.manager import MemoryManager
@@ -38,6 +55,9 @@ try:
     )
     from .tools.executor import ToolExecutor
     from .tools.registry import ToolRegistry
+    from .critique.evaluator import CritiqueEvaluator, RevisionEvaluator, CritiqueResult
+    from .critique.debate import DebateManager, DebateRole, DebateResult
+    from .critique.arbitrator import Arbitrator, ArbitrationStrategy, ArbitrationResult
 except ImportError:
     _p2_available = False
     # Stub classes for P2 functionality
@@ -47,6 +67,9 @@ except ImportError:
     ToolRegistry = ToolExecutor = None
     Tool = ToolResult = ToolSpec = ToolStatus = None
     WebSearchTool = CalculatorTool = FileWriteTool = StatusCheckTool = None
+    CritiqueEvaluator = RevisionEvaluator = CritiqueResult = None
+    DebateManager = DebateRole = DebateResult = None
+    Arbitrator = ArbitrationStrategy = ArbitrationResult = None
 
 try:
     # Import P3 features: DAG & Eval
@@ -131,8 +154,8 @@ __version__ = "0.5.0"
 # Phase availability flags
 __phase_status__ = {
     "P0": True,  # Core functionality always available
-    "P1": True,  # Basic multi-agent features
-    "P2": _p2_available,  # Memory & Tools
+    "P1": _p1_available,  # Turn Engine, Policy, Events
+    "P2": _p2_available,  # Memory, Tools, Critique
     "P3": _p3_available,  # DAG & Eval
     "P4": _p4_available,  # Governance++
     "P5": _p5_available,  # Observability
@@ -154,6 +177,32 @@ __all__ = [
 ]
 
 # Add phase-specific exports if available
+if _p1_available:
+    __all__.extend(
+        [
+            # Turn Engine
+            "TurnEngine",
+            "TurnMode", 
+            "TurnResult",
+            "SessionResult",
+            "TerminationReason",
+            # Policy Engine
+            "PolicyEngine",
+            "PolicyAction",
+            "PolicyResult", 
+            "ConstraintRule",
+            "RuleResult",
+            "PolicySeverity",
+            # Events
+            "EventBus",
+            "Event",
+            "EventType",
+            "ConsoleSink", 
+            "FileSink",
+            "EventSink"
+        ]
+    )
+
 if _p2_available:
     __all__.extend(
         [
@@ -177,6 +226,16 @@ if _p2_available:
             "CalculatorTool",
             "FileWriteTool",
             "StatusCheckTool",
+            # Critique
+            "CritiqueEvaluator",
+            "RevisionEvaluator",
+            "CritiqueResult",
+            "DebateManager",
+            "DebateRole", 
+            "DebateResult",
+            "Arbitrator",
+            "ArbitrationStrategy",
+            "ArbitrationResult"
         ]
     )
 
