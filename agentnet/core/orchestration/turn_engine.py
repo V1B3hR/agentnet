@@ -391,10 +391,14 @@ class TurnEngine:
             
             # Apply policy engine if available
             if self.policy_engine:
-                violations = self.policy_engine.evaluate(raw_response, rich=True)
-                if violations:
-                    turn_result.policy_violations = violations
-                    logger.warning(f"Policy violations in turn {turn_id}: {[v['name'] for v in violations]}")
+                violations = self.policy_engine.evaluate(raw_response)
+                if isinstance(violations, list) and violations:
+                    # Convert to rich format if needed
+                    if hasattr(violations[0], 'to_dict'):
+                        turn_result.policy_violations = [v.to_dict() for v in violations]
+                    else:
+                        turn_result.policy_violations = [{"name": str(v), "severity": "unknown"} for v in violations]
+                    logger.warning(f"Policy violations in turn {turn_id}: {[str(v) for v in violations]}")
             
             # Call event callback if available
             if "on_turn_end" in self.event_callbacks:
