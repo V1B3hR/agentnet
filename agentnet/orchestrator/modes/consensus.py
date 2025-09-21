@@ -58,6 +58,9 @@ class ConsensusStrategy(BaseStrategy):
         metadata["consensus_focus"] = "shared_agreement"
         metadata["collaboration_mode"] = True
         
+        # Remove metadata from kwargs to avoid duplicate parameter
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k != 'metadata'}
+        
         # Modify task prompt for consensus-building context
         consensus_task = f"""Work toward shared agreement on: {task}
 
@@ -76,7 +79,7 @@ Move toward collaborative understanding and shared commitment."""
             max_depth=max_depth,
             confidence_threshold=confidence_threshold,
             metadata=metadata,
-            **kwargs
+            **filtered_kwargs
         )
         
         # Add consensus-specific metadata to result

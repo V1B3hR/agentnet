@@ -58,6 +58,9 @@ class BrainstormStrategy(BaseStrategy):
         metadata["brainstorm_focus"] = "idea_generation"
         metadata["creativity_mode"] = True
         
+        # Remove metadata from kwargs to avoid duplicate parameter
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k != 'metadata'}
+        
         # Modify task prompt for brainstorming context
         brainstorm_task = f"""Generate diverse, novel ideas for: {task}
 
@@ -75,7 +78,7 @@ Think freely and explore various possibilities without premature evaluation."""
             max_depth=max_depth,
             confidence_threshold=confidence_threshold,
             metadata=metadata,
-            **kwargs
+            **filtered_kwargs
         )
         
         # Add brainstorm-specific metadata to result

@@ -58,6 +58,9 @@ class DebateStrategy(BaseStrategy):
         metadata["debate_focus"] = "critical_analysis"
         metadata["argumentation_mode"] = True
         
+        # Remove metadata from kwargs to avoid duplicate parameter
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k != 'metadata'}
+        
         # Modify task prompt for debate context
         debate_task = f"""Analyze and debate the following topic: {task}
 
@@ -76,7 +79,7 @@ Defend your position while acknowledging valid opposing viewpoints."""
             max_depth=max_depth,
             confidence_threshold=confidence_threshold,
             metadata=metadata,
-            **kwargs
+            **filtered_kwargs
         )
         
         # Add debate-specific metadata to result

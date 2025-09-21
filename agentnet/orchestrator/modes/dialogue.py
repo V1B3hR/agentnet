@@ -58,6 +58,9 @@ class DialogueStrategy(BaseStrategy):
         metadata["dialogue_focus"] = "conversational_exploration"
         metadata["interactive_mode"] = True
         
+        # Remove metadata from kwargs to avoid duplicate parameter
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k != 'metadata'}
+        
         # Modify task prompt for dialogue context
         dialogue_task = f"""Engage in thoughtful dialogue about: {task}
 
@@ -77,7 +80,7 @@ Engage as if in a meaningful conversation to explore this topic."""
             max_depth=max_depth,
             confidence_threshold=confidence_threshold,
             metadata=metadata,
-            **kwargs
+            **filtered_kwargs
         )
         
         # Add dialogue-specific metadata to result

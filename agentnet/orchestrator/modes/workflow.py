@@ -58,6 +58,9 @@ class WorkflowStrategy(BaseStrategy):
         metadata["workflow_focus"] = "process_execution"
         metadata["structured_mode"] = True
         
+        # Remove metadata from kwargs to avoid duplicate parameter
+        filtered_kwargs = {k: v for k, v in kwargs.items() if k != 'metadata'}
+        
         # Modify task prompt for workflow context
         workflow_task = f"""Execute a structured workflow for: {task}
 
@@ -77,7 +80,7 @@ Provide a detailed, actionable workflow with clear milestones."""
             max_depth=max_depth,
             confidence_threshold=confidence_threshold,
             metadata=metadata,
-            **kwargs
+            **filtered_kwargs
         )
         
         # Add workflow-specific metadata to result
