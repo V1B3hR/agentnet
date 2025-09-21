@@ -3,6 +3,7 @@ from __future__ import annotations
 # P0 REFACTORED IMPORTS - Core classes now use modular structure
 try:
     from agentnet import AgentNet as AgentNetCore, ExampleEngine as ExampleEngineCore, Severity as SeverityCore
+    from agentnet.core.autoconfig import get_global_autoconfig
     _use_refactored = True
 except ImportError:
     _use_refactored = False
@@ -1405,6 +1406,27 @@ class AgentNet:
         if not agents:
             raise ValueError("No agents provided for async multi-party dialogue.")
         loop = loop or asyncio.get_event_loop()
+        
+        # Auto-configure parameters based on task difficulty if enabled
+        autoconfig = None
+        auto_config_params = None
+        original_rounds = rounds
+        
+        if _use_refactored:
+            try:
+                autoconfig = get_global_autoconfig()
+                if autoconfig and autoconfig.should_auto_configure(metadata):
+                    auto_config_params = autoconfig.configure_scenario(
+                        task=topic,
+                        context={"confidence": 0.7},  # Default confidence for dialogue
+                        base_rounds=rounds
+                    )
+                    # Apply auto-configured rounds
+                    rounds = auto_config_params.rounds
+                    logger.info(f"[AutoConfig:{session_id}] Adjusted rounds from {original_rounds} to {rounds} for {auto_config_params.difficulty.value} task")
+            except Exception as e:
+                logger.warning(f"AutoConfig failed, using original parameters: {e}")
+        
         rounds = min(rounds, self.dialogue_config.get("max_rounds", rounds))
         session_id = f"adlg_{int(time.time()*1000)}_{len(self.interaction_history)}"
         logger.info(f"[AsyncDialogue:{session_id}] start {len(agents)} agents topic='{topic}' parallel={parallel_round}")
@@ -1456,9 +1478,21 @@ class AgentNet:
                     transcript_tail=self._truncate_transcript(transcript)[-3:],
                     mode=mode,
                 )
+                
+                # Prepare parameters for auto-configured reasoning
+                reasoning_kwargs = {
+                    "include_monitor_trace": include_monitor_trace
+                }
+                
+                # Pass auto-config parameters if available
+                if auto_config_params:
+                    reasoning_kwargs["confidence_threshold"] = auto_config_params.confidence_threshold
+                    reasoning_kwargs["max_depth"] = auto_config_params.max_depth
+                    reasoning_kwargs["metadata"] = metadata
+                
                 turn_result = await ag.async_generate_reasoning_tree(
                     prompt,
-                    include_monitor_trace=include_monitor_trace
+                    **reasoning_kwargs
                 )
                 content = turn_result.get("result", {}).get("content", "")
                 confidence = float(turn_result.get("result", {}).get("confidence", 0.5))
@@ -1577,6 +1611,13 @@ class AgentNet:
             "timestamp": time.time(),
             "parallel_round": parallel_round
         }
+        
+        # Inject auto-configuration data for observability
+        if autoconfig and auto_config_params:
+            try:
+                autoconfig.inject_autoconfig_data(session_record, auto_config_params)
+            except Exception as e:
+                logger.warning(f"Failed to inject autoconfig data: {e}")
 
         self.interaction_history.append({
             "type": "dialogue_session_async",

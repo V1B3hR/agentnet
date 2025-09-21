@@ -217,18 +217,14 @@ class AgentNet:
                 task=task,
                 context=context,
                 base_max_depth=max_depth,
-                base_confidence_threshold=confidence_threshold if confidence_threshold != 0.7 else None
+                base_confidence_threshold=confidence_threshold
             )
             
             # Apply auto-configured parameters
             max_depth = auto_config_params.max_depth
-            # For confidence threshold, use auto-config value if it's for default threshold
-            if confidence_threshold == 0.7:  # Default threshold
-                confidence_threshold = auto_config_params.confidence_threshold
-            else:  # User-specified threshold, preserve or raise
-                confidence_threshold = autoconfig.preserve_confidence_threshold(
-                    confidence_threshold, auto_config_params
-                )
+            confidence_threshold = autoconfig.preserve_confidence_threshold(
+                confidence_threshold, auto_config_params
+            )
 
         try:
             # Use engine if available, otherwise create simple response
@@ -574,18 +570,14 @@ class AgentNet:
                 task=task,
                 context=context,
                 base_max_depth=max_depth,
-                base_confidence_threshold=confidence_threshold if confidence_threshold != 0.7 else None
+                base_confidence_threshold=confidence_threshold
             )
             
             # Apply auto-configured parameters
             max_depth = auto_config_params.max_depth
-            # For confidence threshold, use auto-config value if it's for default threshold
-            if confidence_threshold == 0.7:  # Default threshold
-                confidence_threshold = auto_config_params.confidence_threshold
-            else:  # User-specified threshold, preserve or raise
-                confidence_threshold = autoconfig.preserve_confidence_threshold(
-                    confidence_threshold, auto_config_params
-                )
+            confidence_threshold = autoconfig.preserve_confidence_threshold(
+                confidence_threshold, auto_config_params
+            )
 
         # Retrieve relevant memories if enabled
         memory_context_str = ""
