@@ -13,6 +13,7 @@ from ..persistence.agent_state import AgentStateManager
 from ..persistence.session import SessionManager
 from ..tools.executor import ToolExecutor
 from ..tools.registry import ToolRegistry
+from .autoconfig import get_global_autoconfig
 from .cost.recorder import CostRecorder
 from .types import CognitiveFault
 
@@ -184,6 +185,7 @@ class AgentNet:
         max_depth: int = 3,
         confidence_threshold: float = 0.7,
         style_override: Optional[Dict[str, float]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Generate a reasoning tree for the given task.
@@ -194,11 +196,39 @@ class AgentNet:
             max_depth: Maximum reasoning depth
             confidence_threshold: Minimum confidence threshold
             style_override: Temporary style override
+            metadata: Optional metadata that may include auto_config setting
 
         Returns:
             Reasoning tree dictionary
         """
         start_time = time.time()
+        
+        # Auto-configure parameters based on task difficulty if enabled
+        autoconfig = get_global_autoconfig()
+        auto_config_params = None
+        
+        if autoconfig.should_auto_configure(metadata):
+            # Create context from metadata and confidence
+            context = {"confidence": confidence_threshold}
+            if metadata:
+                context.update(metadata)
+            
+            auto_config_params = autoconfig.configure_scenario(
+                task=task,
+                context=context,
+                base_max_depth=max_depth,
+                base_confidence_threshold=confidence_threshold if confidence_threshold != 0.7 else None
+            )
+            
+            # Apply auto-configured parameters
+            max_depth = auto_config_params.max_depth
+            # For confidence threshold, use auto-config value if it's for default threshold
+            if confidence_threshold == 0.7:  # Default threshold
+                confidence_threshold = auto_config_params.confidence_threshold
+            else:  # User-specified threshold, preserve or raise
+                confidence_threshold = autoconfig.preserve_confidence_threshold(
+                    confidence_threshold, auto_config_params
+                )
 
         try:
             # Use engine if available, otherwise create simple response
@@ -258,6 +288,7 @@ class AgentNet:
                 "timestamp": time.time(),
                 "style": self.style.copy(),
                 "monitor_trace": [] if include_monitor_trace else None,
+                "metadata": metadata or {},
                 "cost_record": (
                     {
                         "total_cost": cost_record.total_cost if cost_record else 0.0,
@@ -271,6 +302,10 @@ class AgentNet:
                     else None
                 ),
             }
+            
+            # Inject auto-configuration data for observability
+            if auto_config_params:
+                autoconfig.inject_autoconfig_data(reasoning_tree, auto_config_params)
 
             # Record in interaction history
             self.interaction_history.append(
@@ -429,6 +464,43 @@ class AgentNet:
             "metadata": result.metadata,
         }
 
+    async def async_generate_reasoning_tree(
+        self,
+        task: str,
+        include_monitor_trace: bool = False,
+        max_depth: int = 3,
+        confidence_threshold: float = 0.7,
+        style_override: Optional[Dict[str, float]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Asynchronously generate a reasoning tree for the given task.
+        
+        This is an async wrapper around generate_reasoning_tree for compatibility
+        with async dialogue systems.
+
+        Args:
+            task: The task/prompt to reason about
+            include_monitor_trace: Whether to include monitor execution traces
+            max_depth: Maximum reasoning depth
+            confidence_threshold: Minimum confidence threshold
+            style_override: Temporary style override
+            metadata: Optional metadata that may include auto_config setting
+
+        Returns:
+            Reasoning tree dictionary
+        """
+        # For now, this is a simple async wrapper around the sync method
+        # In the future, this could be extended to support truly async inference
+        return self.generate_reasoning_tree(
+            task=task,
+            include_monitor_trace=include_monitor_trace,
+            max_depth=max_depth,
+            confidence_threshold=confidence_threshold,
+            style_override=style_override,
+            metadata=metadata,
+        )
+
     def list_available_tools(self, tag: Optional[str] = None) -> List[Dict[str, Any]]:
         """List available tools."""
         if not self.tool_registry:
@@ -468,6 +540,7 @@ class AgentNet:
         style_override: Optional[Dict[str, float]] = None,
         use_memory: bool = True,
         memory_context: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Generate reasoning tree with memory retrieval integration.
@@ -480,11 +553,39 @@ class AgentNet:
             style_override: Temporary style override
             use_memory: Whether to use memory retrieval
             memory_context: Additional context for memory retrieval
+            metadata: Optional metadata that may include auto_config setting
 
         Returns:
             Enhanced reasoning tree with memory context
         """
         start_time = time.time()
+        
+        # Auto-configure parameters based on task difficulty if enabled
+        autoconfig = get_global_autoconfig()
+        auto_config_params = None
+        
+        if autoconfig.should_auto_configure(metadata):
+            # Create context from metadata and confidence
+            context = {"confidence": confidence_threshold}
+            if metadata:
+                context.update(metadata)
+            
+            auto_config_params = autoconfig.configure_scenario(
+                task=task,
+                context=context,
+                base_max_depth=max_depth,
+                base_confidence_threshold=confidence_threshold if confidence_threshold != 0.7 else None
+            )
+            
+            # Apply auto-configured parameters
+            max_depth = auto_config_params.max_depth
+            # For confidence threshold, use auto-config value if it's for default threshold
+            if confidence_threshold == 0.7:  # Default threshold
+                confidence_threshold = auto_config_params.confidence_threshold
+            else:  # User-specified threshold, preserve or raise
+                confidence_threshold = autoconfig.preserve_confidence_threshold(
+                    confidence_threshold, auto_config_params
+                )
 
         # Retrieve relevant memories if enabled
         memory_context_str = ""
@@ -554,7 +655,12 @@ class AgentNet:
                 "monitor_trace": [] if include_monitor_trace else None,
                 "memory_retrieval": memory_retrieval,
                 "memory_used": bool(memory_context_str),
+                "metadata": metadata or {},
             }
+            
+            # Inject auto-configuration data for observability
+            if auto_config_params:
+                autoconfig.inject_autoconfig_data(reasoning_tree, auto_config_params)
 
             # Record in interaction history
             self.interaction_history.append(
