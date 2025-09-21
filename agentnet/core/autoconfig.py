@@ -5,6 +5,7 @@ This module analyzes task complexity and automatically adjusts:
 - Scenario rounds (more rounds for harder tasks)
 - Reasoning depth hints (deeper reasoning for complex tasks)
 - Confidence thresholds (stricter thresholds for harder tasks)
+- Mode-specific optimizations based on problem-solving approach
 """
 
 from __future__ import annotations
@@ -14,6 +15,8 @@ import re
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Dict, Optional
+
+from .enums import Mode, ProblemSolvingStyle, ProblemTechnique
 
 logger = logging.getLogger("agentnet.core.autoconfig")
 
@@ -34,6 +37,10 @@ class AutoConfigParams:
     difficulty: TaskDifficulty
     reasoning: str
     confidence_adjustment: float
+    # New fields for mode/style/technique integration
+    recommended_mode: Optional[Mode] = None
+    recommended_style: Optional[ProblemSolvingStyle] = None
+    recommended_technique: Optional[ProblemTechnique] = None
 
 
 class AutoConfig:
@@ -219,13 +226,21 @@ class AutoConfig:
         
         reasoning = self._generate_reasoning(difficulty, task)
         
+        # Analyze and recommend mode, style, and technique
+        recommended_mode = self._recommend_mode(task, context)
+        recommended_style = self._recommend_style(task, context)
+        recommended_technique = self._recommend_technique(task, context, difficulty)
+        
         return AutoConfigParams(
             rounds=params["rounds"],
             max_depth=params["max_depth"],
             confidence_threshold=params["confidence_threshold"],
             difficulty=difficulty,
             reasoning=reasoning,
-            confidence_adjustment=params["confidence_adjustment"]
+            confidence_adjustment=params["confidence_adjustment"],
+            recommended_mode=recommended_mode,
+            recommended_style=recommended_style,
+            recommended_technique=recommended_technique
         )
 
     def _generate_reasoning(self, difficulty: TaskDifficulty, task: str) -> str:
@@ -236,6 +251,162 @@ class AutoConfig:
             return f"Task classified as MEDIUM complexity. Using balanced configuration: 4 rounds, depth 3, confidence 0.7"
         else:
             return f"Task classified as SIMPLE. Using lightweight configuration: 3 rounds, depth 2, confidence 0.6"
+
+    def _recommend_mode(self, task: str, context: Optional[Dict[str, Any]] = None) -> Optional[Mode]:
+        """Recommend problem-solving mode based on task characteristics."""
+        task_lower = task.lower()
+        
+        # Brainstorm indicators
+        brainstorm_indicators = [
+            "generate", "create", "brainstorm", "ideas", "innovative", "creative",
+            "possibilities", "alternatives", "options", "novel", "explore"
+        ]
+        
+        # Debate indicators  
+        debate_indicators = [
+            "argue", "debate", "position", "defend", "critique", "analyze",
+            "compare", "evaluate", "pros and cons", "advantages", "disadvantages"
+        ]
+        
+        # Consensus indicators
+        consensus_indicators = [
+            "agree", "consensus", "common ground", "shared", "collaborate",
+            "together", "unified", "compromise", "alignment", "convergence"
+        ]
+        
+        # Workflow indicators
+        workflow_indicators = [
+            "process", "workflow", "steps", "procedure", "methodology",
+            "implement", "execute", "plan", "sequence", "phases"
+        ]
+        
+        # Dialogue indicators
+        dialogue_indicators = [
+            "discuss", "conversation", "explore", "understand", "clarify",
+            "question", "interactive", "dialogue", "talk through"
+        ]
+        
+        # Count matches for each mode
+        mode_scores = {
+            Mode.BRAINSTORM: sum(1 for indicator in brainstorm_indicators if indicator in task_lower),
+            Mode.DEBATE: sum(1 for indicator in debate_indicators if indicator in task_lower),
+            Mode.CONSENSUS: sum(1 for indicator in consensus_indicators if indicator in task_lower),
+            Mode.WORKFLOW: sum(1 for indicator in workflow_indicators if indicator in task_lower),
+            Mode.DIALOGUE: sum(1 for indicator in dialogue_indicators if indicator in task_lower)
+        }
+        
+        # Return mode with highest score, or None if no clear match
+        max_score = max(mode_scores.values())
+        if max_score > 0:
+            return max(mode_scores, key=mode_scores.get)
+        return None
+
+    def _recommend_style(self, task: str, context: Optional[Dict[str, Any]] = None) -> Optional[ProblemSolvingStyle]:
+        """Recommend problem-solving style based on task characteristics."""
+        task_lower = task.lower()
+        
+        # Clarifier indicators
+        clarifier_indicators = [
+            "clarify", "understand", "define", "explain", "what is",
+            "meaning", "context", "background", "requirements", "scope"
+        ]
+        
+        # Ideator indicators
+        ideator_indicators = [
+            "generate", "create", "innovate", "ideas", "concepts", "possibilities",
+            "brainstorm", "imagine", "envision", "conceptualize"
+        ]
+        
+        # Developer indicators
+        developer_indicators = [
+            "develop", "build", "design", "architect", "structure", "framework",
+            "system", "solution", "approach", "methodology"
+        ]
+        
+        # Implementor indicators
+        implementor_indicators = [
+            "implement", "execute", "deploy", "action", "practical", "concrete",
+            "deliver", "realize", "operationalize", "apply"
+        ]
+        
+        # Count matches for each style
+        style_scores = {
+            ProblemSolvingStyle.CLARIFIER: sum(1 for indicator in clarifier_indicators if indicator in task_lower),
+            ProblemSolvingStyle.IDEATOR: sum(1 for indicator in ideator_indicators if indicator in task_lower),
+            ProblemSolvingStyle.DEVELOPER: sum(1 for indicator in developer_indicators if indicator in task_lower),
+            ProblemSolvingStyle.IMPLEMENTOR: sum(1 for indicator in implementor_indicators if indicator in task_lower)
+        }
+        
+        # Return style with highest score, or None if no clear match
+        max_score = max(style_scores.values())
+        if max_score > 0:
+            return max(style_scores, key=style_scores.get)
+        return None
+
+    def _recommend_technique(
+        self, 
+        task: str, 
+        context: Optional[Dict[str, Any]] = None,
+        difficulty: Optional[TaskDifficulty] = None
+    ) -> Optional[ProblemTechnique]:
+        """Recommend problem-solving technique based on task characteristics and difficulty."""
+        task_lower = task.lower()
+        
+        # Troubleshooting indicators
+        troubleshooting_indicators = [
+            "fix", "troubleshoot", "debug", "error", "problem", "issue",
+            "broken", "not working", "failure", "malfunction"
+        ]
+        
+        # Gap from standard indicators
+        gap_indicators = [
+            "gap", "missing", "deviation", "standard", "benchmark", "baseline",
+            "should be", "expected", "compliance", "requirements"
+        ]
+        
+        # Target state indicators
+        target_indicators = [
+            "goal", "target", "objective", "achieve", "reach", "attain",
+            "desired state", "end state", "vision", "aspiration"
+        ]
+        
+        # Open-ended indicators
+        open_ended_indicators = [
+            "explore", "investigate", "research", "open-ended", "flexible",
+            "undefined", "ambiguous", "uncertain", "discovery"
+        ]
+        
+        # Count matches for each technique
+        technique_scores = {
+            ProblemTechnique.TROUBLESHOOTING: sum(1 for indicator in troubleshooting_indicators if indicator in task_lower),
+            ProblemTechnique.GAP_FROM_STANDARD: sum(1 for indicator in gap_indicators if indicator in task_lower),
+            ProblemTechnique.TARGET_STATE: sum(1 for indicator in target_indicators if indicator in task_lower),
+            ProblemTechnique.OPEN_ENDED: sum(1 for indicator in open_ended_indicators if indicator in task_lower),
+            ProblemTechnique.SIMPLE: 0,
+            ProblemTechnique.COMPLEX: 0
+        }
+        
+        # Add complexity-based techniques only if no content-based matches
+        content_based_max = max(
+            technique_scores[ProblemTechnique.TROUBLESHOOTING],
+            technique_scores[ProblemTechnique.GAP_FROM_STANDARD], 
+            technique_scores[ProblemTechnique.TARGET_STATE],
+            technique_scores[ProblemTechnique.OPEN_ENDED]
+        )
+        
+        if content_based_max == 0:
+            # Only use difficulty-based techniques if no content indicators found
+            if difficulty == TaskDifficulty.HARD:
+                technique_scores[ProblemTechnique.COMPLEX] = 1
+            elif difficulty == TaskDifficulty.SIMPLE:
+                technique_scores[ProblemTechnique.SIMPLE] = 1
+        
+        # Return technique with highest score
+        max_score = max(technique_scores.values())
+        if max_score > 0:
+            return max(technique_scores, key=technique_scores.get)
+        
+        return None
 
     def should_auto_configure(self, metadata: Optional[Dict[str, Any]] = None) -> bool:
         """
@@ -271,6 +442,9 @@ class AutoConfig:
             "configured_confidence_threshold": config_params.confidence_threshold,
             "reasoning": config_params.reasoning,
             "confidence_adjustment": config_params.confidence_adjustment,
+            "recommended_mode": config_params.recommended_mode.value if config_params.recommended_mode else None,
+            "recommended_style": config_params.recommended_style.value if config_params.recommended_style else None,
+            "recommended_technique": config_params.recommended_technique.value if config_params.recommended_technique else None,
             "enabled": True
         }
 
