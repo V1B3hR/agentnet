@@ -18,6 +18,7 @@ from .keyword import create_keyword_monitor
 from .regex import create_regex_monitor
 from .resource import create_resource_monitor
 from .semantic import create_semantic_similarity_monitor
+from .ethics import EthicsMonitor
 
 if TYPE_CHECKING:
     from ..core.agent import AgentNet
@@ -58,6 +59,8 @@ class MonitorFactory:
             return create_llm_classifier_monitor(spec)
         if t == "numerical_threshold":
             return create_numerical_threshold_monitor(spec)
+        if t == "ethics":
+            return create_ethics_monitor(spec)
         raise ValueError(f"Unknown monitor type: {spec.type}")
 
     @staticmethod
@@ -139,5 +142,42 @@ class MonitorFactory:
         }
 
 
+def create_ethics_monitor(spec: MonitorSpec) -> MonitorFn:
+    """Create an ethics monitor function from specification."""
+    
+    def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
+        """Monitor function that uses EthicsMonitor."""
+        if MonitorFactory._should_cooldown(spec, task):
+            return
+            
+        # Create EthicsMonitor instance with config from spec params
+        ethics_monitor = EthicsMonitor(
+            name=spec.name,
+            config=spec.params
+        )
+        
+        # Evaluate the result
+        outcome = result if isinstance(result, dict) else {"content": str(result)}
+        passed, message, eval_time = ethics_monitor.evaluate(outcome)
+        
+        if not passed:
+            # Handle violation using the factory's standard approach
+            violations = [{
+                "name": spec.name,
+                "type": "ethics",
+                "severity": spec.severity.value,
+                "description": spec.description or "Ethics violation detected",
+                "rationale": message or "Ethics rules violated",
+                "meta": {"evaluation_time": eval_time}
+            }]
+            
+            detail = {"outcome": outcome, "violations": violations}
+            MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
+        else:
+            logger.debug(f"Ethics monitor '{spec.name}' passed for task '{task}'")
+    
+    return monitor
+
+
 # Re-export register function for backward compatibility
-__all__ = ["MonitorFactory", "register_custom_monitor_func"]
+__all__ = ["MonitorFactory", "register_custom_monitor_func", "create_ethics_monitor"]

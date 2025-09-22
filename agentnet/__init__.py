@@ -24,20 +24,35 @@ _p5_available = True
 _p6_available = True
 
 try:
-    # Import P1 features: Turn Engine, Policy Engine, Events
-    from .core.orchestration.turn_engine import TurnEngine, TurnMode, TurnResult, SessionResult, TerminationReason
+    # Import P1 features: Policy Engine, Events, Ethics
     from .core.policy.engine import PolicyEngine, PolicyAction, PolicyResult  
     from .core.policy.rules import ConstraintRule, RuleResult, Severity as PolicySeverity
+    from .core.policy.ethics import EthicsJudge, get_ethics_judge, EthicsConfiguration, EthicsViolation
+    from .monitors.ethics import EthicsMonitor, applied_ethics_check
     from .events.bus import EventBus, Event, EventType
     from .events.sinks import ConsoleSink, FileSink, EventSink
+    _p1_core_available = True
 except ImportError:
-    _p1_available = False
-    # Stub classes for P1 functionality
-    TurnEngine = TurnMode = TurnResult = SessionResult = TerminationReason = None
+    _p1_core_available = False
+    # Stub classes for core P1 functionality
     PolicyEngine = PolicyAction = PolicyResult = None
     ConstraintRule = RuleResult = PolicySeverity = None
+    EthicsJudge = get_ethics_judge = EthicsConfiguration = EthicsViolation = None
+    EthicsMonitor = applied_ethics_check = None
     EventBus = Event = EventType = None
     ConsoleSink = FileSink = EventSink = None
+
+try:
+    # Import P1 Turn Engine (optional)
+    from .core.orchestration.turn_engine import TurnEngine, TurnMode, TurnResult, SessionResult, TerminationReason
+    _p1_turn_available = True
+except ImportError:
+    _p1_turn_available = False
+    # Stub classes for Turn Engine functionality
+    TurnEngine = TurnMode = TurnResult = SessionResult = TerminationReason = None
+
+# P1 is available if core features work
+_p1_available = _p1_core_available
 
 try:
     # Import P2 features: Memory & Tools & Critique
@@ -180,12 +195,6 @@ __all__ = [
 if _p1_available:
     __all__.extend(
         [
-            # Turn Engine
-            "TurnEngine",
-            "TurnMode", 
-            "TurnResult",
-            "SessionResult",
-            "TerminationReason",
             # Policy Engine
             "PolicyEngine",
             "PolicyAction",
@@ -193,6 +202,13 @@ if _p1_available:
             "ConstraintRule",
             "RuleResult",
             "PolicySeverity",
+            # Ethics System
+            "EthicsJudge",
+            "get_ethics_judge",
+            "EthicsConfiguration",
+            "EthicsViolation",
+            "EthicsMonitor",
+            "applied_ethics_check",
             # Events
             "EventBus",
             "Event",
@@ -202,6 +218,16 @@ if _p1_available:
             "EventSink"
         ]
     )
+
+# Add Turn Engine if available
+if _p1_turn_available:
+    __all__.extend([
+        "TurnEngine",
+        "TurnMode", 
+        "TurnResult",
+        "SessionResult",
+        "TerminationReason",
+    ])
 
 if _p2_available:
     __all__.extend(

@@ -3,10 +3,18 @@ Policy Engine Module
 
 Provides rule-based policy evaluation for agent actions and outputs.
 Implements matchers for regex, role, tool usage, and content classification.
+Includes centralized ethics oversight through the EthicsJudge singleton.
 """
 
 from .engine import PolicyEngine, PolicyAction, PolicyResult
 from .rules import ConstraintRule, RuleResult, Severity
+from .ethics import (
+    EthicsJudge,
+    EthicsViolation,
+    EthicsViolationType,
+    EthicsConfiguration,
+    get_ethics_judge,
+)
 
 __all__ = [
     "PolicyEngine",
@@ -14,5 +22,10 @@ __all__ = [
     "PolicyResult",
     "ConstraintRule",
     "RuleResult", 
-    "Severity"
+    "Severity",
+    "EthicsJudge",
+    "EthicsViolation",
+    "EthicsViolationType", 
+    "EthicsConfiguration",
+    "get_ethics_judge",
 ]

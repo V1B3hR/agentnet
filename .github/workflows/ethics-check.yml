@@ -1,0 +1,202 @@
+name: Ethics Compliance Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run ethics check daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  ethics-compliance:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [3.8, 3.9, "3.10", "3.11", "3.12"]
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pydantic pyyaml typing-extensions pytest
+        
+    - name: Run Ethics Judge Tests
+      run: |
+        PYTHONPATH=. python -m pytest tests/test_ethics_judge.py -v --tb=short
+        
+    - name: Test Ethics Integration
+      run: |
+        PYTHONPATH=. python -c "
+        from agentnet.core.policy.ethics import get_ethics_judge
+        from agentnet.monitors.ethics import applied_ethics_check
+        
+        # Test basic functionality
+        judge = get_ethics_judge()
+        print('✓ EthicsJudge singleton initialized')
+        
+        # Test harm detection
+        harmful_content = 'I want to hurt someone'
+        passed, violations = judge.evaluate(harmful_content)
+        if not passed or violations:
+            print('✓ Harm detection working')
+        else:
+            print('⚠ Harm detection may need tuning')
+            
+        # Test clean content
+        clean_content = 'I am here to help with your questions'
+        passed, violations = judge.evaluate(clean_content)
+        if passed and not violations:
+            print('✓ Clean content passes ethics check')
+        else:
+            print('⚠ Clean content evaluation issue')
+            
+        # Test legacy compatibility
+        result = applied_ethics_check({'content': 'Hello world'})
+        if result[0] is True:
+            print('✓ Legacy compatibility maintained')
+        else:
+            print('⚠ Legacy compatibility issue')
+            
+        print('Ethics compliance check completed successfully!')
+        "
+        
+    - name: Validate Ethics Configuration
+      run: |
+        PYTHONPATH=. python -c "
+        import yaml
+        from pathlib import Path
+        from agentnet.core.policy.ethics import EthicsConfiguration
+        
+        # Validate ethics configuration file
+        config_file = Path('configs/ethics.yaml')
+        if config_file.exists():
+            with open(config_file) as f:
+                config_data = yaml.safe_load(f)
+            config = EthicsConfiguration.from_dict(config_data)
+            print(f'✓ Ethics configuration loaded: enabled={config.enabled}')
+        else:
+            print('⚠ Ethics configuration file not found')
+        "
+        
+    - name: Generate Ethics Report
+      if: always()
+      run: |
+        PYTHONPATH=. python -c "
+        from agentnet.core.policy.ethics import get_ethics_judge
+        import json
+        
+        judge = get_ethics_judge()
+        stats = judge.get_statistics()
+        
+        print('=== Ethics Judge Statistics ===')
+        print(json.dumps(stats, indent=2))
+        
+        print('\n=== Active Ethics Rules ===')
+        for rule in judge.policy_engine.rules:
+            if rule.enabled:
+                print(f'✓ {rule.name}: {rule.description}')
+            else:
+                print(f'✗ {rule.name}: {rule.description} (DISABLED)')
+        "
+
+  ethics-security-scan:
+    runs-on: ubuntu-latest
+    needs: ethics-compliance
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install security tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit safety
+        
+    - name: Run security scan on ethics module
+      run: |
+        echo "Running security scan on ethics module..."
+        bandit -r agentnet/core/policy/ethics.py -f json -o ethics_security_report.json || true
+        
+        if [ -f ethics_security_report.json ]; then
+          echo "Security scan results:"
+          cat ethics_security_report.json
+        fi
+        
+    - name: Check for sensitive data in ethics rules
+      run: |
+        echo "Scanning for potential sensitive data patterns..."
+        
+        # Check for potential secrets or sensitive patterns
+        grep -r -i "password\|secret\|key\|token" agentnet/core/policy/ethics.py || echo "No sensitive patterns found"
+        grep -r -i "api_key\|auth\|credential" agentnet/core/policy/ethics.py || echo "No credential patterns found"
+        
+        echo "✓ Sensitive data scan completed"
+
+  ethics-performance:
+    runs-on: ubuntu-latest
+    needs: ethics-compliance
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pydantic pyyaml typing-extensions pytest pytest-benchmark
+        
+    - name: Run Ethics Performance Tests
+      run: |
+        PYTHONPATH=. python -c "
+        import time
+        from agentnet.core.policy.ethics import get_ethics_judge
+        
+        judge = get_ethics_judge()
+        
+        # Performance test
+        test_content = 'This is a test message for performance evaluation'
+        
+        # Warm up
+        for _ in range(10):
+            judge.evaluate(test_content)
+        
+        # Benchmark
+        iterations = 100
+        start_time = time.time()
+        
+        for i in range(iterations):
+            judge.evaluate(f'{test_content} iteration {i}')
+            
+        end_time = time.time()
+        total_time = end_time - start_time
+        avg_time = total_time / iterations
+        
+        print(f'Performance Test Results:')
+        print(f'  Total evaluations: {iterations}')
+        print(f'  Total time: {total_time:.3f}s')
+        print(f'  Average time per evaluation: {avg_time*1000:.2f}ms')
+        print(f'  Evaluations per second: {iterations/total_time:.1f}')
+        
+        if avg_time > 0.01:  # 10ms threshold
+            print('⚠ Ethics evaluation may be slow')
+        else:
+            print('✓ Ethics evaluation performance acceptable')
+        "

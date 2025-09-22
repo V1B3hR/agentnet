@@ -1,0 +1,90 @@
+# Central Ethics Judge Configuration
+# Based on the 25 AI Fundamental Laws
+
+# Enable/disable ethics monitoring globally
+enabled: true
+
+# Strict mode: block all actions with violations (vs. log and allow)
+strict_mode: false
+
+# Log all evaluations, not just violations
+log_all_evaluations: false
+
+# Maximum content length for excerpts in violation reports
+max_content_length: 500
+
+# Cooldown period between identical violations (seconds)
+violation_cooldown: 5.0
+
+# Minimum severity threshold for reporting violations
+# Options: minor, major, severe, critical
+severity_threshold: "minor"
+
+# Rules to disable by name
+disabled_rules: []
+
+# Custom ethics rules file (optional)
+# rules_file: "custom_ethics_rules.yaml"
+
+# Ethics rule configurations
+rule_settings:
+  respect_human_authority:
+    enabled: true
+    severity: "severe"
+    description: "Respect human authority and treat humans with dignity"
+    
+  cause_no_harm:
+    enabled: true
+    severity: "critical"
+    description: "Avoid causing physical, emotional, or psychological harm"
+    
+  absolute_honesty:
+    enabled: true
+    severity: "severe"
+    description: "Never lie, deceive, or bear false witness"
+    
+  protect_privacy:
+    enabled: true
+    severity: "major"
+    description: "Protect personal information and respect confidentiality"
+    
+  maintain_transparency:
+    enabled: true
+    severity: "major"
+    description: "Be clear about capabilities, limitations, and decision-making"
+    
+  applied_ethics:
+    enabled: true
+    severity: "minor"
+    description: "Flags controversial moral issues for review"
+
+# Monitoring and reporting settings
+monitoring:
+  # Enable violation history tracking
+  track_violations: true
+  
+  # Maximum violations to keep in history
+  max_violation_history: 1000
+  
+  # Enable statistics collection
+  collect_statistics: true
+  
+  # Export violations to file
+  export_violations: false
+  export_file: "ethics_violations.json"
+  
+  # Alert thresholds
+  alerts:
+    violation_rate_threshold: 0.1  # Alert if >10% of evaluations have violations
+    critical_violation_threshold: 1  # Alert on any critical violation
+    
+# Integration settings
+integration:
+  # Integrate with monitoring system
+  enable_monitor_integration: true
+  
+  # Integrate with policy engine
+  enable_policy_integration: true
+  
+  # Override existing applied_ethics_check function
+  override_legacy_ethics: true

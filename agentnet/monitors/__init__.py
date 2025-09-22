@@ -3,6 +3,7 @@
 from .base import MonitorFn, MonitorSpec, MonitorTemplate
 from .custom import register_custom_monitor_func
 from .factory import MonitorFactory
+from .ethics import EthicsMonitor, create_ethics_monitor_spec, applied_ethics_check
 
 # Import specific monitor types for direct access
 from .keyword import create_keyword_monitor
@@ -22,4 +23,7 @@ __all__ = [
     "create_regex_monitor",
     "create_resource_monitor",
     "create_semantic_similarity_monitor",
+    "EthicsMonitor",
+    "create_ethics_monitor_spec", 
+    "applied_ethics_check",
 ]

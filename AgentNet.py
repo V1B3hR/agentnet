@@ -1,4 +1,10 @@
 from __future__ import annotations
+# =============================================================================
+# NOTICE: This file has been updated to integrate with the central EthicsJudge
+# The applied_ethics_check function now delegates to the centralized ethics
+# system while maintaining backward compatibility.
+# =============================================================================
+
 
 # P0 REFACTORED IMPORTS - Core classes now use modular structure
 try:
@@ -29,6 +35,13 @@ from typing import (
     Union,
     Awaitable,
 )
+# Central Ethics Judge integration
+try:
+    from agentnet.core.policy.ethics import get_ethics_judge
+    ETHICS_JUDGE_AVAILABLE = True
+except ImportError:
+    ETHICS_JUDGE_AVAILABLE = False
+
 
 try:
     import yaml  # type: ignore
@@ -295,22 +308,34 @@ def regex_rule(pattern: str, flags: int = re.IGNORECASE) -> RuleCheckFn:
 
 
 def applied_ethics_check(outcome: Dict[str, Any]) -> RuleCheckResult:
-    content = str(outcome.get("content", "")).lower()
-    moral_keywords = [
-        "right", "wrong", "justice", "fair", "unfair", "harm", "benefit",
-        "responsibility", "duty", "obligation", "virtue", "vice", "good", "bad", "evil",
-    ]
-    controversy_keywords = [
-        "controversy", "debate", "dispute", "conflict", "argument",
-        "polarizing", "divisive", "hotly debated", "scandal",
-    ]
-    moral_hits = {kw for kw in moral_keywords if kw in content}
-    controversy_hits = {kw for kw in controversy_keywords if kw in content}
-    if moral_hits and controversy_hits:
-        return False, ("Applied ethics review triggered: moral terms ("
-                       + ", ".join(sorted(moral_hits)) + ") with controversy terms ("
-                       + ", ".join(sorted(controversy_hits)) + ")")
-    return True
+    """
+    Legacy compatibility wrapper for applied_ethics_check.
+    
+    This function now delegates to the centralized EthicsJudge while
+    maintaining the original interface for backward compatibility.
+    """
+    try:
+        # Import here to avoid circular imports
+        from agentnet.monitors.ethics import applied_ethics_check as central_ethics_check
+        return central_ethics_check(outcome)
+    except Exception as e:
+        # Fallback to original logic if central system fails
+        content = str(outcome.get("content", "")).lower()
+        moral_keywords = [
+            "right", "wrong", "justice", "fair", "unfair", "harm", "benefit",
+            "responsibility", "duty", "obligation", "virtue", "vice", "good", "bad", "evil",
+        ]
+        controversy_keywords = [
+            "controversy", "debate", "dispute", "conflict", "argument",
+            "polarizing", "divisive", "hotly debated", "scandal",
+        ]
+        moral_hits = {kw for kw in moral_keywords if kw in content}
+        controversy_hits = {kw for kw in controversy_keywords if kw in content}
+        if moral_hits and controversy_hits:
+            return False, ("Applied ethics review triggered: moral terms ("
+                           + ", ".join(sorted(moral_hits)) + ") with controversy terms ("
+                           + ", ".join(sorted(controversy_hits)) + ")")
+        return True
 
 
 CUSTOM_FUNCS: Dict[str, RuleCheckFn] = {
