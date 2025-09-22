@@ -239,6 +239,55 @@ except ImportError:
     ReinforcementLearningEngine = Skill = TaskPattern = PerformanceMetric = None
     LearningExperience = LearningStrategy = SpecializationType = None
 
+# Phase 8: Ecosystem & Integration
+_p8_available = True
+try:
+    # Import P8 features: Enterprise Connectors, Developer Platform, Cloud-Native Deployment
+    from .enterprise import (
+        # Enterprise Connectors
+        SlackConnector,
+        TeamsConnector,
+        SalesforceConnector,
+        HubSpotConnector,
+        JiraConnector,
+        ServiceNowConnector,
+        Office365Connector,
+        GoogleWorkspaceConnector,
+        IntegrationConfig,
+        Message,
+        Document,
+        
+        # Developer Platform
+        WorkflowDesigner,
+        LowCodeInterface,
+        AgentMarketplace,
+        IDEExtension,
+        WorkflowNode,
+        WorkflowDefinition,
+        AgentTemplate,
+        MarketplacePlugin,
+        
+        # Cloud-Native Deployment
+        KubernetesOperator,
+        AutoScaler,
+        MultiRegionDeployment,
+        ServerlessAdapter,
+        ClusterConfig,
+        AutoScalingConfig,
+        RegionConfig,
+        ServerlessConfig,
+    )
+except ImportError:
+    _p8_available = False
+    # Stub classes for P8 functionality
+    SlackConnector = TeamsConnector = SalesforceConnector = HubSpotConnector = None
+    JiraConnector = ServiceNowConnector = Office365Connector = GoogleWorkspaceConnector = None
+    IntegrationConfig = Message = Document = None
+    WorkflowDesigner = LowCodeInterface = AgentMarketplace = IDEExtension = None
+    WorkflowNode = WorkflowDefinition = AgentTemplate = MarketplacePlugin = None
+    KubernetesOperator = AutoScaler = MultiRegionDeployment = ServerlessAdapter = None
+    ClusterConfig = AutoScalingConfig = RegionConfig = ServerlessConfig = None
+
 __version__ = "0.5.0"
 
 # Phase availability flags
@@ -251,6 +300,7 @@ __phase_status__ = {
     "P5": _p5_available,  # Observability
     "P6": _p6_available,  # Enterprise Hardening
     "P7": _p7_available,  # Advanced Intelligence & Reasoning
+    "P8": _p8_available,  # Ecosystem & Integration
 }
 
 # Build dynamic __all__ based on available features
@@ -469,6 +519,42 @@ if _p7_available:
             "LearningExperience",
             "LearningStrategy",
             "SpecializationType",
+        ]
+    )
+
+if _p8_available:
+    __all__.extend(
+        [
+            # Enterprise Connectors
+            "SlackConnector",
+            "TeamsConnector",
+            "SalesforceConnector",
+            "HubSpotConnector",
+            "JiraConnector",
+            "ServiceNowConnector",
+            "Office365Connector",
+            "GoogleWorkspaceConnector",
+            "IntegrationConfig",
+            "Message",
+            "Document",
+            # Developer Platform
+            "WorkflowDesigner",
+            "LowCodeInterface",
+            "AgentMarketplace",
+            "IDEExtension",
+            "WorkflowNode",
+            "WorkflowDefinition",
+            "AgentTemplate",
+            "MarketplacePlugin",
+            # Cloud-Native Deployment
+            "KubernetesOperator",
+            "AutoScaler",
+            "MultiRegionDeployment",
+            "ServerlessAdapter",
+            "ClusterConfig",
+            "AutoScalingConfig",
+            "RegionConfig",
+            "ServerlessConfig",
         ]
     )
 
