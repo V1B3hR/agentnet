@@ -88,12 +88,21 @@ try:
         TaskNode,
         TaskScheduler,
     )
+    # New Phase 3 features
+    from .core.cache import CacheManager, CacheEntry, InMemoryCache, FileCache
+    from .core.multimodal import (
+        MultiModalManager, MultiModalMessage, ModalityContent, ModalityType
+    )
+    from .memory.retention import RetentionManager, RetentionPolicy, RetentionStrategy
 except ImportError:
     _p3_available = False
     # Stub classes for P3 functionality
     DAGPlanner = TaskNode = TaskGraph = TaskScheduler = ExecutionResult = None
     EvaluationRunner = EvaluationScenario = EvaluationSuite = None
     MetricsCalculator = EvaluationMetrics = SuccessCriteria = None
+    CacheManager = CacheEntry = InMemoryCache = FileCache = None
+    MultiModalManager = MultiModalMessage = ModalityContent = ModalityType = None
+    RetentionManager = RetentionPolicy = RetentionStrategy = None
 
 try:
     # Import P4 features: Governance++, Cost Engine, RBAC
@@ -103,6 +112,11 @@ try:
         CostRecorder,
         PricingEngine,
         TenantCostTracker,
+    )
+    # New Phase 4 features
+    from .core.telemetry import (
+        TelemetryCollector, TelemetryEvent, EventType, MetricType,
+        init_telemetry, get_telemetry, record_event, record_metric
     )
 except ImportError:
     _p4_available = False
@@ -254,6 +268,18 @@ if _p3_available:
             "MetricsCalculator",
             "EvaluationMetrics",
             "SuccessCriteria",
+            # Phase 3 New Features
+            "CacheManager",
+            "CacheEntry",
+            "InMemoryCache",
+            "FileCache",
+            "RetentionManager",
+            "RetentionPolicy",
+            "RetentionStrategy",
+            "MultiModalManager",
+            "MultiModalMessage",
+            "ModalityContent",
+            "ModalityType",
         ]
     )
 
@@ -270,6 +296,15 @@ if _p4_available:
             "RBACManager",
             "User",
             "AuthMiddleware",
+            # Phase 4 New Features
+            "TelemetryCollector",
+            "TelemetryEvent",
+            "EventType",
+            "MetricType",
+            "init_telemetry",
+            "get_telemetry",
+            "record_event",
+            "record_metric",
         ]
     )
 

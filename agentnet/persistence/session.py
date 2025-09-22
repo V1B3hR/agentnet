@@ -194,3 +194,121 @@ class SessionManager:
 
         logger.info(f"Cleaned up {deleted_count} old sessions")
         return deleted_count
+
+    def create_checkpoint(
+        self, session_id: str, checkpoint_data: Dict[str, Any]
+    ) -> str:
+        """Create a checkpoint for session state.
+
+        Args:
+            session_id: Session ID to checkpoint
+            checkpoint_data: Current session state to save
+
+        Returns:
+            Checkpoint identifier
+        """
+        checkpoint_id = f"{session_id}_checkpoint_{int(time.time() * 1000)}"
+        checkpoint_dir = self.storage_dir / "checkpoints"
+        checkpoint_dir.mkdir(exist_ok=True)
+        
+        checkpoint_file = checkpoint_dir / f"{checkpoint_id}.json"
+        
+        checkpoint_record = {
+            "checkpoint_id": checkpoint_id,
+            "session_id": session_id,
+            "timestamp": time.time(),
+            "data": checkpoint_data,
+            "version": "1.0"
+        }
+        
+        checkpoint_file.write_text(json.dumps(checkpoint_record, indent=2))
+        logger.info(f"Created checkpoint '{checkpoint_id}' for session '{session_id}'")
+        return checkpoint_id
+
+    def load_checkpoint(self, checkpoint_id: str) -> Optional[Dict[str, Any]]:
+        """Load a session checkpoint.
+
+        Args:
+            checkpoint_id: Checkpoint ID to load
+
+        Returns:
+            Checkpoint data or None if not found
+        """
+        checkpoint_dir = self.storage_dir / "checkpoints"
+        checkpoint_file = checkpoint_dir / f"{checkpoint_id}.json"
+        
+        if not checkpoint_file.exists():
+            logger.warning(f"Checkpoint '{checkpoint_id}' not found")
+            return None
+            
+        try:
+            data = json.loads(checkpoint_file.read_text())
+            logger.info(f"Loaded checkpoint '{checkpoint_id}'")
+            return data
+        except (json.JSONDecodeError, IOError) as e:
+            logger.error(f"Failed to load checkpoint '{checkpoint_id}': {e}")
+            return None
+
+    def resume_session(
+        self, checkpoint_id: str, additional_context: Optional[Dict[str, Any]] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Resume a session from checkpoint.
+
+        Args:
+            checkpoint_id: Checkpoint to resume from
+            additional_context: Additional context to merge with checkpoint
+
+        Returns:
+            Merged session state ready for resumption
+        """
+        checkpoint = self.load_checkpoint(checkpoint_id)
+        if not checkpoint:
+            return None
+            
+        session_data = checkpoint["data"]
+        
+        # Merge additional context if provided
+        if additional_context:
+            session_data.update(additional_context)
+            
+        # Mark as resumed
+        session_data["resumed_from_checkpoint"] = checkpoint_id
+        session_data["resume_timestamp"] = time.time()
+        
+        logger.info(f"Session resumed from checkpoint '{checkpoint_id}'")
+        return session_data
+
+    def list_checkpoints(self, session_id: Optional[str] = None) -> List[Dict[str, Any]]:
+        """List available checkpoints.
+
+        Args:
+            session_id: Filter by session ID (optional)
+
+        Returns:
+            List of checkpoint metadata
+        """
+        checkpoint_dir = self.storage_dir / "checkpoints"
+        if not checkpoint_dir.exists():
+            return []
+            
+        checkpoints = []
+        pattern = f"{session_id}_checkpoint_*.json" if session_id else "*.json"
+        
+        for checkpoint_file in sorted(
+            checkpoint_dir.glob(pattern),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True
+        ):
+            try:
+                data = json.loads(checkpoint_file.read_text())
+                metadata = {
+                    "checkpoint_id": data.get("checkpoint_id"),
+                    "session_id": data.get("session_id"),
+                    "timestamp": data.get("timestamp"),
+                    "filepath": str(checkpoint_file),
+                }
+                checkpoints.append(metadata)
+            except (json.JSONDecodeError, IOError) as e:
+                logger.error(f"Failed to read checkpoint file {checkpoint_file}: {e}")
+                
+        return checkpoints

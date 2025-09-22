@@ -1,6 +1,9 @@
 # Temporary demo files
 _agentnet_demo_*
 sessions/
+test_sessions/
+telemetry/
+cache/
 
 # ==============================
 # Python bytecode / caches
