@@ -1,0 +1,17 @@
+monitors:
+  - name: "resource_guard"
+    type: "resource"
+    params:
+      max_memory_mb: 512
+      max_cpu_percent: 80
+      max_runtime_seconds: 120
+    severity: "minor"
+    description: "Monitor system resource usage and performance"
+    
+  - name: "content_safety"
+    type: "keyword"
+    params:
+      keywords: ["unsafe", "harmful", "dangerous", "malicious"]
+      case_sensitive: false
+    severity: "major"
+    description: "Monitor for potentially unsafe content"

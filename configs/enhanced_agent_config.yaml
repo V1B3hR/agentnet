@@ -148,7 +148,7 @@ memory:
 
 # Monitor configuration (existing - compatible)
 monitors:
-  file: "monitors/enhanced_monitors.py"
+  file: "monitors/enhanced_monitors.yaml"
   
   # Enhanced monitoring for new features (new)
   enhanced:
