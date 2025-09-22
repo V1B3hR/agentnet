@@ -12,6 +12,8 @@ import tempfile
 import time
 from pathlib import Path
 
+import pytest
+
 # Import P3 components
 from agentnet import (  # DAG components; Evaluation components; Existing components for integration
     AgentNet,
@@ -101,6 +103,7 @@ def test_dag_planner():
     print("🎉 DAG Planner tests passed!")
 
 
+@pytest.mark.asyncio
 async def test_task_scheduler():
     """Test Task Scheduler functionality."""
     print("🧪 Testing Task Scheduler...")
@@ -245,6 +248,7 @@ def test_metrics_calculator():
     print("🎉 Metrics Calculator tests passed!")
 
 
+@pytest.mark.asyncio
 async def test_evaluation_runner():
     """Test Evaluation Runner functionality."""
     print("🧪 Testing Evaluation Runner...")
@@ -373,6 +377,7 @@ async def test_evaluation_runner():
         print("🎉 Evaluation Runner tests passed!")
 
 
+@pytest.mark.asyncio
 async def test_yaml_evaluation_suite():
     """Test loading and running YAML evaluation suite."""
     print("🧪 Testing YAML Evaluation Suite...")
@@ -411,6 +416,7 @@ async def test_yaml_evaluation_suite():
     print("🎉 YAML Evaluation Suite tests passed!")
 
 
+@pytest.mark.asyncio
 async def test_integration_with_agentnet():
     """Test integration with existing AgentNet components."""
     print("🧪 Testing Integration with AgentNet...")
