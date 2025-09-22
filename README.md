@@ -183,7 +183,7 @@ print(session.final.output)
 - **Advanced Capabilities**: Meta-controller, human-in-loop, adaptive orchestration
 
 ---
-
+!!!Create "mirror agents" with noise injection ("Dusty Mirror") to test resilience and variability.!!!
 ## Future Development Roadmap
 
 ### 🚀 Phase 7 – Advanced Intelligence & Reasoning (Q2 2025)
