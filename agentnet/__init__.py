@@ -125,7 +125,7 @@ except ImportError:
     Role = Permission = RBACManager = User = AuthMiddleware = None
 
 try:
-    # Import P5 features: Observability
+    # Import P5 features: Observability & Performance
     from .observability import (
         AgentNetMetrics,
         MetricsCollector,
@@ -134,11 +134,25 @@ try:
         get_correlation_logger,
         setup_structured_logging,
     )
+    from .performance import (
+        PerformanceHarness,
+        BenchmarkConfig,
+        BenchmarkResult,
+        LatencyTracker,
+        TurnLatencyMeasurement,
+        TokenUtilizationTracker,
+        TokenMetrics,
+        PerformanceReporter,
+        ReportFormat,
+    )
 except ImportError:
     _p5_available = False
     # Stub functions for P5 functionality
     MetricsCollector = AgentNetMetrics = TracingManager = create_tracer = None
     setup_structured_logging = get_correlation_logger = None
+    PerformanceHarness = BenchmarkConfig = BenchmarkResult = None
+    LatencyTracker = TurnLatencyMeasurement = TokenUtilizationTracker = None
+    TokenMetrics = PerformanceReporter = ReportFormat = None
 
 try:
     # Import P6 features: Enterprise Hardening
@@ -318,6 +332,16 @@ if _p5_available:
             "create_tracer",
             "setup_structured_logging",
             "get_correlation_logger",
+            # Performance Harness
+            "PerformanceHarness",
+            "BenchmarkConfig",
+            "BenchmarkResult",
+            "LatencyTracker",
+            "TurnLatencyMeasurement",
+            "TokenUtilizationTracker",
+            "TokenMetrics",
+            "PerformanceReporter",
+            "ReportFormat",
         ]
     )
 
