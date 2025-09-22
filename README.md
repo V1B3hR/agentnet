@@ -224,13 +224,13 @@ Legend:
 - [•] PyPI packaging & versioning policy (semver w/ 0.x rapid changes)
 - [•] Plugin registry (entry points for tools/policies/evaluators)
 
-### Phase 6 – Advanced / Exploratory (R)
-- [R] Meta-controller agent (dynamic agent graph reconfiguration)
-- [R] Human-in-loop gating (approval & escalation flow)
-- [R] Reward modeling integration / offline evaluation loops
-- [R] Adaptive orchestration via performance feedback
-- [R] Multi-lingual safety policy translation
-- [R] Streaming partial-output collaboration
+### Phase 6 – Advanced / Exploratory (✅)
+- [✅] Meta-controller agent (dynamic agent graph reconfiguration)
+- [✅] Human-in-loop gating (approval & escalation flow)
+- [✅] Reward modeling integration / offline evaluation loops
+- [✅] Adaptive orchestration via performance feedback
+- [✅] Multi-lingual safety policy translation
+- [✅] Streaming partial-output collaboration
 
 ---
 
@@ -287,6 +287,199 @@ pytest -q
 
 # Regenerate event schema (planned)
 python scripts/gen_schema.py
+```
+
+---
+
+## Phase 6 Advanced Features
+
+### Meta-Controller Agent
+Dynamic agent graph reconfiguration for adaptive multi-agent systems:
+
+```python
+from agentnet.core import MetaController, AgentRole, ReconfigurationTrigger
+
+# Create meta-controller
+controller = MetaController(max_agents=10, performance_threshold=0.7)
+
+# Add agents dynamically
+analyst_id = controller.add_agent("DataAnalyst", AgentRole.ANALYST, {"analysis", "statistics"})
+critic_id = controller.add_agent("Critic", AgentRole.CRITIC, {"validation", "critique"})
+
+# Connect agents
+controller.connect_agents(analyst_id, critic_id)
+
+# Auto-reconfigure based on performance
+controller.auto_reconfigure(ReconfigurationTrigger.PERFORMANCE_THRESHOLD, {"complexity": 0.8})
+```
+
+### Human-in-Loop Gating
+Approval and escalation flow for high-risk decisions:
+
+```python
+from agentnet.core import HumanApprovalGate, RiskLevel, EscalationLevel
+
+# Setup approval system
+gate = HumanApprovalGate()
+approver_id = gate.add_approver("Supervisor", "sup@company.com", EscalationLevel.L2_SUPERVISOR)
+
+# Request approval for high-risk action
+request = await gate.request_approval(
+    "Deploy AI model to production",
+    RiskLevel.HIGH,
+    "ai_agent",
+    {"model_version": "v2.1", "deployment": "production"}
+)
+
+# Wait for human approval
+status = await gate.wait_for_approval(request.id)
+```
+
+### Reward Modeling & Offline Evaluation
+Continuous improvement through feedback loops:
+
+```python
+from agentnet.core import RewardModel, FeedbackType
+
+# Setup reward model
+model = RewardModel(min_feedback_count=5)
+
+# Add feedback from various sources
+model.add_feedback(
+    session_id="session_123",
+    agent_id="smart_agent",
+    action_taken="generated_summary",
+    feedback_type=FeedbackType.HUMAN_RATING,
+    score=4.2,  # 1-5 scale
+    feedback_source="human_evaluator"
+)
+
+# Get agent performance
+score = model.get_agent_reward_score("smart_agent")
+
+# Create evaluation batch for offline learning
+batch = model.create_evaluation_batch(days_back=7)
+results = await model.process_evaluation_batch(batch.id)
+```
+
+### Adaptive Orchestration
+Performance-driven orchestration optimization:
+
+```python
+from agentnet.core import (
+    PerformanceFeedbackCollector, AdaptiveOrchestrator,
+    PerformanceMetric, OrchestrationStrategy, OptimizationObjective
+)
+
+# Setup performance feedback
+collector = PerformanceFeedbackCollector()
+
+# Record performance metrics
+collector.record_performance(
+    session_id="task_001",
+    strategy=OrchestrationStrategy.DEBATE,
+    metrics={
+        PerformanceMetric.LATENCY: 2.5,
+        PerformanceMetric.ACCURACY: 0.92,
+        PerformanceMetric.ERROR_RATE: 0.03
+    },
+    success=True
+)
+
+# Get strategy recommendations
+strategy, confidence = collector.get_strategy_recommendation(
+    context={"task_complexity": 0.7, "agent_count": 4},
+    objective=OptimizationObjective.MINIMIZE_LATENCY
+)
+
+# Setup adaptive orchestrator
+orchestrator = AdaptiveOrchestrator(collector)
+orchestrator.set_optimization_objective(OptimizationObjective.BALANCE_PERFORMANCE)
+```
+
+### Multi-lingual Safety Policy
+Global safety policy enforcement:
+
+```python
+from agentnet.core import (
+    MultiLingualPolicyTranslator, SupportedLanguage, PolicyViolationType
+)
+
+# Setup multi-lingual safety
+translator = MultiLingualPolicyTranslator()
+
+# Add custom safety rule
+rule_id = translator.add_safety_rule(
+    name="Sensitive Information Protection",
+    violation_type=PolicyViolationType.PRIVACY_VIOLATION,
+    base_language=SupportedLanguage.ENGLISH,
+    base_patterns=[r'\b\d{3}-\d{2}-\d{4}\b'],  # SSN pattern
+    base_keywords=["social security", "ssn"],
+    base_description="Detects personal information like SSN",
+    severity="high",
+    action="redact"
+)
+
+# Translate to other languages
+translator.translate_rule_to_language(
+    rule_id,
+    SupportedLanguage.SPANISH,
+    "Detecta información personal como NSS",
+    [r'\b\d{3}-\d{2}-\d{4}\b'],
+    ["seguridad social", "nss"]
+)
+
+# Check content safety
+violations = translator.check_content_safety(
+    "Please don't share your SSN: 123-45-6789",
+    session_id="safety_check",
+    agent_id="content_agent"
+)
+```
+
+### Enhanced Streaming Collaboration
+Real-time collaboration with interventions:
+
+```python
+from agentnet.streaming import (
+    EnhancedStreamingCollaborator, InterventionType,
+    coherence_monitor, relevance_monitor, safety_monitor
+)
+
+# Setup enhanced collaborator
+collaborator = EnhancedStreamingCollaborator()
+
+# Register quality monitors
+collaborator.register_quality_monitor(coherence_monitor)
+collaborator.register_quality_monitor(relevance_monitor)
+collaborator.register_quality_monitor(safety_monitor)
+
+# Create monitored session
+session_id = await collaborator.create_monitored_session(
+    enable_interventions=True,
+    quality_threshold=0.8
+)
+
+# Stream with real-time monitoring
+async def content_stream():
+    for chunk in ["This is ", "a streaming ", "response with ", "quality monitoring."]:
+        yield chunk
+        await asyncio.sleep(0.1)
+
+response = await collaborator.stream_with_monitoring(
+    session_id=session_id,
+    agent_id="streaming_agent",
+    response_stream=content_stream(),
+    enable_corrections=True
+)
+
+# Manual intervention if needed
+await collaborator.intervene_stream(
+    session_id=session_id,
+    agent_id="streaming_agent",
+    intervention_type=InterventionType.GUIDANCE,
+    intervention_content="Please focus more on technical details"
+)
 ```
 
 ---

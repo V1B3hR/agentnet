@@ -22,6 +22,27 @@ from .handlers import (
     HandlerType
 )
 
+# Phase 6 enhanced features with graceful fallback
+try:
+    from .enhanced_collaboration import (
+        EnhancedStreamingCollaborator,
+        StreamingIntervention,
+        StreamingMetrics,
+        InterventionType,
+        InterventionTrigger,
+        coherence_monitor,
+        relevance_monitor,
+        safety_monitor
+    )
+    _ENHANCED_AVAILABLE = True
+except ImportError:
+    # Stub classes if dependencies are missing
+    EnhancedStreamingCollaborator = None
+    StreamingIntervention = StreamingMetrics = None
+    InterventionType = InterventionTrigger = None
+    coherence_monitor = relevance_monitor = safety_monitor = None
+    _ENHANCED_AVAILABLE = False
+
 __all__ = [
     "StreamingCollaborator",
     "CollaborationSession", 
@@ -38,3 +59,16 @@ __all__ = [
     "TransformHandler",
     "HandlerType",
 ]
+
+# Add enhanced features if available
+if _ENHANCED_AVAILABLE:
+    __all__.extend([
+        "EnhancedStreamingCollaborator",
+        "StreamingIntervention",
+        "StreamingMetrics",
+        "InterventionType",
+        "InterventionTrigger",
+        "coherence_monitor",
+        "relevance_monitor",
+        "safety_monitor",
+    ])
