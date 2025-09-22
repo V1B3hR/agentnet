@@ -11,6 +11,17 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from .base import MemoryEntry, MemoryLayer, MemoryType
 
+# Optional imports for caching and retention
+try:
+    from ..core.cache import CacheManager
+    from .retention import RetentionManager, RetentionPolicy
+    _CACHE_AVAILABLE = True
+except ImportError:
+    CacheManager = None
+    RetentionManager = None
+    RetentionPolicy = None
+    _CACHE_AVAILABLE = False
+
 
 class EmbeddingProvider(ABC):
     """Abstract interface for embedding providers."""
@@ -152,6 +163,36 @@ class SemanticMemory(MemoryLayer):
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
         self._content_store: Dict[str, MemoryEntry] = self._load_content()
 
+        # Initialize caching if available
+        if _CACHE_AVAILABLE and config.get("enable_caching", True):
+            cache_config = config.get("cache", {})
+            self.cache_manager = CacheManager(
+                default_ttl=cache_config.get("ttl", 3600)  # 1 hour default
+            )
+        else:
+            self.cache_manager = None
+
+        # Initialize retention if available
+        if _CACHE_AVAILABLE and config.get("enable_retention", True):
+            retention_config = config.get("retention", {})
+            self.retention_manager = RetentionManager()
+            # Default retention policy can be configured
+            if retention_config.get("policy"):
+                from .retention import (
+                    LRURetentionPolicy, SemanticSalienceRetentionPolicy,
+                    HybridRetentionPolicy
+                )
+                policy_type = retention_config["policy"]
+                if policy_type == "lru":
+                    policy = LRURetentionPolicy(retention_config)
+                elif policy_type == "semantic":
+                    policy = SemanticSalienceRetentionPolicy(retention_config)
+                else:
+                    policy = HybridRetentionPolicy(retention_config)
+                self.retention_manager.set_policy(MemoryType.SEMANTIC, policy)
+        else:
+            self.retention_manager = None
+
     @property
     def memory_type(self) -> MemoryType:
         return MemoryType.SEMANTIC
@@ -160,13 +201,23 @@ class SemanticMemory(MemoryLayer):
         """Store entry with vector embedding."""
         entry_id = f"sem_{int(time.time() * 1000)}_{hash(entry.content) & 0x7FFFFFFF}"
 
-        # Generate embedding
-        try:
-            embedding = self.embedding_provider.encode(entry.content)
-            entry.embedding = embedding
-        except Exception as e:
-            # If embedding fails, skip semantic storage
-            return False
+        # Check cache for existing embedding
+        embedding = None
+        if self.cache_manager:
+            embedding = self.cache_manager.get_embedding(entry.content)
+
+        # Generate embedding if not cached
+        if embedding is None:
+            try:
+                embedding = self.embedding_provider.encode(entry.content)
+                # Cache the embedding
+                if self.cache_manager:
+                    self.cache_manager.cache_embedding(entry.content, embedding)
+            except Exception as e:
+                # If embedding fails, skip semantic storage
+                return False
+
+        entry.embedding = embedding
 
         # Store in vector store
         metadata = {
@@ -182,7 +233,11 @@ class SemanticMemory(MemoryLayer):
         # Store content
         self._content_store[entry_id] = entry
 
-        # Enforce size limits
+        # Add to retention tracking
+        if self.retention_manager:
+            self.retention_manager.add_entry(entry, entry_id, MemoryType.SEMANTIC)
+
+        # Enforce size limits with retention-aware eviction
         self._enforce_size_limit()
 
         # Persist content store
@@ -197,18 +252,27 @@ class SemanticMemory(MemoryLayer):
         if threshold is None:
             threshold = self.similarity_threshold
 
-        try:
-            # Generate query embedding
-            query_embedding = self.embedding_provider.encode(query)
-        except Exception:
-            return []
+        # Check cache for query embedding
+        query_embedding = None
+        if self.cache_manager:
+            query_embedding = self.cache_manager.get_embedding(query)
+
+        if query_embedding is None:
+            try:
+                # Generate query embedding
+                query_embedding = self.embedding_provider.encode(query)
+                # Cache the query embedding
+                if self.cache_manager:
+                    self.cache_manager.cache_embedding(query, query_embedding)
+            except Exception:
+                return []
 
         # Search vector store
         search_results = self.vector_store.search(
             query_embedding, top_k=max_entries, threshold=threshold
         )
 
-        # Build results
+        # Build results and update access tracking
         entries = []
         for entry_id, similarity, metadata in search_results:
             if entry_id in self._content_store:
@@ -216,6 +280,10 @@ class SemanticMemory(MemoryLayer):
                 # Add similarity to metadata
                 entry.metadata["similarity_score"] = similarity
                 entries.append(entry)
+                
+                # Update access tracking for retention
+                if self.retention_manager:
+                    self.retention_manager.update_access(entry_id, MemoryType.SEMANTIC)
 
         return entries
 
@@ -226,20 +294,33 @@ class SemanticMemory(MemoryLayer):
         self._save_content()
 
     def _enforce_size_limit(self) -> None:
-        """Enforce maximum entry limits."""
+        """Enforce maximum entry limits using retention policies."""
         if len(self._content_store) <= self.max_entries:
             return
 
-        # Remove oldest entries
-        entries_by_time = sorted(
-            self._content_store.items(), key=lambda x: x[1].timestamp
-        )
+        entries_to_remove_count = len(self._content_store) - self.max_entries
 
-        entries_to_remove = len(self._content_store) - self.max_entries
-        for i in range(entries_to_remove):
-            entry_id, _ = entries_by_time[i]
+        # Use retention manager if available
+        if self.retention_manager:
+            entries_to_remove = self.retention_manager.select_for_eviction(
+                self._content_store, MemoryType.SEMANTIC, entries_to_remove_count
+            )
+        else:
+            # Fallback to oldest entries
+            entries_by_time = sorted(
+                self._content_store.items(), key=lambda x: x[1].timestamp
+            )
+            entries_to_remove = [entry_id for entry_id, _ in entries_by_time[:entries_to_remove_count]]
+
+        # Remove selected entries
+        for entry_id in entries_to_remove:
             self.vector_store.delete(entry_id)
-            del self._content_store[entry_id]
+            if entry_id in self._content_store:
+                del self._content_store[entry_id]
+            
+            # Remove from retention tracking
+            if self.retention_manager:
+                self.retention_manager.remove_entry(entry_id, MemoryType.SEMANTIC)
 
     def _load_content(self) -> Dict[str, MemoryEntry]:
         """Load content store from disk."""

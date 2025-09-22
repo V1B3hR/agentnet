@@ -1,0 +1,9 @@
+{
+  "checkpoint_id": "test_session_checkpoint_1758522619784",
+  "session_id": "test_session",
+  "timestamp": 1758522619.784298,
+  "data": {
+    "data": "test"
+  },
+  "version": "1.0"
+}
