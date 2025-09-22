@@ -111,6 +111,131 @@ Orchestrator  <--- config (mode: debate | critique | linear | async)
 
 ---
 
+## 🚀 Quick Start & Integrations
+
+### Basic Installation
+
+```bash
+pip install agentnet
+```
+
+### With Integrations
+
+```bash
+# All integrations
+pip install agentnet[integrations]
+
+# Specific integrations
+pip install agentnet[langchain]          # LangChain compatibility
+pip install agentnet[openai]             # OpenAI Assistants API
+pip install agentnet[huggingface]        # Hugging Face Hub
+pip install agentnet[vector_databases]   # All vector databases
+pip install agentnet[monitoring]         # Grafana + Prometheus
+```
+
+### Simple Example
+
+```python
+from agentnet import AgentNet
+
+# Create an agent
+agent = AgentNet(
+    name="Assistant", 
+    style={"analytical": 0.7, "creative": 0.3}
+)
+
+# Use the agent
+response = agent.reason("What are the benefits of renewable energy?")
+print(response.content)
+```
+
+### 🔌 Integration Examples
+
+#### LangChain Migration
+```python
+from agentnet.integrations import get_langchain_compatibility
+from langchain.chat_models import ChatOpenAI
+
+# Your existing LangChain code
+llm = ChatOpenAI()
+
+# Wrap for AgentNet
+compat = get_langchain_compatibility()
+provider = compat.wrap_langchain_llm(llm)
+agent = AgentNet(name="Assistant", style={"analytical": 0.8}, engine=provider)
+```
+
+#### OpenAI Assistants
+```python
+from agentnet.integrations import get_openai_assistants
+
+AssistantsAdapter = get_openai_assistants()
+assistant = AssistantsAdapter(
+    api_key="your-api-key",
+    assistant_config={
+        "name": "AgentNet Assistant",
+        "instructions": "You are a helpful AI assistant.",
+        "model": "gpt-4-1106-preview"
+    }
+)
+
+response = assistant.infer("Help me plan a project")
+```
+
+#### Hugging Face Hub
+```python
+from agentnet.integrations import get_huggingface_hub
+
+HFAdapter = get_huggingface_hub()
+model = HFAdapter(
+    model_name_or_path="microsoft/DialoGPT-medium",
+    task="text-generation"
+)
+
+response = model.infer("Hello, how are you?")
+```
+
+#### Vector Databases
+```python
+from agentnet.integrations import get_vector_database_adapter
+
+# Pinecone
+PineconeAdapter = get_vector_database_adapter("pinecone")
+pinecone_db = PineconeAdapter(
+    api_key="your-api-key",
+    environment="your-environment"
+)
+
+# Create collection and search
+pinecone_db.connect()
+pinecone_db.create_collection("documents", dimension=1536)
+results = pinecone_db.search("documents", query_vector, top_k=5)
+```
+
+#### Monitoring
+```python
+from agentnet.integrations import get_monitoring_integration
+
+# Prometheus metrics
+PrometheusIntegration = get_monitoring_integration("prometheus")
+prometheus = PrometheusIntegration(
+    pushgateway_url="http://localhost:9091"
+)
+
+# Record metrics
+prometheus.record_inference("my-agent", "openai", "gpt-4", 1.2, 100, 50, 0.02)
+
+# Grafana dashboards
+GrafanaIntegration = get_monitoring_integration("grafana")
+grafana = GrafanaIntegration(
+    url="http://localhost:3000",
+    api_key="your-api-key"
+)
+
+# Create AgentNet dashboard
+grafana.create_agentnet_dashboard()
+```
+
 ## Installation (Early Dev)
 
 ```bash
@@ -275,12 +400,12 @@ print(session.final.output)
 
 ## Integration Roadmap
 
-### 🔧 Near-term Integrations (Next 6 months)
-1. **LangChain Compatibility Layer** - Seamless migration from LangChain projects
-2. **OpenAI Assistants API** - Native support for OpenAI's assistant framework  
-3. **Hugging Face Hub** - Direct model loading and fine-tuning integration
-4. **Vector Database Expansion** - Pinecone, Weaviate, Milvus native support
-5. **Monitoring Stack** - Grafana dashboards, Prometheus alerting rules
+### 🎉 Available Integrations (Now Available!)
+1. **✅ LangChain Compatibility Layer** - Seamless migration from LangChain projects
+2. **✅ OpenAI Assistants API** - Native support for OpenAI's assistant framework  
+3. **✅ Hugging Face Hub** - Direct model loading and fine-tuning integration
+4. **✅ Vector Database Expansion** - Pinecone, Weaviate, Milvus native support
+5. **✅ Monitoring Stack** - Grafana dashboards, Prometheus alerting rules
 
 ### 📈 Growth Initiatives (6-12 months)
 1. **Community Edition** - Free tier with essential features for developers

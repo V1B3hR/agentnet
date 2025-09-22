@@ -151,10 +151,14 @@ risk_tagger = "agentnet.critique.evaluators:RiskTaggerEvaluator"
 example = "agentnet.providers.example:ExampleEngine"
 instrumented = "agentnet.providers.instrumented:InstrumentedProvider"
 
-[project.entry-points."agentnet.integrations"]
 langchain = "agentnet.integrations.langchain:LangChainCompatibilityLayer"
-openai_assistants = "agentnet.integrations.openai_assistants:OpenAIAssistantsAdapter"
-huggingface = "agentnet.integrations.huggingface:HuggingFaceHubAdapter"
+pinecone = "agentnet.integrations.vector_databases:PineconeAdapter"
+weaviate = "agentnet.integrations.vector_databases:WeaviateAdapter"
+milvus = "agentnet.integrations.vector_databases:MilvusAdapter"
+prometheus = "agentnet.integrations.monitoring:PrometheusIntegration"
+grafana = "agentnet.integrations.monitoring:GrafanaIntegration"
+
+langchain = "agentnet.integrations.langchain:LangChainCompatibilityLayer"
 pinecone = "agentnet.integrations.vector_databases:PineconeAdapter"
 weaviate = "agentnet.integrations.vector_databases:WeaviateAdapter"
 milvus = "agentnet.integrations.vector_databases:MilvusAdapter"
