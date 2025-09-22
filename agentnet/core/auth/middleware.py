@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional
 
 import jwt
@@ -30,8 +30,8 @@ class AuthMiddleware:
             "username": user.username,
             "tenant_id": user.tenant_id,
             "roles": [role.value for role in user.roles],
-            "exp": datetime.utcnow() + timedelta(hours=expires_hours),
-            "iat": datetime.utcnow(),
+            "exp": datetime.now(timezone.utc) + timedelta(hours=expires_hours),
+            "iat": datetime.now(timezone.utc),
         }
 
         token = jwt.encode(payload, self.secret_key, algorithm="HS256")
