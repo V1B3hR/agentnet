@@ -1,0 +1,156 @@
+site_name: AgentNet Documentation
+site_description: "Policy-governed multi-agent LLM framework for dialogue, debate, tool-use, memory, and observability"
+site_author: "AgentNet Contributors"
+site_url: "https://github.com/V1B3hR/agentnet"
+
+repo_name: "V1B3hR/agentnet"
+repo_url: "https://github.com/V1B3hR/agentnet"
+
+# Theme configuration
+theme:
+  name: material
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.top
+    - search.highlight
+    - search.suggest
+    - toc.follow
+    - content.code.copy
+    - content.code.annotate
+
+# Navigation structure
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+    - Basic Concepts: getting-started/concepts.md
+  - User Guide:
+    - Core Features: guide/core-features.md
+    - Agent Configuration: guide/agent-config.md
+    - Multi-Agent Dialogue: guide/multi-agent.md
+    - Memory Systems: guide/memory.md
+    - Tool Integration: guide/tools.md
+    - Policy Management: guide/policies.md
+    - Performance Monitoring: guide/observability.md
+  - Examples:
+    - Basic Examples: examples/basic.md
+    - Multi-Agent Scenarios: examples/multi-agent.md
+    - Performance Testing: examples/performance.md
+    - Integration Examples: examples/integration.md
+  - API Reference:
+    - Core API: api/core.md
+    - Agents: api/agents.md
+    - Memory: api/memory.md
+    - Tools: api/tools.md
+    - Policies: api/policies.md
+    - Observability: api/observability.md
+    - Performance: api/performance.md
+    - Testing: api/testing.md
+  - Architecture:
+    - System Overview: architecture/overview.md
+    - Phase Development: architecture/phases.md
+    - Design Principles: architecture/principles.md
+    - Performance Model: architecture/performance.md
+  - Development:
+    - Contributing: development/contributing.md
+    - Testing Guide: development/testing.md
+    - Plugin Development: development/plugins.md
+  - Reference:
+    - 25 AI Fundamental Laws: reference/fundamental-laws.md
+    - Roadmap: reference/roadmap.md
+    - Changelog: reference/changelog.md
+    - FAQ: reference/faq.md
+
+# Plugins
+plugins:
+  - search:
+      lang: en
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_category_heading: true
+            merge_init_into_class: true
+            show_signature_annotations: true
+  - mermaid2
+  - autorefs
+
+# Markdown extensions
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - toc:
+      permalink: true
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+      emoji_index: !!python/name:materialx.emoji.twemoji
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: V1B3hR
+      repo: agentnet
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# Extra configuration
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/V1B3hR/agentnet
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/agentnet/
+
+# Development server
+dev_addr: "127.0.0.1:8000"
