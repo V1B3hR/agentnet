@@ -177,6 +177,68 @@ except ImportError:
     AuditWorkflow = AuditLogger = AuditStorage = AuditDashboard = None
     PluginManager = Plugin = PluginInfo = PluginSandbox = SecurityPolicy = None
 
+# Phase 7: Advanced Intelligence & Reasoning
+_p7_available = True
+try:
+    # Import P7 features: Advanced Reasoning & Memory & Agent Evolution
+    from .reasoning.advanced import (
+        ChainOfThoughtReasoning,
+        MultiHopReasoning,
+        CounterfactualReasoning,
+        SymbolicReasoning,
+        AdvancedReasoningEngine,
+        StepValidation,
+        KnowledgeGraph,
+        ReasoningStep,
+        ValidationResult,
+    )
+    from .reasoning.temporal import (
+        TemporalReasoning,
+        TemporalPattern,
+        TemporalSequence,
+        TemporalRule,
+        TemporalEvent,
+        TemporalRelation,
+    )
+    from .memory.enhanced import (
+        EnhancedEpisodicMemory,
+        HierarchicalKnowledgeOrganizer,
+        CrossModalMemoryLinker,
+        MemoryConsolidationEngine,
+        ModalityType,
+        ConsolidationStrategy,
+        CrossModalLink,
+        MemoryCluster,
+        ConsolidationRule,
+    )
+    from .core.evolution import (
+        AgentEvolutionManager,
+        SkillAcquisitionEngine,
+        TaskPatternAnalyzer,
+        ReinforcementLearningEngine,
+        Skill,
+        TaskPattern,
+        PerformanceMetric,
+        LearningExperience,
+        LearningStrategy,
+        SpecializationType,
+    )
+except ImportError:
+    _p7_available = False
+    # Stub classes for P7 functionality
+    ChainOfThoughtReasoning = MultiHopReasoning = CounterfactualReasoning = None
+    SymbolicReasoning = AdvancedReasoningEngine = StepValidation = None
+    KnowledgeGraph = ReasoningStep = ValidationResult = None
+    TemporalReasoning = TemporalPattern = TemporalSequence = TemporalRule = None
+    TemporalEvent = TemporalRelation = None
+    EnhancedEpisodicMemory = HierarchicalKnowledgeOrganizer = None
+    CrossModalMemoryLinker = MemoryConsolidationEngine = None
+    ModalityType = ConsolidationStrategy = CrossModalLink = None
+    MemoryCluster = ConsolidationRule = None
+    AgentEvolutionManager = SkillAcquisitionEngine = TaskPatternAnalyzer = None
+    ReinforcementLearningEngine = Skill = TaskPattern = PerformanceMetric = None
+    LearningExperience = LearningStrategy = SpecializationType = None
+
 __version__ = "0.5.0"
 
 # Phase availability flags
@@ -188,6 +250,7 @@ __phase_status__ = {
     "P4": _p4_available,  # Governance++
     "P5": _p5_available,  # Observability
     "P6": _p6_available,  # Enterprise Hardening
+    "P7": _p7_available,  # Advanced Intelligence & Reasoning
 }
 
 # Build dynamic __all__ based on available features
@@ -362,6 +425,50 @@ if _p6_available:
             "PluginInfo",
             "PluginSandbox",
             "SecurityPolicy",
+        ]
+    )
+
+if _p7_available:
+    __all__.extend(
+        [
+            # Advanced Reasoning Engine
+            "ChainOfThoughtReasoning",
+            "MultiHopReasoning",
+            "CounterfactualReasoning",
+            "SymbolicReasoning",
+            "AdvancedReasoningEngine",
+            "StepValidation",
+            "KnowledgeGraph",
+            "ReasoningStep",
+            "ValidationResult",
+            # Temporal Reasoning
+            "TemporalReasoning",
+            "TemporalPattern",
+            "TemporalSequence",
+            "TemporalRule",
+            "TemporalEvent",
+            "TemporalRelation",
+            # Enhanced Memory Systems
+            "EnhancedEpisodicMemory",
+            "HierarchicalKnowledgeOrganizer",
+            "CrossModalMemoryLinker",
+            "MemoryConsolidationEngine",
+            "ModalityType",
+            "ConsolidationStrategy",
+            "CrossModalLink",
+            "MemoryCluster",
+            "ConsolidationRule",
+            # AI-Powered Agent Evolution
+            "AgentEvolutionManager",
+            "SkillAcquisitionEngine",
+            "TaskPatternAnalyzer",
+            "ReinforcementLearningEngine",
+            "Skill",
+            "TaskPattern",
+            "PerformanceMetric",
+            "LearningExperience",
+            "LearningStrategy",
+            "SpecializationType",
         ]
     )
 

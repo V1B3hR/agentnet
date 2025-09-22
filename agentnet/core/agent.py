@@ -17,6 +17,20 @@ from .autoconfig import get_global_autoconfig
 from .cost.recorder import CostRecorder
 from .types import CognitiveFault
 
+# Phase 7 Advanced Intelligence & Reasoning imports
+try:
+    from ..reasoning.advanced import AdvancedReasoningEngine
+    from ..reasoning.temporal import TemporalReasoning
+    from ..memory.enhanced import EnhancedEpisodicMemory
+    from .evolution import AgentEvolutionManager
+    _PHASE7_AVAILABLE = True
+except ImportError:
+    AdvancedReasoningEngine = None
+    TemporalReasoning = None
+    EnhancedEpisodicMemory = None
+    AgentEvolutionManager = None
+    _PHASE7_AVAILABLE = False
+
 if TYPE_CHECKING:
     from ..providers.base import ProviderAdapter
 
@@ -91,11 +105,41 @@ class AgentNet:
         # Initialize managers
         self.session_manager = SessionManager()
 
+        # Phase 7: Advanced Intelligence & Reasoning initialization
+        self.advanced_reasoning_engine = None
+        self.temporal_reasoning = None
+        self.enhanced_memory = None
+        self.evolution_manager = None
+        
+        if _PHASE7_AVAILABLE:
+            # Initialize advanced reasoning engine
+            self.advanced_reasoning_engine = AdvancedReasoningEngine(style)
+            
+            # Initialize temporal reasoning
+            self.temporal_reasoning = TemporalReasoning(style)
+            
+            # Initialize enhanced episodic memory if memory config supports it
+            if memory_config and memory_config.get("enhanced_episodic", False):
+                enhanced_config = memory_config.copy()
+                enhanced_config["storage_path"] = enhanced_config.get("storage_path", "sessions/enhanced_episodic.json")
+                self.enhanced_memory = EnhancedEpisodicMemory(enhanced_config)
+            
+            # Initialize evolution manager
+            evolution_config = memory_config.get("evolution", {}) if memory_config else {}
+            evolution_config.setdefault("learning_rate", 0.1)
+            evolution_config.setdefault("min_pattern_frequency", 3)
+            self.evolution_manager = AgentEvolutionManager(evolution_config)
+            
+            logger.info(f"Phase 7 capabilities enabled for agent '{name}'")
+        else:
+            logger.info(f"Phase 7 capabilities not available for agent '{name}'")
+
         logger.info(
             f"AgentNet instance '{name}' initialized with style {style}, "
             f"{len(self.monitors)} monitors, {len(self.pre_monitors)} pre-monitors, "
             f"memory={'enabled' if self.memory_manager else 'disabled'}, "
-            f"tools={'enabled' if self.tool_executor else 'disabled'}"
+            f"tools={'enabled' if self.tool_executor else 'disabled'}, "
+            f"phase7={'enabled' if _PHASE7_AVAILABLE else 'disabled'}"
         )
 
     def register_monitor(self, monitor_fn: MonitorFn, pre_style: bool = False) -> None:
@@ -725,3 +769,343 @@ class AgentNet:
             }
 
             return error_tree
+    
+    # Phase 7: Advanced Intelligence & Reasoning Methods
+    
+    def advanced_reason(
+        self,
+        task: str,
+        reasoning_mode: str = "auto",
+        context: Optional[Dict[str, Any]] = None,
+        use_temporal: bool = False
+    ) -> Dict[str, Any]:
+        """
+        Perform advanced reasoning using Phase 7 capabilities.
+        
+        Args:
+            task: The reasoning task
+            reasoning_mode: Reasoning mode ("chain_of_thought", "multi_hop", "counterfactual", "symbolic", "auto")
+            context: Additional context for reasoning
+            use_temporal: Whether to include temporal reasoning
+            
+        Returns:
+            Advanced reasoning result
+        """
+        if not _PHASE7_AVAILABLE or not self.advanced_reasoning_engine:
+            return {
+                "content": f"Advanced reasoning not available for task: {task}",
+                "confidence": 0.3,
+                "reasoning_type": "fallback",
+                "phase7_available": False
+            }
+        
+        start_time = time.time()
+        context = context or {}
+        
+        try:
+            # Auto-select reasoning mode if needed
+            if reasoning_mode == "auto":
+                reasoning_mode = self.advanced_reasoning_engine.auto_select_advanced_mode(task)
+            
+            # Perform advanced reasoning
+            reasoning_result = self.advanced_reasoning_engine.advanced_reason(task, reasoning_mode, context)
+            
+            # Add temporal reasoning if requested
+            temporal_result = None
+            if use_temporal and self.temporal_reasoning:
+                temporal_result = self.temporal_reasoning.reason(task, context)
+            
+            # Combine results
+            combined_result = {
+                "primary_reasoning": {
+                    "mode": reasoning_mode,
+                    "content": reasoning_result.content,
+                    "confidence": reasoning_result.confidence,
+                    "reasoning_steps": reasoning_result.reasoning_steps,
+                    "metadata": reasoning_result.metadata
+                },
+                "temporal_reasoning": None,
+                "runtime": time.time() - start_time,
+                "phase7_enabled": True
+            }
+            
+            if temporal_result:
+                combined_result["temporal_reasoning"] = {
+                    "content": temporal_result.content,
+                    "confidence": temporal_result.confidence,
+                    "reasoning_steps": temporal_result.reasoning_steps,
+                    "metadata": temporal_result.metadata
+                }
+                # Boost overall confidence if temporal reasoning supports primary reasoning
+                if temporal_result.confidence > 0.6:
+                    combined_result["primary_reasoning"]["confidence"] = min(1.0, 
+                        combined_result["primary_reasoning"]["confidence"] * 1.1)
+            
+            # Store advanced reasoning experience for evolution
+            if self.evolution_manager:
+                self._record_reasoning_experience(task, reasoning_mode, combined_result)
+            
+            return combined_result
+            
+        except Exception as e:
+            logger.error(f"Advanced reasoning failed: {e}")
+            return {
+                "content": f"Advanced reasoning failed for task: {task}",
+                "confidence": 0.2,
+                "reasoning_type": "error",
+                "error": str(e),
+                "phase7_available": True
+            }
+    
+    def hybrid_reasoning(
+        self,
+        task: str,
+        modes: List[str],
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Apply multiple advanced reasoning modes to the same task.
+        
+        Args:
+            task: The reasoning task
+            modes: List of reasoning modes to apply
+            context: Additional context for reasoning
+            
+        Returns:
+            Hybrid reasoning results from multiple modes
+        """
+        if not _PHASE7_AVAILABLE or not self.advanced_reasoning_engine:
+            return {
+                "content": f"Hybrid reasoning not available for task: {task}",
+                "confidence": 0.3,
+                "modes_applied": [],
+                "phase7_available": False
+            }
+        
+        start_time = time.time()
+        context = context or {}
+        
+        try:
+            # Apply multiple reasoning modes
+            reasoning_results = self.advanced_reasoning_engine.hybrid_reasoning(task, modes, context)
+            
+            # Synthesize results
+            all_confidences = [r.confidence for r in reasoning_results]
+            avg_confidence = sum(all_confidences) / len(all_confidences) if all_confidences else 0.0
+            
+            # Find consensus or best result
+            best_result = max(reasoning_results, key=lambda r: r.confidence) if reasoning_results else None
+            
+            hybrid_result = {
+                "task": task,
+                "modes_applied": modes,
+                "individual_results": [
+                    {
+                        "mode": r.reasoning_type.value,
+                        "content": r.content,
+                        "confidence": r.confidence,
+                        "reasoning_steps": r.reasoning_steps,
+                        "metadata": r.metadata
+                    }
+                    for r in reasoning_results
+                ],
+                "synthesis": {
+                    "best_mode": best_result.reasoning_type.value if best_result else "none",
+                    "best_content": best_result.content if best_result else "No valid results",
+                    "avg_confidence": avg_confidence,
+                    "consensus_confidence": avg_confidence * (len(reasoning_results) / len(modes))
+                },
+                "runtime": time.time() - start_time,
+                "phase7_enabled": True
+            }
+            
+            return hybrid_result
+            
+        except Exception as e:
+            logger.error(f"Hybrid reasoning failed: {e}")
+            return {
+                "content": f"Hybrid reasoning failed for task: {task}",
+                "confidence": 0.2,
+                "modes_applied": modes,
+                "error": str(e),
+                "phase7_available": True
+            }
+    
+    def get_enhanced_memory_hierarchy(self) -> Dict[str, Any]:
+        """Get hierarchical organization of enhanced memories."""
+        if not _PHASE7_AVAILABLE or not self.enhanced_memory:
+            return {"error": "Enhanced memory not available", "phase7_available": _PHASE7_AVAILABLE}
+        
+        try:
+            return self.enhanced_memory.get_memory_hierarchy()
+        except Exception as e:
+            logger.error(f"Failed to get memory hierarchy: {e}")
+            return {"error": str(e), "phase7_available": True}
+    
+    def get_cross_modal_links(self, memory_id: str) -> List[Dict[str, Any]]:
+        """Get cross-modal links for a specific memory."""
+        if not _PHASE7_AVAILABLE or not self.enhanced_memory:
+            return []
+        
+        try:
+            links = self.enhanced_memory.get_cross_modal_links(memory_id)
+            return [
+                {
+                    "source_id": link.source_id,
+                    "target_id": link.target_id,
+                    "source_modality": link.source_modality.value,
+                    "target_modality": link.target_modality.value,
+                    "relation_type": link.relation_type,
+                    "strength": link.strength,
+                    "metadata": link.metadata
+                }
+                for link in links
+            ]
+        except Exception as e:
+            logger.error(f"Failed to get cross-modal links: {e}")
+            return []
+    
+    def evolve_capabilities(self, task_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Evolve agent capabilities based on task performance.
+        
+        Args:
+            task_results: List of task results for learning
+            
+        Returns:
+            Evolution report with improvements and recommendations
+        """
+        if not _PHASE7_AVAILABLE or not self.evolution_manager:
+            return {
+                "error": "Agent evolution not available",
+                "phase7_available": _PHASE7_AVAILABLE
+            }
+        
+        try:
+            evolution_report = self.evolution_manager.evolve_agent(self.name, task_results)
+            
+            # Log evolution progress
+            logger.info(f"Agent '{self.name}' evolved: {len(evolution_report.get('new_skills', []))} new skills, "
+                       f"{len(evolution_report.get('improvements', []))} improvements")
+            
+            return evolution_report
+            
+        except Exception as e:
+            logger.error(f"Agent evolution failed: {e}")
+            return {"error": str(e), "phase7_available": True}
+    
+    def get_agent_capabilities(self) -> Dict[str, Any]:
+        """Get current agent capabilities and evolution status."""
+        if not _PHASE7_AVAILABLE or not self.evolution_manager:
+            return {
+                "basic_capabilities": {
+                    "name": self.name,
+                    "style": self.style,
+                    "has_engine": self.engine is not None,
+                    "has_memory": self.memory_manager is not None,
+                    "has_tools": self.tool_executor is not None
+                },
+                "phase7_available": _PHASE7_AVAILABLE
+            }
+        
+        try:
+            capabilities = self.evolution_manager.get_agent_capabilities(self.name)
+            capabilities["basic_info"] = {
+                "name": self.name,
+                "style": self.style,
+                "has_engine": self.engine is not None,
+                "has_memory": self.memory_manager is not None,
+                "has_tools": self.tool_executor is not None
+            }
+            capabilities["phase7_enabled"] = True
+            
+            return capabilities
+            
+        except Exception as e:
+            logger.error(f"Failed to get agent capabilities: {e}")
+            return {"error": str(e), "phase7_available": True}
+    
+    def get_improvement_recommendations(self) -> Dict[str, Any]:
+        """Get recommendations for agent improvements."""
+        if not _PHASE7_AVAILABLE or not self.evolution_manager:
+            return {
+                "recommendations": ["Enable Phase 7 capabilities for advanced recommendations"],
+                "phase7_available": _PHASE7_AVAILABLE
+            }
+        
+        try:
+            return self.evolution_manager.recommend_agent_improvements(self.name)
+        except Exception as e:
+            logger.error(f"Failed to get improvement recommendations: {e}")
+            return {"error": str(e), "phase7_available": True}
+    
+    def save_evolution_state(self, filepath: Optional[str] = None) -> bool:
+        """Save agent evolution state to file."""
+        if not _PHASE7_AVAILABLE or not self.evolution_manager:
+            logger.warning("Phase 7 evolution not available for state saving")
+            return False
+        
+        if filepath is None:
+            filepath = f"sessions/agent_evolution_{self.name}.json"
+        
+        try:
+            self.evolution_manager.save_evolution_state(filepath)
+            logger.info(f"Saved evolution state for agent '{self.name}' to {filepath}")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to save evolution state: {e}")
+            return False
+    
+    def load_evolution_state(self, filepath: Optional[str] = None) -> bool:
+        """Load agent evolution state from file."""
+        if not _PHASE7_AVAILABLE or not self.evolution_manager:
+            logger.warning("Phase 7 evolution not available for state loading")
+            return False
+        
+        if filepath is None:
+            filepath = f"sessions/agent_evolution_{self.name}.json"
+        
+        try:
+            success = self.evolution_manager.load_evolution_state(filepath)
+            if success:
+                logger.info(f"Loaded evolution state for agent '{self.name}' from {filepath}")
+            return success
+        except Exception as e:
+            logger.error(f"Failed to load evolution state: {e}")
+            return False
+    
+    def _record_reasoning_experience(
+        self,
+        task: str,
+        reasoning_mode: str,
+        result: Dict[str, Any]
+    ) -> None:
+        """Record reasoning experience for evolution learning."""
+        if not self.evolution_manager:
+            return
+        
+        try:
+            # Create learning experience from reasoning result
+            confidence = result.get("primary_reasoning", {}).get("confidence", 0.0)
+            success = confidence > 0.6  # Consider high confidence as success
+            
+            task_result = {
+                "task_id": f"reasoning_{int(time.time())}",
+                "task_type": f"advanced_reasoning_{reasoning_mode}",
+                "content": task,
+                "success": success,
+                "confidence": confidence,
+                "duration": result.get("runtime", 0.0),
+                "skills_used": [reasoning_mode, "advanced_reasoning"],
+                "metadata": {
+                    "reasoning_mode": reasoning_mode,
+                    "temporal_used": result.get("temporal_reasoning") is not None,
+                    "phase7_capability": True
+                }
+            }
+            
+            # Record the task for pattern analysis
+            self.evolution_manager.pattern_analyzer.record_task(task_result)
+            
+        except Exception as e:
+            logger.error(f"Failed to record reasoning experience: {e}")
