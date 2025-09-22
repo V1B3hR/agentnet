@@ -14,25 +14,80 @@ Modern LLM systems need:
 - Enforceable policies (redaction, action gating, role-based tool access).
 - Transparent reasoning (event streams, audit trails, reproducible sessions).
 - Memory persistence & retrieval (short-term conversation, semantic vector store, structured / graph memory).
-- Configurable orchestration modes (round-robin, debate, critique-revise, arbitration).
+- Configurable orchestration modes (round-robin, debate, critique-revise, arbitration, async, multi-modal).
 - Extensibility (new tools, policies, evaluators, memory backends).
 
 AgentNet aims to offer these as composable, inspectable primitives rather than monolith patterns.
 
 ---
 
+## New Modes & Features (2025 Update)
+
+- **Modes:**  
+  - *Debate*: Analyst vs Critic agent, scoring, arbitration.
+  - *Critique-Revise*: Agent self-improvement loop.
+  - *Round-Robin*: Sequential, multi-agent dialogue.
+  - *Async*: Parallel tool invocation & agent turns.
+  - *Arbitration*: Score-based decision resolution.
+  - *Multi-modal*: Text-first, extensibility for other modalities.
+- **Features:**
+  - *Policy engine*: Redaction, blocking, rewriting, deferred actions, human gating.
+  - *Memory adapters*: Short-term buffer, vector store, graph/structured memory, caching, LRU/salience retention.
+  - *Tools*: API calls, calculation, file access, external system integration.
+  - *Evaluators*: Heuristic truthiness, risk tagging, complexity, consensus, revision triggers.
+  - *Observability*: Event bus, trace export, OpenTelemetry, audit bundles.
+  - *Persistence*: Session checkpoint, resume, replay.
+  - *Dashboard*: Live event stream, violation panel, metrics (planned).
+
+---
+
+## The 25 AI Fundamental Law
+
+AgentNet is inspired by the emerging "25 AI Fundamental Law"—a set of best practices for building safe, transparent, and adaptive AI agent systems.  
+**Summary of the Law:**
+
+1. Policy-first: All reasoning and actions must pass through explicit policy gates.
+2. Memory isolation: Distinct layers for ephemeral, semantic, and structural knowledge.
+3. Full observability: Every non-trivial action emits a traceable event.
+4. Deterministic input/output surfaces.
+5. Explicit orchestration: All agent sequences are logged and reproducible.
+6. Role-based tool access.
+7. Human-in-the-loop escalation for high-risk actions.
+8. Redaction by default for sensitive data.
+9. Consensus & arbitration for critical decisions.
+10. Adaptive performance feedback.
+11. Multi-modal extensibility with provenance tracking.
+12. Reward modeling integration for learning loops.
+13. Transparent policy violation reporting.
+14. Structured audit export (events, config, memory).
+15. Pluggable memory retention strategies.
+16. Metrics-first: Latency, cost, error rate tracked.
+17. Plugin registry for extensibility (tools, policies, evaluators).
+18. Safe default toolsets and allowlists.
+19. Explicit dependency passing—minimal hidden global state.
+20. Persistent session state for replay and analysis.
+21. Layered evaluator protocols: critique, scoring, revision.
+22. Live monitoring (dashboard, telemetry).
+23. Multi-lingual safety policy translation (planned).
+24. Streaming partial-output collaboration (planned).
+25. Rapid iteration with versioned change tracking.
+
+See [docs/25_AI_fundamental_law.md](docs/25_AI_fundamental_law.md) for full explanation and rationale.
+
+---
+
 ## Core Concepts
 
-| Component | Purpose |
-|-----------|---------|
-| `Agent` | Encapsulates model interface, role, allowed tools, and policy hooks. |
-| `Orchestrator` | Manages turn-taking, debate modes, arbitration, or async flows. |
-| `Policy` | Rule engine evaluating actions/messages (allow, block, transform, log). |
-| `Tool` | External capability (API call, computation, retrieval). |
-| `Memory` | Pluggable adapters (short-term buffer, vector store, structured / graph). |
-| `Evaluator` | Self or cross-agent critique, scoring, revision triggers. |
-| `Monitor` | Event capture: traces, metrics, violations, tokens, decisions. |
-| `Session` | Persistent container of configuration + evolving state snapshot. |
+| Component      | Purpose                                                                |
+|----------------|------------------------------------------------------------------------|
+| `Agent`        | Encapsulates model interface, role, allowed tools, and policy hooks.   |
+| `Orchestrator` | Manages turn-taking, debate modes, arbitration, or async flows.        |
+| `Policy`       | Rule engine evaluating actions/messages (allow, block, transform, log).|
+| `Tool`         | External capability (API call, computation, retrieval).                |
+| `Memory`       | Pluggable adapters (short-term buffer, vector store, structured / graph).|
+| `Evaluator`    | Self or cross-agent critique, scoring, revision triggers.              |
+| `Monitor`      | Event capture: traces, metrics, violations, tokens, decisions.         |
+| `Session`      | Persistent container of configuration + evolving state snapshot.       |
 
 ---
 
@@ -207,16 +262,16 @@ Actions (initial set): `allow`, `block`, `redact`, `transform`, `log`, `defer`, 
 
 ## Event Model (Indicative)
 
-| Event | When |
-|-------|------|
-| `turn.start` / `turn.end` | Orchestrator loop boundaries |
-| `agent.request` | Agent forms model prompt |
-| `model.response` | Raw model output |
-| `policy.violation` | Rule triggered |
-| `tool.invoke` / `tool.result` | External capability usage |
-| `memory.store` / `memory.retrieve` | Memory operations |
-| `evaluator.score` | Critique or scoring module output |
-| `session.checkpoint` | Persistence snapshot written |
+| Event                   | When                                   |
+|-------------------------|----------------------------------------|
+| `turn.start` / `turn.end`     | Orchestrator loop boundaries      |
+| `agent.request`               | Agent forms model prompt          |
+| `model.response`              | Raw model output                  |
+| `policy.violation`            | Rule triggered                    |
+| `tool.invoke` / `tool.result` | External capability usage         |
+| `memory.store` / `memory.retrieve` | Memory operations           |
+| `evaluator.score`             | Critique or scoring module output |
+| `session.checkpoint`          | Persistence snapshot written      |
 
 ---
 
@@ -268,16 +323,16 @@ Experimental software. Interfaces may change. Do not deploy in production enviro
 
 ## Quick Status Snapshot (Live Edit Area)
 
-| Area | State |
-|------|-------|
-| Core orchestration | WIP |
-| Policy engine | Scaffold planned |
-| Vector memory | Pending adapter |
-| Graph memory | Partial (needs `networkx`) |
-| Event bus | Basic in progress |
-| Debate mode | Planned |
-| Evaluators | Stub design |
-| Dashboard | Not started |
+| Area            | State             |
+|-----------------|-------------------|
+| Core orchestration | WIP             |
+| Policy engine      | Scaffold planned|
+| Vector memory      | Pending adapter |
+| Graph memory       | Partial (`networkx`) |
+| Event bus          | Basic in progress|
+| Debate mode        | Planned         |
+| Evaluators         | Stub design     |
+| Dashboard          | Not started     |
 
 ---
 
