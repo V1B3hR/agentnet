@@ -1,0 +1,33 @@
+{
+  "checkpoint_id": "demo_conversation_checkpoint_1758522813362",
+  "session_id": "demo_conversation",
+  "timestamp": 1758522813.362795,
+  "data": {
+    "session_id": "demo_conversation",
+    "participants": [
+      "Alice",
+      "Bob",
+      "Charlie"
+    ],
+    "current_round": 3,
+    "topic": "AI Safety Protocols",
+    "transcript": [
+      {
+        "speaker": "Alice",
+        "message": "We need better safety measures"
+      },
+      {
+        "speaker": "Bob",
+        "message": "I agree, what do you propose?"
+      },
+      {
+        "speaker": "Charlie",
+        "message": "Let me suggest a framework..."
+      }
+    ],
+    "metadata": {
+      "start_time": 1758521013.3627396
+    }
+  },
+  "version": "1.0"
+}

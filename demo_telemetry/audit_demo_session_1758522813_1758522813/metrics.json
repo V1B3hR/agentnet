@@ -1,0 +1,29 @@
+{
+  "timer.reasoning_task": {
+    "name": "timer.reasoning_task",
+    "count": 1,
+    "min": 10.075092315673828,
+    "max": 10.075092315673828,
+    "avg": 10.075092315673828,
+    "latest": 10.075092315673828,
+    "latest_timestamp": 1758522813.3612409
+  },
+  "tasks_completed": {
+    "name": "tasks_completed",
+    "count": 1,
+    "min": 1,
+    "max": 1,
+    "avg": 1.0,
+    "latest": 1,
+    "latest_timestamp": 1758522813.3612652
+  },
+  "memory_usage_mb": {
+    "name": "memory_usage_mb",
+    "count": 1,
+    "min": 45.2,
+    "max": 45.2,
+    "avg": 45.2,
+    "latest": 45.2,
+    "latest_timestamp": 1758522813.3612707
+  }
+}
