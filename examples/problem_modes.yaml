@@ -1,0 +1,164 @@
+# AgentNet Problem-Solving Modes Configuration Example
+# 
+# This file demonstrates how to configure problem-solving modes, styles, and techniques
+# for different scenarios using AgentNet's integrated orchestration capabilities.
+
+# Basic Mode Configuration Examples
+modes:
+  brainstorm_session:
+    mode: "brainstorm"
+    style: "ideator"
+    technique: "open_ended"
+    parameters:
+      max_depth: 3
+      confidence_threshold: 0.6
+      rounds: 4
+    metadata:
+      focus: "idea_generation"
+      creativity_mode: true
+      
+  debate_analysis:
+    mode: "debate"
+    style: "developer"
+    technique: "complex"
+    parameters:
+      max_depth: 4
+      confidence_threshold: 0.75
+      rounds: 5
+    metadata:
+      focus: "critical_analysis"
+      argumentation_mode: true
+      
+  consensus_building:
+    mode: "consensus"
+    style: "clarifier"
+    technique: "target_state"
+    parameters:
+      max_depth: 3
+      confidence_threshold: 0.7
+      rounds: 4
+    metadata:
+      focus: "shared_agreement"
+      collaboration_mode: true
+      
+  workflow_execution:
+    mode: "workflow"
+    style: "implementor"
+    technique: "simple"
+    parameters:
+      max_depth: 4
+      confidence_threshold: 0.8
+      rounds: 5
+    metadata:
+      focus: "process_execution"
+      structured_mode: true
+      
+  dialogue_exploration:
+    mode: "dialogue"
+    style: "clarifier"
+    technique: "open_ended"
+    parameters:
+      max_depth: 3
+      confidence_threshold: 0.65
+      rounds: 4
+    metadata:
+      focus: "conversational_exploration"
+      interactive_mode: true
+
+# Scenario-Specific Configurations
+scenarios:
+  software_architecture_review:
+    task: "Review the proposed microservices architecture for scalability and maintainability"
+    mode: "debate"
+    style: "developer"
+    technique: "gap_from_standard"
+    agents: ["Architect", "Developer", "Reviewer"]
+    parameters:
+      max_depth: 4
+      confidence_threshold: 0.8
+      rounds: 6
+    expected_outcomes:
+      - technical_assessment
+      - scalability_analysis
+      - maintainability_review
+      
+  product_ideation_workshop:
+    task: "Generate innovative features for the next product release"
+    mode: "brainstorm"
+    style: "ideator"
+    technique: "open_ended"
+    agents: ["ProductManager", "Designer", "Engineer"]
+    parameters:
+      max_depth: 3
+      confidence_threshold: 0.6
+      rounds: 5
+      voltage: 7.5  # High creativity voltage
+    expected_outcomes:
+      - feature_ideas
+      - user_value_analysis
+      - technical_feasibility
+      
+  incident_response_planning:
+    task: "Develop response plan for critical system outage scenarios"
+    mode: "workflow"
+    style: "implementor"
+    technique: "troubleshooting"
+    agents: ["SRE", "DevOps", "Manager"]
+    parameters:
+      max_depth: 5
+      confidence_threshold: 0.85
+      rounds: 6
+    expected_outcomes:
+      - response_procedures
+      - escalation_matrix
+      - communication_plan
+      
+  team_alignment_session:
+    task: "Align team on quarterly objectives and priorities"
+    mode: "consensus"
+    style: "clarifier"
+    technique: "target_state"
+    agents: ["TeamLead", "Developer1", "Developer2", "ProductOwner"]
+    parameters:
+      max_depth: 3
+      confidence_threshold: 0.75
+      rounds: 4
+    expected_outcomes:
+      - shared_objectives
+      - priority_alignment
+      - commitment_plan
+
+# Flow Metrics Configuration
+flow_metrics:
+  enabled: true
+  resistance_weights:
+    alpha: 0.4  # Policy hits weight
+    beta: 0.3   # Tool latency weight  
+    gamma: 0.3  # Disagreement score weight
+  voltage_mappings:
+    techniques:
+      simple: 3.0
+      complex: 8.0
+      troubleshooting: 7.0
+      gap_from_standard: 6.0
+      target_state: 7.5
+      open_ended: 5.5
+    difficulties:
+      simple: 3.0
+      medium: 5.0
+      hard: 8.0
+
+# Auto-Configuration Settings
+auto_config:
+  enabled: true
+  mode_recommendations: true
+  style_recommendations: true
+  technique_recommendations: true
+  adaptive_parameters: true
+  
+# Integration Settings
+integration:
+  autoconfig_integration: true
+  flow_metrics_collection: true
+  strategy_logging: true
+  metadata_enrichment: true
