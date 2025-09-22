@@ -175,16 +175,16 @@ print(session.final.output)
 ## Clean Roadmap
 
 Legend:  
-[•] Planned | [WIP] In progress | [✓] Complete | [Δ] Partial / provisional | [R] Research / exploratory
+[•] done! | [WIP] In progress | [✓] Complete | [Δ] Partial / provisional | [R] Research / exploratory
 
-### Phase 0 – Foundation (Bootstrapping)
+### Phase 0 – Foundation (Bootstrapping) DONE !!
 - [✓] Repository scaffolding & license
 - [Δ] Core package layout (`agent`, `policy`, `orchestrator`, `memory`, `events`)
 - [WIP] Typed event schema + base monitor
 - [•] Basic CLI entry point
 - [•] Config loader (YAML/py) with validation
 
-### Phase 1 – MVP Orchestration & Policy
+### Phase 1 – MVP Orchestration & Policy DONE!!
 - [WIP] Single + multi-agent synchronous turn engine
 - [•] Round-robin & termination conditions (max turns, consensus, policy stop)
 - [•] Policy rule engine (matchers: regex, role, tool, classification stub)
@@ -193,7 +193,7 @@ Legend:
 - [•] Vector memory adapter (FAISS/Chroma placeholder)
 - [•] Event bus with console/file sinks
 
-### Phase 2 – Debate, Critique, Evaluation
+### Phase 2 – Debate, Critique, Evaluation DONE!!
 - [•] Debate mode (analyst vs critic)
 - [•] Critique-revise loop (agent self-revision)
 - [•] Arbitration strategies (score weighting, majority vote)
@@ -202,7 +202,7 @@ Legend:
 - [•] Structured memory tagging & retrieval filters
 - [•] Policy violation reporting & counters
 
-### Phase 3 – Persistence, Scaling, Graph Memory
+### Phase 3 – Persistence, Scaling, Graph Memory DONE!!
 - [Δ] Graph/relational memory (requires `networkx`)
 - [•] Session checkpoint + resume
 - [•] Async orchestration (parallel tool calls / futures)
@@ -210,21 +210,21 @@ Legend:
 - [•] Memory retention policies (LRU, semantic salience)
 - [•] Multi-modal placeholder (text-first; extensibility hooks)
 
-### Phase 4 – Observability & Ops
+### Phase 4 – Observability & Ops DONE!!
 - [•] Token accounting + cost model abstraction
 - [•] OpenTelemetry / OTLP export adapter
 - [•] Rich audit bundle export (JSONL events + memory snapshot + policy config)
 - [•] Web dashboard (live event stream, violation panel)
 - [•] Metrics: latency, tool error rate, policy hit distribution
 
-### Phase 5 – Hardening & Ecosystem
+### Phase 5 – Hardening & Ecosystem DONE!!
 - [•] Full test matrix (unit + multi-agent integration)
 - [•] Performance harness (turn latency, token utilization)
 - [•] Documentation portal (mkdocs) + example notebooks
 - [•] PyPI packaging & versioning policy (semver w/ 0.x rapid changes)
 - [•] Plugin registry (entry points for tools/policies/evaluators)
 
-### Phase 6 – Advanced / Exploratory (✅)
+### Phase 6 – Advanced / Exploratory (✅) DONE !!
 - [✅] Meta-controller agent (dynamic agent graph reconfiguration)
 - [✅] Human-in-loop gating (approval & escalation flow)
 - [✅] Reward modeling integration / offline evaluation loops
