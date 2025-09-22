@@ -6,6 +6,8 @@ Direct module test - imports modules directly without going through agentnet pac
 import os
 import sys
 
+import pytest
+
 # Add project root to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -41,14 +43,17 @@ def test_direct_reasoning_import():
         print(f"  Reasoning type: {result.reasoning_type.value}")
         print(f"  Confidence: {result.confidence:.2f}")
 
-        return True
+        # Assert success instead of returning
+        assert result is not None
+        assert hasattr(result, 'reasoning_type')
+        assert hasattr(result, 'confidence')
 
     except Exception as e:
         print(f"  ❌ Direct reasoning import failed: {e}")
         import traceback
 
         traceback.print_exc()
-        return False
+        pytest.fail(f"Direct reasoning import test failed: {e}")
 
 
 def test_direct_dialogue_import():
@@ -78,14 +83,17 @@ def test_direct_dialogue_import():
         mapper = DialogueMapper()
         print("  ✅ Dialogue mapper instance created")
 
-        return True
+        # Assert success instead of returning
+        assert outer_dialogue is not None
+        assert solution_dialogue is not None
+        assert mapper is not None
 
     except Exception as e:
         print(f"  ❌ Direct dialogue import failed: {e}")
         import traceback
 
         traceback.print_exc()
-        return False
+        pytest.fail(f"Direct dialogue import test failed: {e}")
 
 
 def test_reasoning_functionality():
@@ -133,14 +141,16 @@ def test_reasoning_functionality():
             f"\n  Multi-perspective reasoning generated {len(multi_results)} perspectives"
         )
 
-        return True
+        # Assert success instead of returning
+        assert multi_results is not None
+        assert len(multi_results) > 0
 
     except Exception as e:
         print(f"  ❌ Reasoning functionality test failed: {e}")
         import traceback
 
         traceback.print_exc()
-        return False
+        pytest.fail(f"Reasoning functionality test failed: {e}")
 
 
 def test_style_modulation_functionality():
@@ -173,11 +183,13 @@ def test_style_modulation_functionality():
             suggestions = modulator.suggest_reasoning_types(base_style)
             print(f"    Suggested types: {[rt.value for rt in suggestions[:3]]}")
 
-        return True
+        # Assert success instead of returning
+        assert suggestions is not None
+        assert len(suggestions) > 0
 
     except Exception as e:
         print(f"  ❌ Style modulation functionality test failed: {e}")
-        return False
+        pytest.fail(f"Style modulation functionality test failed: {e}")
 
 
 def test_standalone_agentnet():
@@ -209,14 +221,17 @@ def test_standalone_agentnet():
         )
         print(f"  Multi-party transcript: {len(multi_result['transcript'])} turns")
 
-        return True
+        # Assert success instead of returning
+        assert multi_result is not None
+        assert 'transcript' in multi_result
+        assert len(multi_result['transcript']) > 0
 
     except Exception as e:
         print(f"  ❌ Standalone AgentNet test failed: {e}")
         import traceback
 
         traceback.print_exc()
-        return False
+        pytest.fail(f"Standalone AgentNet test failed: {e}")
 
 
 def main():
@@ -237,14 +252,11 @@ def main():
 
     for test_func in tests:
         try:
-            if test_func():
-                passed += 1
-                print("  ✅ PASSED")
-            else:
-                failed += 1
-                print("  ❌ FAILED")
+            test_func()  # Run test function - will raise assertion error if fails
+            passed += 1
+            print("  ✅ PASSED")
         except Exception as e:
-            print(f"  ❌ CRASHED: {e}")
+            print(f"  ❌ FAILED: {e}")
             failed += 1
 
     print(f"\n📊 Final Results: {passed} passed, {failed} failed")

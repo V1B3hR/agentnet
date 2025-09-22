@@ -11,6 +11,8 @@ import json
 import time
 from typing import AsyncIterator
 
+import pytest
+
 from agentnet.streaming import (
     StreamingCollaborator,
     CollaborationSession,
@@ -72,7 +74,9 @@ def test_partial_json_parser():
     assert len(result.partial_data) > 0  # Should extract what it can
     print(f"  🛠️ Error recovery: extracted {result.partial_data}")
     
-    return True
+    # Assert success instead of returning
+    assert result is not None
+    assert hasattr(result, 'partial_data')
 
 
 def test_streaming_parser():
@@ -138,9 +142,12 @@ def test_streaming_parser():
     parser.close_stream(stream_id)
     parser.close_stream("error_stream")
     
-    return True
+    # Assert success instead of returning
+    assert len(updates_received) > 0
+    assert len(completions_received) > 0
 
 
+@pytest.mark.asyncio
 async def test_streaming_collaboration():
     """Test streaming collaboration between agents."""
     print("🤝 Testing Streaming Collaboration...")
@@ -238,6 +245,7 @@ async def test_streaming_collaboration():
     return True
 
 
+@pytest.mark.asyncio
 async def test_collaboration_handlers():
     """Test specialized collaboration handlers."""
     print("🔧 Testing Collaboration Handlers...")
@@ -314,6 +322,7 @@ async def test_collaboration_handlers():
     return True
 
 
+@pytest.mark.asyncio
 async def test_end_to_end_streaming():
     """Test complete end-to-end streaming collaboration scenario."""
     print("🚀 Testing End-to-End Streaming Collaboration...")

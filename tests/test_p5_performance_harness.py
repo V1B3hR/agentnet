@@ -10,6 +10,8 @@ import asyncio
 import tempfile
 from pathlib import Path
 
+import pytest
+
 from agentnet import ExampleEngine, AgentNet
 from agentnet.performance import (
     PerformanceHarness,
@@ -24,48 +26,44 @@ from agentnet.performance import (
 )
 
 
-def test_performance_harness():
+@pytest.mark.asyncio
+async def test_performance_harness():
     """Test basic performance harness functionality."""
     print("🚀 Testing Performance Harness...")
     
-    async def run_test():
-        # Create test harness
-        harness = PerformanceHarness()
-        
-        # Create benchmark configuration
-        config = BenchmarkConfig(
-            name="Basic Agent Test",
-            benchmark_type=BenchmarkType.SINGLE_TURN,
-            iterations=5,
-            concurrency_level=1,
-            test_prompts=["Test prompt 1", "Test prompt 2"]
-        )
-        
-        # Create agent factory
-        def agent_factory():
-            return AgentNet(
-                "TestAgent",
-                {"logic": 0.8, "creativity": 0.6},
-                engine=ExampleEngine()
-            )
-        
-        # Run benchmark
-        result = await harness.run_benchmark(config, agent_factory)
-        
-        # Verify results
-        assert result.config.name == "Basic Agent Test"
-        assert result.total_operations == 5
-        assert result.successful_operations >= 0
-        assert result.success_rate >= 0.0
-        assert result.total_duration > 0
-        
-        print(f"  ✅ Benchmark completed: {result.success_rate:.1%} success rate")
-        print(f"  ⏱️ Average latency: {result.avg_turn_latency_ms:.1f}ms")
-        print(f"  🔄 Throughput: {result.operations_per_second:.2f} ops/sec")
-        
-        return True
+    # Create test harness
+    harness = PerformanceHarness()
     
-    return run_test()
+    # Create benchmark configuration
+    config = BenchmarkConfig(
+        name="Basic Agent Test",
+        benchmark_type=BenchmarkType.SINGLE_TURN,
+        iterations=5,
+        concurrency_level=1,
+        test_prompts=["Test prompt 1", "Test prompt 2"]
+    )
+    
+    # Create agent factory
+    def agent_factory():
+        return AgentNet(
+            "TestAgent",
+            {"logic": 0.8, "creativity": 0.6},
+            engine=ExampleEngine()
+        )
+    
+    # Run benchmark
+    result = await harness.run_benchmark(config, agent_factory)
+    
+    # Verify results
+    assert result.config.name == "Basic Agent Test"
+    assert result.total_operations == 5
+    assert result.successful_operations >= 0
+    assert result.success_rate >= 0.0
+    assert result.total_duration > 0
+    
+    print(f"  ✅ Benchmark completed: {result.success_rate:.1%} success rate")
+    print(f"  ⏱️ Average latency: {result.avg_turn_latency_ms:.1f}ms")
+    print(f"  🔄 Throughput: {result.operations_per_second:.2f} ops/sec")
 
 
 def test_latency_tracker():
@@ -118,7 +116,9 @@ def test_latency_tracker():
     print(f"  🔧 Components: Inference {inference_latency:.2f}ms, Policy {policy_latency:.2f}ms")
     print(f"  📊 Statistics: {stats}")
     
-    return True
+    # Assert success instead of returning
+    assert measurement is not None
+    assert measurement.total_latency_ms > 0
 
 
 def test_token_utilization_tracker():
@@ -173,84 +173,83 @@ def test_token_utilization_tracker():
     print(f"  💰 Cost per token: ${metrics.cost_per_token:.4f}")
     print(f"  🔍 Optimization opportunities: {len(sum(opportunities.values(), []))}")
     
-    return True
+    # Assert success instead of returning
+    assert metrics.total_tokens == 225
+    assert opportunities is not None
 
 
-def test_performance_reporter():
+@pytest.mark.asyncio
+async def test_performance_reporter():
     """Test performance report generation."""
     print("📊 Testing Performance Reporter...")
     
-    async def run_test():
-        # Create temporary output directory
-        with tempfile.TemporaryDirectory() as temp_dir:
-            reporter = PerformanceReporter(output_dir=temp_dir)
-            
-            # Create mock benchmark results
-            harness = PerformanceHarness()
-            config = BenchmarkConfig(
-                name="Test Benchmark",
-                benchmark_type=BenchmarkType.SINGLE_TURN,
-                iterations=3
-            )
-            
-            def agent_factory():
-                return AgentNet("TestAgent", {"logic": 0.8}, engine=ExampleEngine())
-            
-            # Run a quick benchmark
-            benchmark_result = await harness.run_benchmark(config, agent_factory)
-            
-            # Create latency tracker with sample data
-            latency_tracker = LatencyTracker()
-            latency_tracker.start_turn_measurement("test_001", "TestAgent", 50)
-            import time
-            time.sleep(0.01)
-            latency_tracker.end_turn_measurement("test_001", 100, 75)
-            
-            # Create token tracker with sample data
-            token_tracker = TokenUtilizationTracker()
-            token_tracker.record_token_usage(
-                "TestAgent", "test_001", 100, 50, processing_time=0.01
-            )
-            
-            # Generate comprehensive report
-            report_path = reporter.generate_comprehensive_report(
-                benchmark_results=[benchmark_result],
-                latency_tracker=latency_tracker,
-                token_tracker=token_tracker,
-                format=ReportFormat.MARKDOWN
-            )
-            
-            # Verify report was created
-            assert Path(report_path).exists()
-            
-            # Read and verify report content
-            with open(report_path, 'r') as f:
-                content = f.read()
-            
-            assert "AgentNet Performance Report" in content
-            assert "Executive Summary" in content
-            assert "Recommendations" in content
-            
-            # Generate JSON report
-            json_report_path = reporter.generate_comprehensive_report(
-                benchmark_results=[benchmark_result],
-                latency_tracker=latency_tracker,
-                token_tracker=token_tracker,
-                format=ReportFormat.JSON
-            )
-            
-            assert Path(json_report_path).exists()
-            
-            print(f"  ✅ Reports generated:")
-            print(f"    📝 Markdown: {Path(report_path).name}")
-            print(f"    📋 JSON: {Path(json_report_path).name}")
-            print(f"  📄 Report size: {len(content)} characters")
+    # Create temporary output directory
+    with tempfile.TemporaryDirectory() as temp_dir:
+        reporter = PerformanceReporter(output_dir=temp_dir)
         
-        return True
-    
-    return run_test()
+        # Create mock benchmark results
+        harness = PerformanceHarness()
+        config = BenchmarkConfig(
+            name="Test Benchmark",
+            benchmark_type=BenchmarkType.SINGLE_TURN,
+            iterations=3
+        )
+        
+        def agent_factory():
+            return AgentNet("TestAgent", {"logic": 0.8}, engine=ExampleEngine())
+        
+        # Run a quick benchmark
+        benchmark_result = await harness.run_benchmark(config, agent_factory)
+        
+        # Create latency tracker with sample data
+        latency_tracker = LatencyTracker()
+        latency_tracker.start_turn_measurement("test_001", "TestAgent", 50)
+        import time
+        time.sleep(0.01)
+        latency_tracker.end_turn_measurement("test_001", 100, 75)
+        
+        # Create token tracker with sample data
+        token_tracker = TokenUtilizationTracker()
+        token_tracker.record_token_usage(
+            "TestAgent", "test_001", 100, 50, processing_time=0.01
+        )
+        
+        # Generate comprehensive report
+        report_path = reporter.generate_comprehensive_report(
+            benchmark_results=[benchmark_result],
+            latency_tracker=latency_tracker,
+            token_tracker=token_tracker,
+            format=ReportFormat.MARKDOWN
+        )
+        
+        # Verify report was created
+        assert Path(report_path).exists()
+        
+        # Read and verify report content
+        with open(report_path, 'r') as f:
+            content = f.read()
+        
+        assert "AgentNet Performance Report" in content
+        assert "Executive Summary" in content
+        assert "Recommendations" in content
+        
+        # Generate JSON report
+        json_report_path = reporter.generate_comprehensive_report(
+            benchmark_results=[benchmark_result],
+            latency_tracker=latency_tracker,
+            token_tracker=token_tracker,
+            format=ReportFormat.JSON
+        )
+        
+        assert Path(json_report_path).exists()
+        
+        print(f"  ✅ Reports generated:")
+        print(f"    📝 Markdown: {Path(report_path).name}")
+        print(f"    📋 JSON: {Path(json_report_path).name}")
+        print(f"  📄 Report size: {len(content)} characters")
 
 
+@pytest.mark.asyncio
 async def test_integrated_performance_measurement():
     """Test integrated performance measurement across components."""
     print("🔗 Testing Integrated Performance Measurement...")
@@ -327,7 +326,9 @@ async def test_integrated_performance_measurement():
     print(f"    🪙 Total tokens: {token_overview['overview']['total_tokens']}")
     print(f"    📏 Latency measurements: {len(measurements)}")
     
-    return True
+    # Assert success instead of returning
+    assert benchmark_result.success_rate >= 0.0
+    assert measurements is not None
 
 
 async def main():
