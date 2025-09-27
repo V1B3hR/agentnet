@@ -2,6 +2,7 @@
 
 from .pricing import CostRecord, PricingEngine, ProviderPricing
 from .recorder import CostAggregator, CostRecorder, TenantCostTracker
+from .analytics import CostPredictor, SpendAlertEngine, CostReportGenerator, CostPrediction, SpendAlert
 
 __all__ = [
     "PricingEngine",
@@ -10,4 +11,9 @@ __all__ = [
     "CostRecorder",
     "CostAggregator",
     "TenantCostTracker",
+    "CostPredictor",
+    "SpendAlertEngine", 
+    "CostReportGenerator",
+    "CostPrediction",
+    "SpendAlert",
 ]

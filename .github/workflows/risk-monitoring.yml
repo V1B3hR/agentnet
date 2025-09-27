@@ -1,0 +1,310 @@
+name: Risk Monitoring and Mitigation
+
+on:
+  schedule:
+    # Run every 15 minutes during business hours (UTC)
+    - cron: '*/15 8-20 * * 1-5'
+  workflow_dispatch:
+    inputs:
+      emergency_mode:
+        description: 'Run in emergency mode (more frequent checks)'
+        required: false
+        default: 'false'
+        type: boolean
+      tenant_id:
+        description: 'Specific tenant to monitor (optional)'
+        required: false
+        type: string
+
+jobs:
+  risk-assessment:
+    name: Continuous Risk Assessment
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          make install install-dev
+          
+      - name: Run risk monitoring
+        run: |
+          python -c "
+          from agentnet.risk.registry import RiskRegistry
+          from agentnet.risk.monitor import RiskMonitor
+          from agentnet.risk.mitigation import RiskMitigationEngine
+          from agentnet.core.cost.recorder import CostRecorder
+          from agentnet.core.cost.analytics import SpendAlertEngine, CostReportGenerator
+          from datetime import datetime
+          import json
+          import os
+          
+          # Initialize systems
+          risk_registry = RiskRegistry(storage_dir='data/risk_logs')
+          risk_monitor = RiskMonitor(risk_registry)
+          mitigation_engine = RiskMitigationEngine(risk_registry)
+          cost_recorder = CostRecorder(storage_dir='cost_logs')
+          alert_engine = SpendAlertEngine(cost_recorder)
+          
+          # Risk monitoring results
+          monitoring_results = {
+              'timestamp': datetime.now().isoformat(),
+              'emergency_mode': '${{ github.event.inputs.emergency_mode }}' == 'true',
+              'tenant_id': '${{ github.event.inputs.tenant_id }}' or None,
+              'risk_summary': risk_registry.get_risk_summary(
+                  tenant_id='${{ github.event.inputs.tenant_id }}' or None,
+                  days_back=1 if '${{ github.event.inputs.emergency_mode }}' == 'true' else 7
+              ),
+              'active_alerts': [],
+              'mitigation_summary': mitigation_engine.get_mitigation_summary(days_back=1)
+          }
+          
+          print('Risk Monitoring Results:')
+          print(json.dumps(monitoring_results, indent=2, default=str))
+          
+          # Save results
+          os.makedirs('monitoring-results', exist_ok=True)
+          with open('monitoring-results/risk-monitoring.json', 'w') as f:
+              json.dump(monitoring_results, f, indent=2, default=str)
+          
+          # Check for critical risks
+          critical_events = risk_registry.get_risk_events(
+              severity=risk_registry.RiskLevel.CRITICAL,
+              resolved=False
+          )
+          
+          if critical_events:
+              print(f'ALERT: {len(critical_events)} unresolved critical risk events!')
+              for event in critical_events[:5]:  # Show first 5
+                  print(f'- {event.risk_id}: {event.description}')
+              exit(1)
+          else:
+              print('✓ No critical unresolved risks detected')
+          "
+          
+      - name: Upload monitoring results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: risk-monitoring-results
+          path: monitoring-results/
+          
+      - name: Create GitHub issue for critical risks
+        if: failure()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'monitoring-results/risk-monitoring.json';
+            
+            if (fs.existsSync(path)) {
+              const results = JSON.parse(fs.readFileSync(path, 'utf8'));
+              
+              const issueBody = `
+            ## 🚨 Critical Risk Alert
+            
+            **Monitoring Run:** ${results.timestamp}
+            **Emergency Mode:** ${results.emergency_mode}
+            
+            ### Risk Summary
+            - **Total Events:** ${results.risk_summary.total_events}
+            - **Unresolved Events:** ${results.risk_summary.unresolved_events}
+            - **Resolution Rate:** ${(results.risk_summary.resolution_rate * 100).toFixed(1)}%
+            
+            ### Top Risks
+            ${results.risk_summary.top_risks.map(risk => 
+              `- **${risk.name}** (${risk.risk_id}): ${risk.count} events`
+            ).join('\n')}
+            
+            ### Mitigation Status  
+            - **Total Mitigations:** ${results.mitigation_summary.total_mitigations}
+            - **Success Rate:** ${(results.mitigation_summary.success_rate * 100).toFixed(1)}%
+            
+            **Action Required:** Review and resolve critical risk events.
+            
+            /cc @V1B3hR
+            `;
+            
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🚨 Critical Risk Alert - ${new Date().toISOString().split('T')[0]}`,
+                body: issueBody,
+                labels: ['critical', 'risk-management', 'automated-alert']
+              });
+            }
+
+  cost-monitoring:
+    name: Cost and Spend Monitoring
+    runs-on: ubuntu-latest
+    needs: risk-assessment
+    if: always()
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          make install install-dev
+          
+      - name: Generate cost monitoring report
+        run: |
+          python -c "
+          from agentnet.core.cost.recorder import CostRecorder
+          from agentnet.core.cost.analytics import CostReportGenerator, SpendAlertEngine
+          from agentnet.risk.registry import RiskRegistry
+          from agentnet.risk.monitor import RiskMonitor
+          from datetime import datetime
+          import json
+          import os
+          
+          # Initialize cost monitoring
+          cost_recorder = CostRecorder(storage_dir='cost_logs')
+          report_generator = CostReportGenerator(cost_recorder)
+          alert_engine = SpendAlertEngine(cost_recorder)
+          
+          # Initialize risk monitoring for cost risks
+          risk_registry = RiskRegistry(storage_dir='data/risk_logs')
+          risk_monitor = RiskMonitor(risk_registry)
+          
+          # Generate comprehensive cost report
+          tenant_id = '${{ github.event.inputs.tenant_id }}' or None
+          
+          cost_report = {
+              'timestamp': datetime.now().isoformat(),
+              'tenant_id': tenant_id,
+              'executive_summary': report_generator.generate_executive_summary(
+                  tenant_id=tenant_id,
+                  period_days=7
+              ),
+              'spend_alerts': {
+                  'velocity_alerts': alert_engine.check_spend_velocity(tenant_id=tenant_id),
+                  'spike_alerts': alert_engine.check_daily_spend_spikes(tenant_id=tenant_id),
+                  'anomaly_alerts': alert_engine.check_agent_anomalies(tenant_id=tenant_id)
+              }
+          }
+          
+          print('Cost Monitoring Report:')
+          print(json.dumps(cost_report, indent=2, default=str))
+          
+          # Save report
+          os.makedirs('monitoring-results', exist_ok=True)
+          with open('monitoring-results/cost-monitoring.json', 'w') as f:
+              json.dump(cost_report, f, indent=2, default=str)
+          
+          # Check for cost alerts
+          total_alerts = sum(len(alerts) for alerts in cost_report['spend_alerts'].values())
+          
+          if total_alerts > 0:
+              print(f'WARNING: {total_alerts} cost alerts detected!')
+              for alert_type, alerts in cost_report['spend_alerts'].items():
+                  if alerts:
+                      print(f'{alert_type}: {len(alerts)} alerts')
+          else:
+              print('✓ No cost alerts detected')
+          "
+          
+      - name: Upload cost monitoring results
+        uses: actions/upload-artifact@v3
+        with:
+          name: cost-monitoring-results
+          path: monitoring-results/
+
+  deployment-risk-check:
+    name: Pre-deployment Risk Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.emergency_mode == 'false'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          make install install-dev
+          
+      - name: Pre-deployment risk assessment
+        run: |
+          python -c "
+          from agentnet.risk.registry import RiskRegistry
+          from agentnet.core.cost.recorder import CostRecorder
+          from agentnet.core.cost.analytics import CostReportGenerator
+          from datetime import datetime, timedelta
+          import json
+          
+          # Initialize systems
+          risk_registry = RiskRegistry(storage_dir='data/risk_logs')
+          cost_recorder = CostRecorder(storage_dir='cost_logs')
+          report_generator = CostReportGenerator(cost_recorder)
+          
+          # Check deployment readiness
+          deployment_check = {
+              'timestamp': datetime.now().isoformat(),
+              'deployment_safe': True,
+              'blocking_risks': [],
+              'warnings': [],
+              'recommendations': []
+          }
+          
+          # Check for critical unresolved risks
+          critical_events = risk_registry.get_risk_events(
+              severity=risk_registry.RiskLevel.CRITICAL,
+              resolved=False,
+              start_date=datetime.now() - timedelta(hours=24)
+          )
+          
+          if critical_events:
+              deployment_check['deployment_safe'] = False
+              deployment_check['blocking_risks'].extend([
+                  f'{event.risk_id}: {event.description}'
+                  for event in critical_events[:5]
+              ])
+          
+          # Check recent cost trends
+          executive_summary = report_generator.generate_executive_summary(period_days=1)
+          recent_cost = executive_summary['cost_summary']['total_cost']
+          
+          if recent_cost > 50.0:  # Example threshold
+              deployment_check['warnings'].append(
+                  f'High recent costs: ${recent_cost:.2f} in last 24h'
+              )
+          
+          # Add recommendations
+          if deployment_check['deployment_safe']:
+              deployment_check['recommendations'].append('✓ Deployment can proceed safely')
+          else:
+              deployment_check['recommendations'].append('⚠️ Resolve critical risks before deployment')
+          
+          print('Deployment Risk Check:')
+          print(json.dumps(deployment_check, indent=2))
+          
+          # Fail if deployment is not safe
+          if not deployment_check['deployment_safe']:
+              print('DEPLOYMENT BLOCKED: Critical risks must be resolved')
+              exit(1)
+          "
+          
+      - name: Set deployment safety output
+        id: safety-check
+        run: echo "deployment_safe=true" >> $GITHUB_OUTPUT
