@@ -386,8 +386,7 @@ class MessageFactory:
             confidence=confidence,
             input_tokens=input_tokens,
             output_tokens=output_tokens,
-            task_id=task_id,
-            **kwargs
+            task_id=task_id
         )
 
 
