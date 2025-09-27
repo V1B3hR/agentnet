@@ -27,6 +27,7 @@ class ToolStatus(str, Enum):
     TIMEOUT = "timeout"
     RATE_LIMITED = "rate_limited"
     AUTH_FAILED = "auth_failed"
+    BLOCKED = "blocked"  # Added for governance blocking
 
 
 @dataclass

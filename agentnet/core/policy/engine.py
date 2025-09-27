@@ -430,3 +430,129 @@ class PolicyEngine:
             "stats": self.get_stats(),
             "tags": list(self._rules_by_tag.keys())
         }
+    
+    def evaluate_agent_orchestration(
+        self,
+        agents: List[Dict[str, Any]],
+        coordination_context: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Evaluate orchestration policies for multi-agent coordination.
+        
+        Args:
+            agents: List of agent information dicts
+            coordination_context: Context for coordination decisions
+            
+        Returns:
+            Orchestration result with allowed agents and coordination rules
+        """
+        orchestration_result = {
+            "allowed_agents": [],
+            "blocked_agents": [],
+            "coordination_rules": [],
+            "orchestration_violations": []
+        }
+        
+        for agent in agents:
+            agent_context = {
+                **coordination_context,
+                "agent_name": agent.get("name", ""),
+                "agent_role": agent.get("role", ""),
+                "agent_capabilities": agent.get("capabilities", []),
+                "agent_trust_level": agent.get("trust_level", 0.5)
+            }
+            
+            # Evaluate orchestration rules for this agent
+            result = self.evaluate(agent_context, tags=["orchestration", "coordination"])
+            
+            if result.action == PolicyAction.ALLOW:
+                orchestration_result["allowed_agents"].append(agent)
+            else:
+                orchestration_result["blocked_agents"].append({
+                    "agent": agent,
+                    "reason": result.explanation,
+                    "violations": [v.to_dict() for v in result.violations]
+                })
+                orchestration_result["orchestration_violations"].extend(result.violations)
+        
+        # Add coordination rules based on allowed agents
+        if len(orchestration_result["allowed_agents"]) > 1:
+            orchestration_result["coordination_rules"] = self._generate_coordination_rules(
+                orchestration_result["allowed_agents"], coordination_context
+            )
+        
+        return orchestration_result
+    
+    def _generate_coordination_rules(
+        self, 
+        agents: List[Dict[str, Any]], 
+        context: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Generate coordination rules for multi-agent interaction."""
+        rules = []
+        
+        # Communication order rules
+        if len(agents) > 2:
+            rules.append({
+                "type": "communication_order",
+                "description": "Agents must communicate in specified order",
+                "agents": [agent["name"] for agent in agents],
+                "enforcement": "sequential"
+            })
+        
+        # Resource sharing rules
+        if any("shared_resource" in agent.get("capabilities", []) for agent in agents):
+            rules.append({
+                "type": "resource_sharing",
+                "description": "Shared resources must be coordinated",
+                "resource_locks": True,
+                "timeout_seconds": 30
+            })
+        
+        # Trust level constraints
+        trust_levels = [agent.get("trust_level", 0.5) for agent in agents]
+        if min(trust_levels) < 0.3:
+            rules.append({
+                "type": "supervision_required",
+                "description": "Low trust agents require supervision",
+                "supervisor_required": True,
+                "min_trust_level": 0.3
+            })
+        
+        return rules
+    
+    def evaluate_tool_usage_policy(
+        self,
+        tool_name: str,
+        tool_params: Dict[str, Any],
+        agent_context: Dict[str, Any]
+    ) -> PolicyResult:
+        """
+        Evaluate policy for tool usage by agents.
+        
+        Args:
+            tool_name: Name of the tool being used
+            tool_params: Parameters for tool execution
+            agent_context: Context about the agent using the tool
+            
+        Returns:
+            Policy result for tool usage
+        """
+        tool_context = {
+            **agent_context,
+            "tool_name": tool_name,
+            "tool_params": tool_params,
+            "action_type": "tool_usage"
+        }
+        
+        # Evaluate with tool-specific tags
+        result = self.evaluate(tool_context, tags=["tool", "usage", "security"])
+        
+        # Add tool-specific metadata
+        result.metadata.update({
+            "tool_name": tool_name,
+            "evaluation_type": "tool_usage",
+            "agent_id": agent_context.get("agent_id", "unknown")
+        })
+        
+        return result
