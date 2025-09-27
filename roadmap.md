@@ -36,6 +36,117 @@ The AgentNet repository has extensive documentation, implementation summaries, a
 
 Legend: ✅ = Verifiably Complete, Partial = Some work present, N/A = Not required/applicable
 
+
+# AgentNet Roadmap: Complete To-Do List (Priority Ordered)
+
+This comprehensive to-do list covers all items from the roadmap audit, sorted by priority (high, medium, low) and including ongoing maintenance tasks. Each item references its status and next actionable steps.
+
+---
+
+## 🔝 High Priority
+
+1. **Security & Isolation**
+   - Complete code-level security features.
+   - Add missing test coverage and validation for isolation mechanisms.
+   - Enhance documentation with practical workflows.
+
+2. **Tool System Extensions**
+   - Finalize advanced governance and custom tool features.
+   - Expand core tool capabilities and modularity.
+   - Increase test coverage.
+
+3. **Policy & Governance Extensions**
+   - Implement advanced policy modules for agent orchestration and tool usage.
+   - Document governance workflows and edge case handling.
+   - Integrate enforcement in code and tests.
+
+4. **CI/CD Pipeline Completion**
+   - Implement full automated pipeline (lint, test, build, deploy).
+   - Add integration tests and continuous deployment scripts.
+   - Verify pipeline coverage and update docs.
+
+5. **Cost Tracking Flow Enhancements**
+   - Complete agent/task cost tracking integration.
+   - Add predictive modeling and reporting features.
+   - Expand test coverage and documentation.
+
+6. **Risk Register Workflow Integration**
+   - Move risk register from docs into code/workflow.
+   - Implement automated risk logging and mitigation.
+   - Link risk management to CI/CD and deployment.
+
+---
+
+## 🟠 Medium Priority
+
+7. **Non-Functional Requirements Testing**
+   - Complete remaining tests for performance, reliability, scalability.
+   - Document results and ensure coverage for all NFRs.
+
+8. **Component Specifications Test Coverage**
+   - Finish tests for all component modules.
+   - Document compliance and edge cases.
+
+9. **Message / Turn Schema (JSON Contract) Finalization**
+   - Complete implementation and tests for schemas.
+   - Document usage and examples.
+
+---
+
+## 🟢 Low Priority & Ongoing Maintenance
+
+10. **Documentation Updates**
+    - Regularly update README and roadmap docs.
+    - Add guides, onboarding, diagrams.
+
+11. **Sprint Breakdown / Phase Planning**
+    - Refine sprint breakdowns and milestones.
+    - Keep planning docs accurate and actionable.
+
+12. **General Maintenance (Code, Tests, Docs)**
+    - Address bugs, refactor and optimize code.
+    - Maintain and expand test suites.
+    - Keep dependency versions up to date.
+
+13. **Review and Update Completed Roadmap Items**
+    - Audit delivered features for improvements.
+    - Ensure documentation and implementation summaries are current.
+
+
+## In-Progress & Missing Items
+
+- **Security/Isolation**: Partially implemented and documented. Needs further code and test evidence.
+- **Tool System & Policy Extensions**: Submodules present, but some advanced governance and custom tool features are still in progress.
+- **CI/CD Pipeline**: Documentation lists steps (lint, tests, build, deploy), but full automated pipeline setup is not fully evidenced in code.
+- **Risk Register**: Exists as a documented item, but no code or workflow integration is evident.
+- **Cost Tracking Flow**: Main modules are present, integration and advanced features (predictive modeling) shown as partially complete.
+
+---
+
+## ✅ Already Completed Items (Periodic Review Recommended)
+
+- Product Vision
+- Core Use Cases
+- Functional Requirements
+- High-Level Architecture
+- Data Model (Initial Schema)
+- Memory Architecture
+- Representative API Endpoints
+- Multi-Agent Orchestration Logic
+- Task Graph Execution
+- LLM Provider Adapter Contract
+- Deployment Topology
+- Observability Metrics
+- Evaluation Harness
+- Phase Roadmap
+- Sprint Breakdown
+
+---
+
+**References:**  
+- [docs/RoadmapAgentNet.md](https://github.com/V1B3hR/agentnet/blob/main/docs/RoadmapAgentNet.md)  
+- [README.md](https://github.com/V1B3hR/agentnet/blob/main/README.md)  
+
 ---
 
 ## Implementation Evidence
@@ -48,13 +159,7 @@ Legend: ✅ = Verifiably Complete, Partial = Some work present, N/A = Not requir
 
 ---
 
-## In-Progress & Missing Items
 
-- **Security/Isolation**: Partially implemented and documented. Needs further code and test evidence.
-- **Tool System & Policy Extensions**: Submodules present, but some advanced governance and custom tool features are still in progress.
-- **CI/CD Pipeline**: Documentation lists steps (lint, tests, build, deploy), but full automated pipeline setup is not fully evidenced in code.
-- **Risk Register**: Exists as a documented item, but no code or workflow integration is evident.
-- **Cost Tracking Flow**: Main modules are present, integration and advanced features (predictive modeling) shown as partially complete.
 
 ---
 
