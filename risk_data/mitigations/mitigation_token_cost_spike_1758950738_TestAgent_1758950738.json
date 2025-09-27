@@ -1,0 +1,11 @@
+{
+  "mitigation_id": "mitigation_token_cost_spike_1758950738_TestAgent_1758950738",
+  "risk_id": "token_cost_spike_1758950738_TestAgent",
+  "action": "Planned: apply_rate_limits",
+  "implemented_at": "2025-09-27T05:25:38.411227",
+  "effectiveness": null,
+  "automated": false,
+  "metadata": {
+    "handler_missing": true
+  }
+}

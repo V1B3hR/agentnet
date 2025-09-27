@@ -1,0 +1,14 @@
+{
+  "risk_type": "policy_false_positives",
+  "category": "operational",
+  "default_level": "medium",
+  "description": "High rate of policy false positives causing user frustration",
+  "impact_description": "User frustration and reduced system usability",
+  "mitigation_strategy": "Severity tiers + override token mechanism",
+  "detection_rules": [],
+  "automated_mitigation": false,
+  "mitigation_actions": [
+    "adjust_policy_thresholds",
+    "provide_override_mechanism"
+  ]
+}

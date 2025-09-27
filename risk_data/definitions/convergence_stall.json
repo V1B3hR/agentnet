@@ -1,0 +1,14 @@
+{
+  "risk_type": "convergence_stall",
+  "category": "performance",
+  "default_level": "high",
+  "description": "Agent conversation failing to converge within reasonable time",
+  "impact_description": "Long sessions consuming excessive resources",
+  "mitigation_strategy": "Hard caps + stagnation detection",
+  "detection_rules": [],
+  "automated_mitigation": true,
+  "mitigation_actions": [
+    "apply_session_timeout",
+    "detect_conversation_loops"
+  ]
+}

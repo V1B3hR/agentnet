@@ -1,0 +1,15 @@
+{
+  "risk_type": "token_cost_spike",
+  "category": "financial",
+  "default_level": "high",
+  "description": "Unexpected spike in token usage costs",
+  "impact_description": "Budget overrun and unexpected charges",
+  "mitigation_strategy": "Spend alerts + automatic downgrade to cheaper models",
+  "detection_rules": [],
+  "automated_mitigation": true,
+  "mitigation_actions": [
+    "send_cost_alert",
+    "downgrade_model",
+    "apply_rate_limits"
+  ]
+}

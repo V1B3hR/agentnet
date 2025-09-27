@@ -1,0 +1,15 @@
+{
+  "risk_type": "tool_injection",
+  "category": "security",
+  "default_level": "critical",
+  "description": "Potential tool injection attack or data exfiltration attempt",
+  "impact_description": "Data breach and security compromise",
+  "mitigation_strategy": "Schema validation + sandboxed tool execution",
+  "detection_rules": [],
+  "automated_mitigation": true,
+  "mitigation_actions": [
+    "validate_tool_inputs",
+    "isolate_tool_execution",
+    "audit_tool_usage"
+  ]
+}
