@@ -343,3 +343,225 @@ def create_role_rule(
         description=description or f"Allowed roles: {allowed_roles}",
         tags=["role", "authorization"]
     )
+
+
+def create_semantic_similarity_rule(
+    name: str,
+    max_similarity: float = 0.92,
+    embedding_set: str = "restricted_corpora",
+    window_size: int = 5,
+    severity: Severity = Severity.SEVERE,
+    description: str = ""
+) -> ConstraintRule:
+    """
+    Create a rule that checks semantic similarity against restricted content.
+    
+    Args:
+        name: Rule name
+        max_similarity: Maximum allowed similarity threshold
+        embedding_set: Name of the embedding set to compare against
+        window_size: Number of historical items to compare
+        severity: Severity if similarity threshold exceeded
+        description: Rule description
+    """
+    # Storage for historical content
+    if not hasattr(create_semantic_similarity_rule, "_history"):
+        create_semantic_similarity_rule._history = {}
+
+    # Try to import semantic similarity functionality
+    try:
+        import numpy as np
+        from sentence_transformers import SentenceTransformer
+        
+        try:
+            model = SentenceTransformer("all-MiniLM-L6-v2")
+            use_semantic = True
+        except Exception:
+            logger.warning("Semantic model unavailable, using Jaccard similarity")
+            model = None
+            use_semantic = False
+    except ImportError:
+        logger.warning("sentence-transformers not available, using Jaccard similarity")
+        model = None
+        use_semantic = False
+
+    def semantic_similarity(text1: str, text2: str) -> float:
+        """Compute semantic similarity between two texts."""
+        if not use_semantic:
+            # Fallback to Jaccard similarity
+            set1 = set(text1.lower().split())
+            set2 = set(text2.lower().split())
+            if not set1 and not set2:
+                return 1.0
+            if not set1 or not set2:
+                return 0.0
+            return len(set1 & set2) / len(set1 | set2)
+        
+        embeddings = model.encode([text1, text2])
+        dot_product = np.dot(embeddings[0], embeddings[1])
+        norm_a = np.linalg.norm(embeddings[0])
+        norm_b = np.linalg.norm(embeddings[1])
+        
+        if norm_a == 0 or norm_b == 0:
+            return 0.0
+        
+        return dot_product / (norm_a * norm_b)
+
+    def check_semantic_similarity(context: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+        content = str(context.get("content", ""))
+        if not content.strip():
+            return True, None
+        
+        # Get history key from context
+        agent_name = context.get("agent_name", "default")
+        task_id = context.get("task_id", "default")
+        history_key = f"{agent_name}_{task_id}_{embedding_set}"
+        
+        history = create_semantic_similarity_rule._history.get(history_key, [])
+        
+        # Check against historical content
+        for i, historical_content in enumerate(history[-window_size:]):
+            similarity = semantic_similarity(content, historical_content)
+            if similarity > max_similarity:
+                return False, f"Content similarity {similarity:.3f} exceeds threshold {max_similarity} (compared to item {i+1} turns ago)"
+        
+        # Add current content to history
+        history.append(content)
+        create_semantic_similarity_rule._history[history_key] = history[-window_size*2:]  # Keep limited history
+        
+        return True, None
+    
+    return ConstraintRule(
+        name=name,
+        check_fn=check_semantic_similarity,
+        severity=severity,
+        description=description or f"Semantic similarity threshold: {max_similarity}",
+        tags=["semantic", "similarity", "content"]
+    )
+
+
+def create_llm_classifier_rule(
+    name: str,
+    model: str = "moderation-small",
+    threshold: float = 0.78,
+    classification_target: str = "toxicity",
+    severity: Severity = Severity.MAJOR,
+    description: str = ""
+) -> ConstraintRule:
+    """
+    Create a rule that uses LLM classification to evaluate content.
+    
+    Args:
+        name: Rule name
+        model: Model to use for classification
+        threshold: Classification threshold
+        classification_target: What to classify for (toxicity, pii, etc.)
+        severity: Severity if threshold exceeded
+        description: Rule description
+    """
+    def check_llm_classification(context: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+        content = str(context.get("content", ""))
+        if not content.strip():
+            return True, None
+        
+        # Simulate LLM classification (in production, this would call an actual LLM service)
+        # For now, use simple heuristics based on classification target
+        score = 0.0
+        
+        if classification_target == "toxicity":
+            # Simple toxicity detection heuristics
+            toxic_words = ["hate", "toxic", "offensive", "harmful", "inappropriate"]
+            toxic_count = sum(1 for word in toxic_words if word.lower() in content.lower())
+            score = min(toxic_count / len(toxic_words), 1.0)
+            
+        elif classification_target == "pii":
+            # Simple PII detection
+            import re
+            pii_patterns = [
+                r'\b\d{3}-\d{2}-\d{4}\b',  # SSN
+                r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b',  # Credit card
+                r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'  # Email
+            ]
+            pii_matches = sum(1 for pattern in pii_patterns if re.search(pattern, content))
+            score = min(pii_matches / len(pii_patterns), 1.0)
+        
+        else:
+            # Default: random score for unknown classification targets
+            score = 0.1
+        
+        if score > threshold:
+            return False, f"LLM classifier '{classification_target}' score {score:.3f} exceeds threshold {threshold}"
+        
+        return True, None
+    
+    return ConstraintRule(
+        name=name,
+        check_fn=check_llm_classification,
+        severity=severity,
+        description=description or f"LLM classifier: {classification_target} threshold {threshold}",
+        tags=["llm", "classification", classification_target]
+    )
+
+
+def create_numerical_threshold_rule(
+    name: str,
+    metric_name: str,
+    threshold: float,
+    operator: str = "less_than",
+    severity: Severity = Severity.MINOR,
+    description: str = ""
+) -> ConstraintRule:
+    """
+    Create a rule that checks numerical thresholds on metrics.
+    
+    Args:
+        name: Rule name
+        metric_name: Name of metric to check in context
+        threshold: Numerical threshold
+        operator: Comparison operator (less_than, greater_than, equals, not_equals)
+        severity: Severity if threshold violated
+        description: Rule description
+    """
+    def check_numerical_threshold(context: Dict[str, Any]) -> Tuple[bool, Optional[str]]:
+        value = context.get(metric_name)
+        if value is None:
+            return False, f"Metric '{metric_name}' not found in context"
+        
+        try:
+            numeric_value = float(value)
+        except (ValueError, TypeError):
+            return False, f"Metric '{metric_name}' is not numeric: {value}"
+        
+        if operator == "less_than":
+            passed = numeric_value < threshold
+            op_desc = "<"
+        elif operator == "greater_than":
+            passed = numeric_value > threshold
+            op_desc = ">"
+        elif operator == "less_equal":
+            passed = numeric_value <= threshold
+            op_desc = "<="
+        elif operator == "greater_equal":
+            passed = numeric_value >= threshold
+            op_desc = ">="
+        elif operator == "equals":
+            passed = abs(numeric_value - threshold) < 1e-9
+            op_desc = "=="
+        elif operator == "not_equals":
+            passed = abs(numeric_value - threshold) >= 1e-9
+            op_desc = "!="
+        else:
+            return False, f"Unknown operator: {operator}"
+        
+        if not passed:
+            return False, f"Metric '{metric_name}' value {numeric_value} violates threshold: {numeric_value} {op_desc} {threshold} is False"
+        
+        return True, None
+    
+    return ConstraintRule(
+        name=name,
+        check_fn=check_numerical_threshold,
+        severity=severity,
+        description=description or f"Numerical threshold: {metric_name} {operator} {threshold}",
+        tags=["numerical", "threshold", "metric"]
+    )
