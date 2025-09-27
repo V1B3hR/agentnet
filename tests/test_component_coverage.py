@@ -22,7 +22,8 @@ from agentnet.core.types import CognitiveFault
 from agentnet.core.orchestration import TurnResult, TurnMode, TerminationReason
 from agentnet.reasoning import ReasoningEngine, ReasoningType
 from agentnet.memory import ShortTermMemory, EpisodicMemory
-from agentnet.tools import Tool, ToolResult, ToolStatus
+from agentnet.tools import Tool, ToolResult
+from agentnet.tools.base import ToolStatus
 from agentnet.performance import LatencyTracker, TokenUtilizationTracker
 from agentnet.persistence import SessionManager
 
