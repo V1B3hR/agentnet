@@ -1,0 +1,14 @@
+{
+  "risk_type": "memory_bloat",
+  "category": "performance",
+  "default_level": "medium",
+  "description": "Excessive memory usage causing system latency",
+  "impact_description": "Increased response times and potential system instability",
+  "mitigation_strategy": "Memory summaries + conversation pruning",
+  "detection_rules": [],
+  "automated_mitigation": true,
+  "mitigation_actions": [
+    "prune_old_conversations",
+    "create_memory_summaries"
+  ]
+}

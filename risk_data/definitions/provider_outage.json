@@ -1,0 +1,14 @@
+{
+  "risk_type": "provider_outage",
+  "category": "operational",
+  "default_level": "high",
+  "description": "Provider service outage or degradation",
+  "impact_description": "Degraded service availability and user experience",
+  "mitigation_strategy": "Fallback providers + circuit breaker pattern",
+  "detection_rules": [],
+  "automated_mitigation": true,
+  "mitigation_actions": [
+    "switch_to_fallback_provider",
+    "enable_circuit_breaker"
+  ]
+}

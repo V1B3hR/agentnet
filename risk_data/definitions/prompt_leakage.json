@@ -1,0 +1,15 @@
+{
+  "risk_type": "prompt_leakage",
+  "category": "security",
+  "default_level": "critical",
+  "description": "Potential system prompt or sensitive information leakage",
+  "impact_description": "Compliance breach and intellectual property exposure",
+  "mitigation_strategy": "Secret scanning + content redaction",
+  "detection_rules": [],
+  "automated_mitigation": true,
+  "mitigation_actions": [
+    "scan_for_secrets",
+    "redact_sensitive_content",
+    "audit_outputs"
+  ]
+}

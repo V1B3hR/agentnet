@@ -113,6 +113,35 @@ try:
         PricingEngine,
         TenantCostTracker,
     )
+    
+    # Import enhanced cost prediction features (with graceful fallback)
+    try:
+        from .core.cost import CostPredictor
+        _cost_predictions_available = True
+    except ImportError:
+        _cost_predictions_available = False
+        CostPredictor = None
+    
+    # Import MLops workflow capabilities
+    from .mlops import (
+        MLopsWorkflow,
+        ModelVersion,
+        DeploymentRecord,
+        ModelStage,
+        DeploymentStatus,
+    )
+    
+    # Import risk management system
+    from .risk import (
+        RiskRegister,
+        RiskEvent,
+        RiskMitigation,
+        RiskDefinition,
+        RiskLevel,
+        RiskStatus,
+        RiskCategory,
+    )
+    
     # New Phase 4 features
     from .core.telemetry import (
         TelemetryCollector, TelemetryEvent, EventType, MetricType,
@@ -122,7 +151,13 @@ except ImportError:
     _p4_available = False
     # Stub classes for P4 functionality
     PricingEngine = CostRecorder = CostAggregator = TenantCostTracker = None
+    CostPredictor = None
+    MLopsWorkflow = ModelVersion = DeploymentRecord = ModelStage = DeploymentStatus = None
+    RiskRegister = RiskEvent = RiskMitigation = RiskDefinition = None
+    RiskLevel = RiskStatus = RiskCategory = None
     Role = Permission = RBACManager = User = AuthMiddleware = None
+    TelemetryCollector = TelemetryEvent = EventType = MetricType = None
+    init_telemetry = get_telemetry = record_event = record_metric = None
 
 try:
     # Import P5 features: Observability & Performance
@@ -432,8 +467,26 @@ if _p4_available:
             "get_telemetry",
             "record_event",
             "record_metric",
+            # MLops Workflow
+            "MLopsWorkflow",
+            "ModelVersion",
+            "DeploymentRecord",
+            "ModelStage", 
+            "DeploymentStatus",
+            # Risk Management
+            "RiskRegister",
+            "RiskEvent",
+            "RiskMitigation",
+            "RiskDefinition",
+            "RiskLevel",
+            "RiskStatus",
+            "RiskCategory",
         ]
     )
+    
+    # Add cost predictions if available
+    if _cost_predictions_available:
+        __all__.extend(["CostPredictor"])
 
 if _p5_available:
     __all__.extend(

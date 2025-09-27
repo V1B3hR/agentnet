@@ -1,0 +1,17 @@
+{
+  "risk_id": "token_cost_spike_1758950738_TestAgent",
+  "category": "financial",
+  "level": "medium",
+  "title": "Token cost spike detected",
+  "description": "Cost $10.0000 exceeds threshold $5.0000",
+  "detected_at": "2025-09-27T05:25:38.410773",
+  "agent_name": "TestAgent",
+  "session_id": null,
+  "tenant_id": null,
+  "metadata": {
+    "risk_type": "token_cost_spike",
+    "current_cost": 10.0,
+    "threshold": 5.0,
+    "spike_ratio": 2.0
+  }
+}
