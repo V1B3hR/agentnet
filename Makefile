@@ -40,6 +40,18 @@ test-p0:  ## Run Phase 0 tests only
 test-minimal:  ## Run tests that don't require async or network
 	PYTHONPATH=. python -m pytest tests/test_p0_implementation.py tests/test_direct_module_import.py -v
 
+test-integration:  ## Run integration tests
+	PYTHONPATH=. python -m pytest tests/test_integration.py -v
+
+test-smoke:  ## Run smoke tests
+	PYTHONPATH=. python -m pytest tests/test_smoke.py -v
+
+test-cost-risk:  ## Run cost tracking and risk management tests
+	PYTHONPATH=. python -m pytest tests/test_cost_risk_enhancements.py -v
+
+test-enhancements:  ## Run all enhancement tests (integration, cost, risk)
+	PYTHONPATH=. python -m pytest tests/test_integration.py tests/test_cost_risk_enhancements.py tests/test_smoke.py -v
+
 build:  ## Build package distribution
 	python -m build
 
