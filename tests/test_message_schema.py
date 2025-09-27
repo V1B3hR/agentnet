@@ -255,7 +255,7 @@ class TestMessageFactory:
         assert message.output.tokens.input == 50
         assert message.output.tokens.output == 100
         assert message.output.tokens.total == 150
-        assert message.timing.latency_ms == 200.0  # 0.2 * 1000
+        assert abs(message.timing.latency_ms - 200.0) < 1.0  # Allow small floating point tolerance
         
         print("  ✅ Message factory working")
     
