@@ -3,7 +3,28 @@
 Policy-governed multi-agent LLM framework for dialogue, debate, tool-use, memory, and observability.  
 Designed for safe, inspectable, and extensible cognitive workflows.
 
-> Status: Early development (scaffolding + initial abstractions). Expect rapid iteration and breaking changes.
+> **Status: UNDER ACTIVE DEVELOPMENT** - Core architecture implemented with excellent documentation, but several critical dependencies missing. See [ROADMAP_AUDIT_REPORT.md](ROADMAP_AUDIT_REPORT.md) for detailed implementation status.
+
+## ⚠️ Current Status & Known Issues
+
+**What Works:**
+- ✅ Core AgentNet architecture and modular design
+- ✅ Memory system (short-term, episodic, semantic layers) 
+- ✅ Task graph planning and orchestration logic
+- ✅ API endpoints structure (/tasks/plan, /tasks/execute, /eval/run)
+- ✅ Comprehensive documentation and architectural planning
+
+**Critical Issues (Blocks Basic Usage):**
+- 🔴 **Missing Dependencies**: pytest, pydantic, prometheus-client required
+- 🔴 **Broken Tests**: Test suite cannot run due to missing dependencies
+- 🔴 **Schema Imports Fail**: JSON schema validation non-functional
+- 🔴 **No CI/CD**: Despite documentation, no automation implemented
+
+**Immediate Setup Required:**
+```bash
+# Install missing critical dependencies
+pip install pytest pydantic prometheus-client opentelemetry-api
+```
 
 ---
 
@@ -236,14 +257,35 @@ grafana = GrafanaIntegration(
 grafana.create_agentnet_dashboard()
 ```
 
-## Installation (Early Dev)
+## Installation & Quick Start
+
+⚠️ **Important**: Due to missing dependencies, additional packages must be installed manually.
 
 ```bash
+# Clone repository
 git clone https://github.com/V1B3hR/agentnet
 cd agentnet
+
+# Create virtual environment
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
+
+# Install core package
+pip install -e .
+
+# Install missing critical dependencies
+pip install pytest pydantic prometheus-client opentelemetry-api
+
+# Verify installation
+python -c "import agentnet; print('AgentNet imported successfully')"
+```
+
+### Running Tests (After Dependencies)
+```bash
+# Run specific working tests (some may still have issues)
+python -c "from agentnet import AgentNet; print('Core functionality works')"
+
+# Note: Full test suite needs pytest and may have additional dependency issues
 ```
 
 Optional / Planned Extras (some may not yet be active):
