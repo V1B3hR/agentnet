@@ -1,0 +1,27 @@
+# AgentNet Core Requirements
+# These are the minimal dependencies required for basic AgentNet functionality
+
+# Core typing and utilities
+typing-extensions>=4.0.0
+pyyaml>=6.0
+
+# Schema validation (required for agentnet/schemas/)
+pydantic>=2.0.0
+
+# Testing framework (required for test execution)
+pytest>=7.0.0
+pytest-asyncio>=0.21.0
+
+# Observability - metrics collection (required for agentnet/observability/metrics.py)
+prometheus-client>=0.14.0
+
+# Observability - distributed tracing (required for agentnet/observability/tracing.py)
+opentelemetry-api>=1.15.0
+
+# Optional: Additional OpenTelemetry components for full tracing functionality
+# opentelemetry-sdk>=1.15.0
+# opentelemetry-exporter-jaeger>=1.15.0
+# opentelemetry-exporter-otlp-proto-grpc>=1.15.0
+
+# Note: Additional dependencies for extended functionality can be installed via:
+# pip install -e .[full,integrations,dev,docs,performance]
