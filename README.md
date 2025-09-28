@@ -13,17 +13,23 @@ Designed for safe, inspectable, and extensible cognitive workflows.
 - ✅ Task graph planning and orchestration logic
 - ✅ API endpoints structure (/tasks/plan, /tasks/execute, /eval/run)
 - ✅ Comprehensive documentation and architectural planning
+- ✅ **NEW**: Schema validation (pydantic imports working)
+- ✅ **NEW**: Test execution framework (pytest functional)
+- ✅ **NEW**: Observability imports (prometheus-client, opentelemetry-api)
 
-**Critical Issues (Blocks Basic Usage):**
-- 🔴 **Missing Dependencies**: pytest, pydantic, prometheus-client required
-- 🔴 **Broken Tests**: Test suite cannot run due to missing dependencies
-- 🔴 **Schema Imports Fail**: JSON schema validation non-functional
+**Minor Issues (Non-blocking):**
+- 🟠 Some advanced tests require optional dependencies (networkx for DAG components)
+- 🟠 Integration features are partial implementations 
 - 🔴 **No CI/CD**: Despite documentation, no automation implemented
 
-**Immediate Setup Required:**
+~~**Critical Issues (Blocks Basic Usage):**~~ **RESOLVED**
+~~- 🔴 **Missing Dependencies**: pytest, pydantic, prometheus-client required~~
+~~- 🔴 **Broken Tests**: Test suite cannot run due to missing dependencies~~
+~~- 🔴 **Schema Imports Fail**: JSON schema validation non-functional~~
+
+**Installation is now simplified:**
 ```bash
-# Install missing critical dependencies
-pip install pytest pydantic prometheus-client opentelemetry-api
+pip install -e .  # All core dependencies included
 ```
 
 ---
@@ -259,7 +265,7 @@ grafana.create_agentnet_dashboard()
 
 ## Installation & Quick Start
 
-⚠️ **Important**: Due to missing dependencies, additional packages must be installed manually.
+✅ **Simplified Installation**: All core dependencies are now included!
 
 ```bash
 # Clone repository
@@ -270,22 +276,27 @@ cd agentnet
 python -m venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 
-# Install core package
+# Install core package with all dependencies
 pip install -e .
-
-# Install missing critical dependencies
-pip install pytest pydantic prometheus-client opentelemetry-api
 
 # Verify installation
 python -c "import agentnet; print('AgentNet imported successfully')"
+python -c "from agentnet.schemas import create_example_message; print('Schema validation working')"
 ```
 
-### Running Tests (After Dependencies)
+### Running Tests
 ```bash
-# Run specific working tests (some may still have issues)
+# Run basic tests (now working with core dependencies)
+python -m pytest tests/test_direct_module_import.py -v
+
+# Run schema-specific tests
+python -c "from agentnet.schemas import create_example_message; msg = create_example_message(); print('Schema validation working:', type(msg).__name__)"
+
+# Check core functionality
 python -c "from agentnet import AgentNet; print('Core functionality works')"
 
-# Note: Full test suite needs pytest and may have additional dependency issues
+# Full test suite (some tests may require optional dependencies like networkx)
+python -m pytest tests/ --tb=short
 ```
 
 Optional / Planned Extras (some may not yet be active):

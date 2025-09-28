@@ -11,14 +11,14 @@ The AgentNet repository has extensive documentation, implementation summaries, a
 |--------------------------------------------|-------------|------------|--------|------------------|-------------------------------|--------------|
 | 1. Product Vision                         | ✅          | ✅         | N/A    | Completed        | docs/RoadmapAgentNet.md, site | None |
 | 2. Core Use Cases                         | ✅          | ✅         | N/A    | Completed        | docs/RoadmapAgentNet.md, site | None |
-| 3. Functional Requirements                | 🟠          | ✅         | 🔴     | Needs Work       | agentnet/core/* exists but deps missing | Missing pytest, pydantic deps |
-| 4. Non-Functional Requirements            | 🟠          | ✅         | 🔴     | Needs Work       | tests/test_nfr_comprehensive.py fails | Cannot run due to missing pytest |
+| 3. Functional Requirements                | ✅          | ✅         | 🟠     | Mostly Complete  | agentnet/core/* works with fixed deps | Basic functionality operational |
+| 4. Non-Functional Requirements            | 🟠          | ✅         | 🟠     | Partially Working | tests/test_nfr_comprehensive.py | Can run with pytest, some limitations |
 | 5. High-Level Architecture                | ✅          | ✅         | N/A    | Completed        | docs/RoadmapAgentNet.md       | None |
-| 6. Component Specifications               | 🟠          | ✅         | 🔴     | Needs Work       | agentnet/* structure exists | Tests fail due to missing dependencies |
+| 6. Component Specifications               | 🟠          | ✅         | 🟠     | Partially Working | agentnet/* structure exists | Some tests need optional deps (networkx) |
 | 7. Data Model (Initial Schema)            | ✅          | ✅         | N/A    | Completed        | docs/RoadmapAgentNet.md       | None |
 | 8. Memory Architecture                    | ✅          | ✅         | 🟠     | Mostly Complete  | agentnet/memory/* | Core works, tests need deps |
-| 9. Message / Turn Schema (JSON Contract)  | 🟠          | ✅         | 🔴     | Needs Work       | agentnet/schemas/ fails import | Missing pydantic dependency |
-| 10. Representative API Endpoints          | ✅          | ✅         | 🟠     | Mostly Complete  | api/server.py with endpoints | Tests need missing dependencies |
+| 9. Message / Turn Schema (JSON Contract)  | ✅          | ✅         | ✅     | Working          | agentnet/schemas/ imports work | Fixed with pydantic dependency |
+| 10. Representative API Endpoints          | ✅          | ✅         | 🟠     | Mostly Complete  | api/server.py with endpoints | Tests work with fixed dependencies |
 | 11. Multi-Agent Orchestration Logic       | ✅          | ✅         | 🟠     | Mostly Complete  | agentnet/core/orchestration/* | Core works, full testing blocked |
 | 12. Task Graph Execution                  | ✅          | ✅         | 🟠     | Mostly Complete  | agentnet/core/orchestration/dag_planner.py | Implementation exists |
 | 13. LLM Provider Adapter Contract         | 🟠          | ✅         | 🔴     | Needs Work       | agentnet/providers/* basic only | Only example provider implemented |
@@ -26,7 +26,7 @@ The AgentNet repository has extensive documentation, implementation summaries, a
 | 15. Policy & Governance Extensions        | 🟠          | ✅         | 🔴     | Needs Work       | agentnet/core/policy/* basic | Advanced features incomplete |
 | 16. Security & Isolation                  | 🔴          | 🟠         | 🔴     | Not Implemented  | agentnet/core/auth/* minimal | Only basic auth structure |
 | 17. Deployment Topology                   | ✅          | ✅         | N/A    | Completed        | docs/RoadmapAgentNet.md       | None |
-| 18. Observability Metrics                 | 🟠          | ✅         | 🔴     | Needs Work       | agentnet/performance/* exists | Missing prometheus deps |
+| 18. Observability Metrics                 | ✅          | ✅         | 🟠     | Working          | agentnet/performance/* exists | Fixed with prometheus_client |
 | 19. Evaluation Harness                    | ✅          | ✅         | 🟠     | Mostly Complete  | agentnet/core/eval/* | Core implementation works |
 | 20. Cost Tracking Flow                    | 🟠          | ✅         | 🔴     | Needs Work       | agentnet/core/cost/* | Basic structure, integration incomplete |
 | 21. CI/CD Pipeline                        | 🔴          | ✅         | 🔴     | Not Implemented  | No .github/workflows/ | No actual CI/CD implementation |
@@ -36,11 +36,17 @@ The AgentNet repository has extensive documentation, implementation summaries, a
 
 Legend: ✅ = Verifiably Complete (Green), 🟠 = Partially Implemented (Orange), 🔴 = Not Implemented/Blocked (Red), N/A = Not required/applicable
 
-**Critical Issues Found:**
-- Multiple test suites cannot run due to missing dependencies (pytest, pydantic, prometheus-client)
-- Security features claimed but not actually implemented
+**Critical Issues Found (RESOLVED in current version):**
+- ✅ **Dependencies Fixed**: pytest, pydantic, prometheus-client, opentelemetry-api now in core dependencies
+- ✅ **Test Execution**: Basic test suite now functional (pytest can run)
+- ✅ **Schema Imports**: JSON schema validation now working (pydantic dependency resolved)
+- ✅ **Observability**: Metrics and tracing modules can import correctly
+
+**Remaining Issues:**
+- Some advanced tests require optional dependencies (networkx for DAG components)
+- Security features need full implementation beyond basic auth structure  
 - CI/CD pipeline documented but not implemented
-- Several modules fail imports due to missing dependencies
+- Several integration features are partial implementations
 
 
 # AgentNet Roadmap: Complete To-Do List (Priority Ordered)
