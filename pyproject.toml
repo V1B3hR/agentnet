@@ -98,6 +98,38 @@ monitoring = [
 # All integration dependencies
 integrations = ["agentnet[langchain,openai,huggingface,vector_databases,monitoring]"]
 
+# Phase 9: Deep Learning dependencies
+pytorch = [
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+]
+
+tensorflow = [
+    "tensorflow>=2.12.0",
+    "tensorflow-hub>=0.13.0",
+]
+
+deeplearning = [
+    "agentnet[pytorch]",
+    # Fine-tuning and optimization
+    "transformers>=4.30.0",
+    "datasets>=2.0.0",
+    "accelerate>=0.20.0",
+    "peft>=0.4.0",
+    "bitsandbytes>=0.39.0",
+    # Embeddings and vector search
+    "sentence-transformers>=2.2.0",
+    "faiss-cpu>=1.7.0",
+    "hnswlib>=0.7.0",
+    # Monitoring and visualization
+    "tensorboard>=2.12.0",
+]
+
+deeplearning_full = [
+    "agentnet[deeplearning,tensorflow]",
+    "wandb>=0.15.0",
+]
+
 # Development dependencies
 dev = [
     "pytest-cov>=3.0.0",
