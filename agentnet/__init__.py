@@ -323,6 +323,53 @@ except ImportError:
     KubernetesOperator = AutoScaler = MultiRegionDeployment = ServerlessAdapter = None
     ClusterConfig = AutoScalingConfig = RegionConfig = ServerlessConfig = None
 
+# Phase 9: Deep Learning Integration
+_p9_available = True
+try:
+    # Import P9 features: Deep Learning, Fine-Tuning, Neural Reasoning
+    from .deeplearning import (
+        # Status and utilities
+        is_available as dl_is_available,
+        pytorch_available,
+        tensorflow_available,
+        get_framework_info,
+        
+        # Model registry
+        ModelRegistry,
+        ModelMetadata,
+        ModelArtifact,
+        
+        # Training
+        DeepLearningTrainer,
+        TrainingConfig,
+        TrainingCallback,
+        
+        # Fine-tuning
+        FineTuner,
+        LoRAConfig,
+        InstructionDataset,
+        
+        # Embeddings
+        EmbeddingGenerator,
+        EmbeddingCache,
+        SemanticSearch,
+        
+        # Neural reasoning
+        NeuralReasoner,
+        AttentionReasoning,
+        GraphNeuralReasoning,
+    )
+except ImportError:
+    _p9_available = False
+    # Stub classes for P9 functionality
+    dl_is_available = pytorch_available = tensorflow_available = None
+    get_framework_info = None
+    ModelRegistry = ModelMetadata = ModelArtifact = None
+    DeepLearningTrainer = TrainingConfig = TrainingCallback = None
+    FineTuner = LoRAConfig = InstructionDataset = None
+    EmbeddingGenerator = EmbeddingCache = SemanticSearch = None
+    NeuralReasoner = AttentionReasoning = GraphNeuralReasoning = None
+
 __version__ = "0.5.0"
 
 # Phase availability flags
@@ -336,6 +383,7 @@ __phase_status__ = {
     "P6": _p6_available,  # Enterprise Hardening
     "P7": _p7_available,  # Advanced Intelligence & Reasoning
     "P8": _p8_available,  # Ecosystem & Integration
+    "P9": _p9_available,  # Deep Learning Integration
 }
 
 # Build dynamic __all__ based on available features
@@ -608,6 +656,37 @@ if _p8_available:
             "AutoScalingConfig",
             "RegionConfig",
             "ServerlessConfig",
+        ]
+    )
+
+if _p9_available:
+    __all__.extend(
+        [
+            # Deep Learning status functions
+            "dl_is_available",
+            "pytorch_available",
+            "tensorflow_available",
+            "get_framework_info",
+            # Model registry
+            "ModelRegistry",
+            "ModelMetadata",
+            "ModelArtifact",
+            # Training
+            "DeepLearningTrainer",
+            "TrainingConfig",
+            "TrainingCallback",
+            # Fine-tuning
+            "FineTuner",
+            "LoRAConfig",
+            "InstructionDataset",
+            # Embeddings
+            "EmbeddingGenerator",
+            "EmbeddingCache",
+            "SemanticSearch",
+            # Neural reasoning
+            "NeuralReasoner",
+            "AttentionReasoning",
+            "GraphNeuralReasoning",
         ]
     )
 
