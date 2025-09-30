@@ -183,6 +183,10 @@ class ModelRegistry:
             except Exception as e:
                 logger.error(f"Failed to load registry: {e}")
                 self._models = {}
+        else:
+            # Create empty registry file
+            self._save_registry()
+            logger.info("Created new empty registry")
     
     def _save_registry(self) -> None:
         """Save registry to disk."""

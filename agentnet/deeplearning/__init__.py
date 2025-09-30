@@ -93,9 +93,34 @@ def get_framework_info() -> dict:
 
 
 # Conditional imports - only import if dependencies available
+# Note: Registry module doesn't need PyTorch, so import it separately
+try:
+    from .registry import ModelRegistry, ModelMetadata, ModelArtifact
+    _REGISTRY_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Registry not available: {e}")
+    _REGISTRY_AVAILABLE = False
+    # Provide stub classes
+    class ModelRegistry:
+        def __init__(self, *args, **kwargs):
+            raise ImportError(
+                "ModelRegistry import failed. Check dependencies."
+            )
+    
+    class ModelMetadata:
+        def __init__(self, *args, **kwargs):
+            raise ImportError(
+                "ModelMetadata import failed. Check dependencies."
+            )
+    
+    class ModelArtifact:
+        def __init__(self, *args, **kwargs):
+            raise ImportError(
+                "ModelArtifact import failed. Check dependencies."
+            )
+
 if PYTORCH_AVAILABLE:
     try:
-        from .registry import ModelRegistry, ModelMetadata, ModelArtifact
         from .trainer import DeepLearningTrainer, TrainingConfig, TrainingCallback
         from .embeddings import EmbeddingGenerator, EmbeddingCache, SemanticSearch
         
@@ -104,36 +129,44 @@ if PYTORCH_AVAILABLE:
         logger.warning(f"Some deep learning components not available: {e}")
         _CORE_AVAILABLE = False
         # Provide stub classes
-        ModelRegistry = None
-        ModelMetadata = None
-        ModelArtifact = None
-        DeepLearningTrainer = None
-        TrainingConfig = None
-        TrainingCallback = None
-        EmbeddingGenerator = None
-        EmbeddingCache = None
-        SemanticSearch = None
+        class DeepLearningTrainer:
+            def __init__(self, *args, **kwargs):
+                raise ImportError(
+                    "DeepLearningTrainer requires PyTorch. Install with: pip install agentnet[deeplearning]"
+                )
+        
+        class TrainingConfig:
+            def __init__(self, *args, **kwargs):
+                raise ImportError(
+                    "TrainingConfig requires PyTorch. Install with: pip install agentnet[deeplearning]"
+                )
+        
+        class TrainingCallback:
+            def __init__(self, *args, **kwargs):
+                raise ImportError(
+                    "TrainingCallback requires PyTorch. Install with: pip install agentnet[deeplearning]"
+                )
+        
+        class EmbeddingGenerator:
+            def __init__(self, *args, **kwargs):
+                raise ImportError(
+                    "EmbeddingGenerator requires sentence-transformers. Install with: pip install agentnet[deeplearning]"
+                )
+        
+        class EmbeddingCache:
+            def __init__(self, *args, **kwargs):
+                raise ImportError(
+                    "EmbeddingCache requires PyTorch. Install with: pip install agentnet[deeplearning]"
+                )
+        
+        class SemanticSearch:
+            def __init__(self, *args, **kwargs):
+                raise ImportError(
+                    "SemanticSearch requires FAISS. Install with: pip install agentnet[deeplearning]"
+                )
 else:
     _CORE_AVAILABLE = False
-    # Provide stub classes for type hints
-    class ModelRegistry:
-        def __init__(self, *args, **kwargs):
-            raise ImportError(
-                "ModelRegistry requires PyTorch. Install with: pip install agentnet[deeplearning]"
-            )
-    
-    class ModelMetadata:
-        def __init__(self, *args, **kwargs):
-            raise ImportError(
-                "ModelMetadata requires PyTorch. Install with: pip install agentnet[deeplearning]"
-            )
-    
-    class ModelArtifact:
-        def __init__(self, *args, **kwargs):
-            raise ImportError(
-                "ModelArtifact requires PyTorch. Install with: pip install agentnet[deeplearning]"
-            )
-    
+    # Provide stub classes when PyTorch not available
     class DeepLearningTrainer:
         def __init__(self, *args, **kwargs):
             raise ImportError(
