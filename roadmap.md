@@ -59,10 +59,25 @@ pip install -e .[full,dev,docs]
 **Remaining Issues:**
 - CI/CD automation missing (no GitHub Actions workflows)
 - Tool, policy, and provider ecosystems need expansion:
-  - Tool System Extensions: Tool capability registration, lifecycle hooks, real provider implementations, versioning
-  - Policy & Governance: Hierarchical policy composition, runtime enforcement engine, automated remediation, policy templates
-  - LLM Provider Adapters: OpenAI (GPT-4, streaming, function calling), Anthropic (Claude, tool use), Azure (managed identity), local models (Ollama, vLLM)
-  - Observability Enhancements: Grafana dashboards, distributed trace correlation, real-time alerting, custom exporters
+  - Tool System Extensions: 
+    - Advanced governance (capability registration, lifecycle hooks with pre/post execution, custom validators)
+    - Production providers (file system with sandboxing, database with connection pooling, API integrations with retry logic)
+    - Tool versioning (semantic versioning, deprecation management, backward compatibility)
+  - Policy & Governance: 
+    - Hierarchical policy composition (parent-child inheritance, override mechanisms, tenant-level hierarchies)
+    - Runtime enforcement engine (circuit breakers, violation tracking, automated remediation hooks)
+    - Policy templates (PII protection, content moderation, industry-specific packs)
+  - LLM Provider Adapters: 
+    - OpenAI (GPT-4/GPT-3.5 with streaming, function calling, vision, JSON mode)
+    - Anthropic (Claude 3 with prompt caching, tool use, extended context 100K+ tokens)
+    - Azure (managed identity, private endpoints, deployment management)
+    - Local models (Ollama, vLLM, LM Studio with model management and optimization)
+    - Provider infrastructure (fallback chains, cost optimization, load balancing)
+  - Observability Enhancements: 
+    - Grafana dashboards (agent performance, cost metrics, error rates, system health)
+    - Distributed trace correlation (W3C Trace Context, trace sampling, trace-to-logs correlation)
+    - Real-time alerting (anomaly detection, cost spikes, performance degradation)
+    - Custom exporters (Datadog, New Relic, CloudWatch, Prometheus federation, OTLP)
 - Risk register not tied to runtime enforcement or monitoring
 - ✅ Container deployment assets added (Dockerfile, docker-compose.yml)
 - ✅ networkx added to requirements.txt (was only in pyproject.toml)
@@ -95,29 +110,94 @@ pip install -e .[full,dev,docs]
 ## 🟠 Medium Priority (Expansion & Maturity)
 
 6. Tool System Extensions (governance, lifecycle hooks, capability registration)
-   - Needs expansion: 
-     - Advanced governance: Tool capability registration system, lifecycle hooks (pre/post execution), custom validators beyond examples
-     - Real providers: Production-ready tool implementations (file system, database, API integrations) beyond example tools
-     - Tool versioning and deprecation management
+   - Advanced governance:
+     - Tool capability registration system: Dynamic capability discovery, permission-based access control, capability-based tool selection
+     - Lifecycle hooks: Pre-execution validation hooks, post-execution auditing hooks, error handling hooks, resource cleanup hooks
+     - Custom validators: Schema validators beyond JSON schema, business logic validators, security validators, rate limit validators
+     - Tool authorization: Role-based access control (RBAC), attribute-based access control (ABAC), context-aware permissions
+   - Real providers (production-ready implementations):
+     - File system provider: Secure file operations with sandboxing, path validation, quota management
+     - Database provider: SQL/NoSQL query execution with connection pooling, query sanitization, transaction support
+     - API integrations: REST/GraphQL clients with retry logic, circuit breakers, API key management
+     - External service connectors: Cloud services (AWS, GCP, Azure), third-party APIs, webhook handlers
+   - Tool versioning and deprecation:
+     - Semantic versioning support (major.minor.patch)
+     - Backward compatibility guarantees
+     - Deprecation warnings and migration paths
+     - Version-specific routing and fallback mechanisms
+     - Changelog and migration documentation
 7. Policy & Governance (hierarchical policy composition, enforcement engine)
-   - Needs expansion:
-     - Hierarchical policy composition: Parent-child policy inheritance, policy override mechanisms, tenant-level policy hierarchies
-     - Enforcement engine: Runtime policy enforcement with circuit breakers, policy violation tracking, automated remediation hooks
-     - Policy templates and libraries for common use cases
+   - Hierarchical policy composition:
+     - Parent-child policy inheritance: Organizational → Team → Individual → Session hierarchy
+     - Policy override mechanisms: Explicit override rules, conflict resolution strategies, priority-based merging
+     - Tenant-level policy hierarchies: Multi-tenant isolation, tenant-specific policy namespaces, cross-tenant policy sharing
+     - Policy composition patterns: Additive composition, restrictive composition, context-aware composition
+   - Enforcement engine:
+     - Runtime policy enforcement: Real-time policy evaluation, async policy checks, policy caching for performance
+     - Circuit breakers: Policy failure thresholds, automatic policy bypass on critical paths, graceful degradation
+     - Policy violation tracking: Violation event logging, violation metrics and analytics, compliance reporting
+     - Automated remediation hooks: Auto-correction actions, violation notifications, escalation workflows
+   - Policy templates and libraries:
+     - Common use case templates: PII protection, content moderation, resource quotas, security policies
+     - Industry-specific policy packs: Healthcare (HIPAA), finance (PCI-DSS), government (FedRAMP)
+     - Policy versioning: Template versioning, policy rollback support, A/B testing for policy changes
+     - Policy marketplace: Shareable policy definitions, community policy library, policy import/export
 8. LLM Provider Adapters (OpenAI, Anthropic, Azure, local models)
-   - Needs expansion:
-     - OpenAI: GPT-4, GPT-3.5 adapters with streaming, function calling, vision support
-     - Anthropic: Claude adapter with prompt caching, tool use, extended context
-     - Azure: Azure OpenAI integration with managed identity, private endpoints
-     - Local models: Ollama, vLLM, LM Studio adapters with model management
-     - Provider fallback chains and cost optimization strategies
+   - OpenAI integration:
+     - Model support: GPT-4, GPT-4-turbo, GPT-3.5-turbo adapters with model-specific configurations
+     - Streaming support: Server-sent events (SSE), chunked responses, real-time token streaming
+     - Function calling: Native function calling API, parallel function calls, function result handling
+     - Vision support: Image input processing, multi-modal prompts, vision-enabled model routing
+     - Advanced features: JSON mode, reproducible outputs (seed), logprobs, token usage optimization
+   - Anthropic integration:
+     - Claude models: Claude 3 Opus, Sonnet, Haiku adapters with appropriate context windows
+     - Prompt caching: Cache-aware prompt construction, cache hit optimization, cost reduction strategies
+     - Tool use: Anthropic's tool use API, tool result formatting, multi-turn tool interactions
+     - Extended context: Long context handling (100K+ tokens), context window management, summarization fallbacks
+     - Safety features: Constitutional AI integration, harm prevention, content filtering
+   - Azure OpenAI integration:
+     - Managed identity: Azure AD authentication, service principal support, managed identity for VM/container deployments
+     - Private endpoints: VNet integration, private link support, secure networking configuration
+     - Deployment management: Model deployment selection, regional failover, quota management
+     - Enterprise features: Customer-managed keys, audit logging, compliance controls
+   - Local model support:
+     - Ollama adapter: Local model management, model pulling/updating, multi-model support
+     - vLLM adapter: High-performance inference, continuous batching, GPU optimization
+     - LM Studio adapter: Desktop integration, model switching, local API compatibility
+     - Model management: Model loading/unloading, resource allocation, health monitoring
+     - Performance optimization: Model quantization support, batching strategies, caching
+   - Provider infrastructure:
+     - Fallback chains: Primary → secondary → tertiary provider routing with automatic failover
+     - Cost optimization: Cost-aware routing, budget enforcement, usage analytics
+     - Load balancing: Round-robin, least-loaded, cost-optimized distribution
+     - Health checks: Provider availability monitoring, latency tracking, automatic removal of unhealthy providers
 9. ✅ Cost Tracking Integration (per-call metering, roll-up per agent/session) - COMPLETED
 10. Observability Enhancements (dashboards, distributed traces correlation)
-    - Needs expansion:
-      - Dashboards: Grafana dashboards for agent performance, cost metrics, error rates, system health
-      - Distributed traces correlation: Cross-service trace propagation, trace sampling strategies, trace-to-logs correlation
-      - Real-time alerting: Alert rules for anomalies, cost spikes, performance degradation
-      - Custom metrics exporters for various observability platforms (Datadog, New Relic, etc.)
+    - Dashboards:
+      - Grafana dashboards: Pre-built dashboard templates for AgentNet metrics
+      - Agent performance metrics: Request latency, throughput, success/failure rates, agent-specific performance
+      - Cost metrics: Real-time cost tracking, cost per agent/session, budget utilization, cost forecasting
+      - Error rates: Error distribution by type, error trends, failure pattern analysis
+      - System health: Resource utilization (CPU, memory), queue depths, connection pool status, provider health
+      - Custom dashboard builder: Drag-and-drop widgets, custom metric queries, dashboard templating
+    - Distributed traces correlation:
+      - Cross-service trace propagation: W3C Trace Context standard, trace ID propagation across services
+      - Trace sampling strategies: Adaptive sampling, priority-based sampling, error-biased sampling
+      - Trace-to-logs correlation: Automatic trace ID injection in logs, log search by trace ID, unified observability
+      - Span enrichment: Custom span attributes, business context tags, performance annotations
+      - Trace visualization: Service dependency graphs, critical path analysis, latency breakdown
+    - Real-time alerting:
+      - Alert rules: Configurable threshold-based alerts, anomaly detection, trend-based alerts
+      - Anomaly detection: ML-based anomaly detection, baseline comparison, automatic threshold adjustment
+      - Cost spike alerts: Budget threshold alerts, unusual spending pattern detection, cost attribution
+      - Performance degradation: Latency degradation alerts, throughput drops, error rate spikes
+      - Alert channels: Email, Slack, PagerDuty, webhook integrations, SMS notifications
+    - Custom metrics exporters:
+      - Datadog exporter: Native Datadog integration, DogStatsD support, custom metric tags
+      - New Relic exporter: New Relic API integration, custom events, transaction tracing
+      - CloudWatch exporter: AWS CloudWatch metrics, log streams, custom namespaces
+      - Prometheus federation: Prometheus remote write, metric relabeling, multi-cluster federation
+      - Generic exporters: OTLP (OpenTelemetry Protocol), StatsD, InfluxDB, custom HTTP endpoints
 
 ## 🟢 Low Priority & Ongoing Maintenance
 
@@ -131,7 +211,12 @@ pip install -e .[full,dev,docs]
 
 ## In-Progress & Not Yet Integrated
 
-- Tool & Policy governance (partial scaffolding - needs advanced governance with lifecycle hooks, capability registration, and production tool providers)
+- Tool & Policy governance (partial scaffolding):
+  - Needs advanced governance: Capability registration system, lifecycle hooks (pre/post execution), custom validators (schema, business logic, security)
+  - Needs production tool providers: File system (sandboxed), database (SQL/NoSQL), API integrations (REST/GraphQL), cloud services
+  - Needs tool versioning: Semantic versioning, deprecation management, backward compatibility
+  - Needs policy templates: Common use cases (PII, moderation), industry-specific packs (HIPAA, PCI-DSS, FedRAMP)
+  - Needs enforcement engine: Runtime enforcement with circuit breakers, violation tracking, automated remediation
 - ✅ Cost flow instrumentation (COMPLETED - now integrated with agent/session lifecycle)
 - CI/CD automation (absent - needs GitHub Actions workflows for lint, test, build, deploy)
 - Risk Register (implemented but not tied to runtime enforcement or monitoring - needs integration with policy engine and alerting)
@@ -196,22 +281,25 @@ Updated audit reflects completion of Security & Isolation and Cost Tracking Inte
 ### Outstanding Gaps
 - CI/CD automation (GitHub Actions workflows for lint, test, build, deploy)
 - Provider ecosystem expansion:
-  - OpenAI: GPT-4, streaming, function calling, vision support
-  - Anthropic: Claude adapter with tool use and extended context
-  - Azure: Azure OpenAI with managed identity
-  - Local models: Ollama, vLLM, LM Studio adapters
+  - OpenAI: GPT-4, GPT-4-turbo, GPT-3.5-turbo adapters with streaming, function calling, vision support, JSON mode
+  - Anthropic: Claude 3 (Opus, Sonnet, Haiku) adapters with prompt caching, tool use, extended context (100K+ tokens)
+  - Azure: Azure OpenAI integration with managed identity, private endpoints, VNet integration, deployment management
+  - Local models: Ollama, vLLM, LM Studio adapters with model management, performance optimization, quantization support
+  - Provider infrastructure: Fallback chains, cost optimization, load balancing, health monitoring
 - Advanced governance:
-  - Hierarchical policy composition with inheritance
-  - Runtime enforcement engine with circuit breakers
-  - Advanced tool lifecycle (registration, versioning, hooks)
-  - Production tool providers beyond examples
+  - Hierarchical policy composition with parent-child inheritance (Organizational → Team → Individual → Session)
+  - Runtime enforcement engine with circuit breakers, async policy checks, graceful degradation
+  - Advanced tool lifecycle: Capability registration, pre/post execution hooks, custom validators (schema, business logic, security)
+  - Production tool providers: File system (sandboxed), database (SQL/NoSQL), API integrations (REST/GraphQL), cloud services
+  - Tool versioning: Semantic versioning, backward compatibility, deprecation management
+  - Policy templates: PII protection, content moderation, industry-specific packs (HIPAA, PCI-DSS, FedRAMP)
 - ✅ Container deployment assets (Docker, docker-compose) - ADDED
 - Risk register runtime enforcement & monitoring integration
 - Observability enhancements:
-  - Grafana dashboards for metrics visualization
-  - Distributed traces correlation across services
-  - Real-time alerting for anomalies and cost spikes
-  - Custom exporters for observability platforms
+  - Grafana dashboards: Agent performance, cost metrics, error rates, system health, custom dashboard builder
+  - Distributed traces correlation: W3C Trace Context, cross-service propagation, trace sampling, trace-to-logs correlation, span enrichment
+  - Real-time alerting: Threshold alerts, anomaly detection (ML-based), cost spike alerts, performance degradation alerts
+  - Custom exporters: Datadog, New Relic, CloudWatch, Prometheus federation, OTLP, generic HTTP endpoints
 - Advanced evaluation scenarios (expanded benchmarks, stress tests)
 
 **References:**  
