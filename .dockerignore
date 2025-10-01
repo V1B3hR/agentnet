@@ -1,0 +1,75 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Testing
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+docs/_build/
+site/
+*.md
+!README.md
+
+# Data and logs
+*.log
+cost_logs/
+risk_data/
+mlops_data/
+api_eval_results/
+demo_output/
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+.tmp/
+tmp/
+
+# Docker
+docker-compose.override.yml
+.dockerignore
+Dockerfile

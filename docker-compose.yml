@@ -1,0 +1,105 @@
+# AgentNet Docker Compose Configuration
+# For development and testing
+
+services:
+  # AgentNet application
+  agentnet:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: agentnet-app
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./cost_logs:/app/cost_logs
+      - ./risk_data:/app/risk_data
+      - ./mlops_data:/app/mlops_data
+      - ./configs:/app/configs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - AGENTNET_ENV=development
+      - LOG_LEVEL=INFO
+    command: python -m agentnet --demo sync
+    networks:
+      - agentnet-network
+    depends_on:
+      - postgres
+      - redis
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    container_name: agentnet-postgres
+    environment:
+      - POSTGRES_USER=agentnet
+      - POSTGRES_PASSWORD=agentnet_dev
+      - POSTGRES_DB=agentnet_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - agentnet-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentnet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    container_name: agentnet-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - agentnet-network
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Optional: Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: agentnet-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    networks:
+      - agentnet-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  # Optional: Grafana for dashboards
+  grafana:
+    image: grafana/grafana:latest
+    container_name: agentnet-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - agentnet-network
+    depends_on:
+      - prometheus
+
+networks:
+  agentnet-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  prometheus-data:
+  grafana-data:
