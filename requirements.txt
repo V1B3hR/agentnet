@@ -18,6 +18,9 @@ prometheus-client>=0.14.0
 # Observability - distributed tracing (required for agentnet/observability/tracing.py)
 opentelemetry-api>=1.15.0
 
+# DAG and orchestration (required for agentnet/core/orchestration/dag_planner.py)
+networkx>=3.0
+
 # Optional: Additional OpenTelemetry components for full tracing functionality
 # opentelemetry-sdk>=1.15.0
 # opentelemetry-exporter-jaeger>=1.15.0

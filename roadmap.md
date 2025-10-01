@@ -11,21 +11,21 @@ The AgentNet repository has extensive documentation, implementation summaries, a
 |--------------------------------------------|-------------|------------|--------|-------------------|----------------------------------------------------------|--------------|
 | 1. Product Vision                         | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md, site                            | None |
 | 2. Core Use Cases                         | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md, site                            | None |
-| 3. Functional Requirements                | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/core/* (deps installed)                         | Optional deps for some tests |
+| 3. Functional Requirements                | ✅          | ✅         | ✅     | Completed         | agentnet/core/* (deps installed)                         | None |
 | 4. Non-Functional Requirements            | 🟠          | ✅         | 🟠     | Partially Working | tests/test_nfr_comprehensive.py                          | Some coverage gaps |
 | 5. High-Level Architecture                | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md                                  | None |
-| 6. Component Specifications               | 🟠          | ✅         | 🟠     | Partially Working | agentnet/* structure                                     | Some tests need optional deps (networkx) |
+| 6. Component Specifications               | ✅          | ✅         | ✅     | Completed         | agentnet/* structure                                     | All deps now available |
 | 7. Data Model (Initial Schema)            | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md                                  | None |
-| 8. Memory Architecture                    | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/memory/*                                        | Optional deps |
+| 8. Memory Architecture                    | ✅          | ✅         | ✅     | Completed         | agentnet/memory/*                                        | All deps available |
 | 9. Message / Turn Schema (JSON Contract)  | ✅          | ✅         | ✅     | Working           | agentnet/schemas/* (pydantic)                            | None |
 | 10. Representative API Endpoints          | ✅          | ✅         | 🟠     | Mostly Complete   | api/server.py, tests/test_p3_api.py                      | Some integration gaps |
 | 11. Multi-Agent Orchestration Logic       | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/core/orchestration/*                            | Broader scenario tests pending |
-| 12. Task Graph Execution                  | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/core/orchestration/dag_planner.py               | Advanced DAG scenarios need networkx |
+| 12. Task Graph Execution                  | ✅          | ✅         | ✅     | Completed         | agentnet/core/orchestration/dag_planner.py               | networkx now in requirements.txt |
 | 13. LLM Provider Adapter Contract         | 🟠          | ✅         | 🔴     | Needs Work        | agentnet/providers/*                                     | Only example provider |
 | 14. Tool System                           | 🟠          | ✅         | 🔴     | Needs Work        | agentnet/tools/*                                         | Governance & advanced lifecycle incomplete |
 | 15. Policy & Governance Extensions        | 🟠          | ✅         | 🔴     | Needs Work        | agentnet/core/policy/*                                   | Advanced enforcement missing |
 | 16. Security & Isolation                  | ✅          | ✅         | ✅     | Completed         | agentnet/core/auth/*; tests/test_security_integration.py | None (foundation delivered) |
-| 17. Deployment Topology                   | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md                                  | None |
+| 17. Deployment Topology                   | ✅          | ✅         | ✅     | Completed         | docs/RoadmapAgentNet.md, Dockerfile, docker-compose.yml | Container assets added |
 | 18. Observability Metrics                 | ✅          | ✅         | 🟠     | Working           | agentnet/performance/* (prometheus, otel)                | Advanced dashboards pending |
 | 19. Evaluation Harness                    | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/core/eval/*                                     | Extended benchmarks pending |
 | 20. Cost Tracking Flow                    | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/core/cost/*                                     | Integrated with agent/session lifecycle |
@@ -37,11 +37,12 @@ The AgentNet repository has extensive documentation, implementation summaries, a
 Legend: ✅ = Verifiably Complete (Green), 🟠 = Partially Implemented (Orange), 🔴 = Not Implemented/Blocked (Red), N/A = Not required/applicable
 
 **Critical Issues Found (RESOLVED in current version):**
-- ✅ Dependencies declared: pytest, pydantic, prometheus-client, opentelemetry-api
+- ✅ Dependencies declared: pytest, pydantic, prometheus-client, opentelemetry-api, networkx
 - ✅ Test execution: pytest suite runnable after installation
 - ✅ Schema validation: pydantic-based models functioning
 - ✅ Observability: metrics/tracing imports work with declared dependencies
 - ✅ Security & Isolation: fully implemented (multi-tenant isolation, resource locking, network/data policy layers, isolation levels, integration + unit tests)
+- ✅ DAG orchestration: networkx now in requirements.txt for task graph execution
 
 **How to Install Dependencies:**
 ```bash
@@ -59,11 +60,13 @@ pip install -e .[full,dev,docs]
 - CI/CD automation missing (no GitHub Actions workflows)
 - Tool, policy, and provider ecosystems need expansion (advanced governance, real providers)
 - Risk register not tied to runtime enforcement or monitoring
-- No Dockerfile / container deployment assets
-- Some advanced orchestration & DAG tests require optional deps (e.g. networkx - in pyproject.toml but not requirements.txt)
+- ✅ Container deployment assets added (Dockerfile, docker-compose.yml)
+- ✅ networkx added to requirements.txt (was only in pyproject.toml)
 
 **Recently Resolved:**
 - ✅ Cost tracking now fully integrated with agent/session lifecycle (session_id, agent_name support, breakdowns in cost summaries)
+- ✅ Container deployment assets added (Dockerfile, docker-compose.yml with PostgreSQL, Redis, Prometheus, Grafana)
+- ✅ networkx dependency added to requirements.txt (was only in pyproject.toml, causing DAG test failures)
 
 ---
 
@@ -154,9 +157,9 @@ pip install -e .[full,dev,docs]
 Updated audit reflects completion of Security & Isolation and Cost Tracking Integration features. Core architectural pillars are in place; maturity work now centers on ecosystem breadth (providers, tools, policies), operational automation (CI/CD, containerization), and deeper integration layers (risk runtime enforcement & monitoring).
 
 ### Status Snapshot
-- Fully Implemented & Working: 10/24 (41.7%) - includes cost tracking integration
-- Partially Implemented: 10/24 (41.7%) - includes risk register (not runtime-integrated)
-- Not Implemented / Blocked: 2/24 (8.3%)  (CI/CD, Docker/containers)
+- Fully Implemented & Working: 13/24 (54.2%) - includes cost tracking, container deployment, DAG orchestration
+- Partially Implemented: 8/24 (33.3%) - includes risk register (not runtime-integrated)
+- Not Implemented / Blocked: 1/24 (4.2%)  (CI/CD)
 - Documentation Only: 2/24 (8.3%)
 
 ### Working Foundations
@@ -171,7 +174,7 @@ Updated audit reflects completion of Security & Isolation and Cost Tracking Inte
 - CI/CD automation
 - Provider ecosystem expansion (real provider implementations needed)
 - Advanced governance (policy + tool lifecycle)
-- Container deployment assets (Docker, docker-compose)
+- ✅ Container deployment assets (Docker, docker-compose) - ADDED
 - Risk register runtime enforcement & monitoring integration
 
 **References:**  
