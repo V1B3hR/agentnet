@@ -58,7 +58,11 @@ pip install -e .[full,dev,docs]
 
 **Remaining Issues:**
 - CI/CD automation missing (no GitHub Actions workflows)
-- Tool, policy, and provider ecosystems need expansion (advanced governance, real providers)
+- Tool, policy, and provider ecosystems need expansion:
+  - Tool System Extensions: advanced governance, real providers
+  - Policy & Governance: hierarchical policy composition, enforcement engine
+  - LLM Provider Adapters: OpenAI, Anthropic, Azure, local models
+  - Observability Enhancements: dashboards, distributed traces correlation
 - Risk register not tied to runtime enforcement or monitoring
 - ✅ Container deployment assets added (Dockerfile, docker-compose.yml)
 - ✅ networkx added to requirements.txt (was only in pyproject.toml)
@@ -91,10 +95,14 @@ pip install -e .[full,dev,docs]
 ## 🟠 Medium Priority (Expansion & Maturity)
 
 6. Tool System Extensions (governance, lifecycle hooks, capability registration)
+   - Needs expansion: advanced governance, real providers
 7. Policy & Governance (hierarchical policy composition, enforcement engine)
+   - Needs expansion: hierarchical policy composition, enforcement engine
 8. LLM Provider Adapters (OpenAI, Anthropic, Azure, local models)
+   - Needs expansion: OpenAI, Anthropic, Azure, local models
 9. ✅ Cost Tracking Integration (per-call metering, roll-up per agent/session) - COMPLETED
 10. Observability Enhancements (dashboards, distributed traces correlation)
+    - Needs expansion: dashboards, distributed traces correlation
 
 ## 🟢 Low Priority & Ongoing Maintenance
 
@@ -108,10 +116,10 @@ pip install -e .[full,dev,docs]
 
 ## In-Progress & Not Yet Integrated
 
-- Tool & Policy governance (partial scaffolding)
+- Tool & Policy governance (partial scaffolding - needs advanced governance, real providers)
 - ✅ Cost flow instrumentation (COMPLETED - now integrated with agent/session lifecycle)
 - CI/CD automation (absent)
-- Risk Register (implemented but lacks runtime linkage/enforcement)
+- Risk Register (implemented but not tied to runtime enforcement or monitoring)
 - Advanced evaluation scenarios (benchmark harness partially populated)
 
 ---
@@ -172,10 +180,11 @@ Updated audit reflects completion of Security & Isolation and Cost Tracking Inte
 
 ### Outstanding Gaps
 - CI/CD automation
-- Provider ecosystem expansion (real provider implementations needed)
-- Advanced governance (policy + tool lifecycle)
+- Provider ecosystem expansion (OpenAI, Anthropic, Azure, local models - real provider implementations needed)
+- Advanced governance (hierarchical policy composition, enforcement engine, advanced tool lifecycle)
 - ✅ Container deployment assets (Docker, docker-compose) - ADDED
 - Risk register runtime enforcement & monitoring integration
+- Observability enhancements (dashboards, distributed traces correlation)
 
 **References:**  
 - docs/RoadmapAgentNet.md  
