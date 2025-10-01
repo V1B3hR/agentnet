@@ -28,9 +28,9 @@ The AgentNet repository has extensive documentation, implementation summaries, a
 | 17. Deployment Topology                   | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md                                  | None |
 | 18. Observability Metrics                 | ✅          | ✅         | 🟠     | Working           | agentnet/performance/* (prometheus, otel)                | Advanced dashboards pending |
 | 19. Evaluation Harness                    | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/core/eval/*                                     | Extended benchmarks pending |
-| 20. Cost Tracking Flow                    | 🟠          | ✅         | 🔴     | Needs Work        | agentnet/core/cost/*                                     | Session integration incomplete |
+| 20. Cost Tracking Flow                    | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/core/cost/*                                     | Integrated with agent/session lifecycle |
 | 21. CI/CD Pipeline                        | 🔴          | ✅         | 🔴     | Not Implemented   | (no .github/workflows/)                                  | No automation |
-| 22. Risk Register                         | 🔴          | ✅         | N/A    | Documentation Only| docs/RoadmapAgentNet.md                                  | Not integrated |
+| 22. Risk Register                         | 🟠          | ✅         | N/A    | Partially Implemented | agentnet/risk/__init__.py                           | Implemented but not tied to runtime enforcement |
 | 23. Phase Roadmap                         | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md                                  | None |
 | 24. Sprint Breakdown                      | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md                                  | None |
 
@@ -57,11 +57,13 @@ pip install -e .[full,dev,docs]
 
 **Remaining Issues:**
 - CI/CD automation missing (no GitHub Actions workflows)
-- Cost tracking not fully integrated with agent/session lifecycle
 - Tool, policy, and provider ecosystems need expansion (advanced governance, real providers)
 - Risk register not tied to runtime enforcement or monitoring
 - No Dockerfile / container deployment assets
-- Some advanced orchestration & DAG tests require optional deps (e.g. networkx)
+- Some advanced orchestration & DAG tests require optional deps (e.g. networkx - in pyproject.toml but not requirements.txt)
+
+**Recently Resolved:**
+- ✅ Cost tracking now fully integrated with agent/session lifecycle (session_id, agent_name support, breakdowns in cost summaries)
 
 ---
 
@@ -88,7 +90,7 @@ pip install -e .[full,dev,docs]
 6. Tool System Extensions (governance, lifecycle hooks, capability registration)
 7. Policy & Governance (hierarchical policy composition, enforcement engine)
 8. LLM Provider Adapters (OpenAI, Anthropic, Azure, local models)
-9. Cost Tracking Integration (per-call metering, roll-up per agent/session)
+9. ✅ Cost Tracking Integration (per-call metering, roll-up per agent/session) - COMPLETED
 10. Observability Enhancements (dashboards, distributed traces correlation)
 
 ## 🟢 Low Priority & Ongoing Maintenance
@@ -104,9 +106,9 @@ pip install -e .[full,dev,docs]
 ## In-Progress & Not Yet Integrated
 
 - Tool & Policy governance (partial scaffolding)
-- Cost flow instrumentation (basic structures only)
+- ✅ Cost flow instrumentation (COMPLETED - now integrated with agent/session lifecycle)
 - CI/CD automation (absent)
-- Risk Register (static doc; lacks runtime linkage)
+- Risk Register (implemented but lacks runtime linkage/enforcement)
 - Advanced evaluation scenarios (benchmark harness partially populated)
 
 ---
@@ -122,6 +124,7 @@ pip install -e .[full,dev,docs]
 - Observability (baseline metrics/tracing)
 - Evaluation Harness (baseline)
 - Phase Roadmap & Sprint Breakdown
+- Cost Tracking & Integration (agent/session lifecycle support)
 
 ---
 
@@ -148,12 +151,12 @@ pip install -e .[full,dev,docs]
 
 ## Conclusion
 
-Updated audit reflects completion of the Security & Isolation feature set. Core architectural pillars are in place; maturity work now centers on ecosystem breadth (providers, tools, policies), operational automation (CI/CD, containerization), and deeper integration layers (cost tracking, risk linkage).
+Updated audit reflects completion of Security & Isolation and Cost Tracking Integration features. Core architectural pillars are in place; maturity work now centers on ecosystem breadth (providers, tools, policies), operational automation (CI/CD, containerization), and deeper integration layers (risk runtime enforcement & monitoring).
 
 ### Status Snapshot
-- Fully Implemented & Working: 9/24 (37.5%)
-- Partially Implemented: 10/24 (41.7%)
-- Not Implemented / Blocked: 3/24 (12.5%)  (CI/CD, Risk (code-level), advanced cost integration)
+- Fully Implemented & Working: 10/24 (41.7%) - includes cost tracking integration
+- Partially Implemented: 10/24 (41.7%) - includes risk register (not runtime-integrated)
+- Not Implemented / Blocked: 2/24 (8.3%)  (CI/CD, Docker/containers)
 - Documentation Only: 2/24 (8.3%)
 
 ### Working Foundations
@@ -162,13 +165,14 @@ Updated audit reflects completion of the Security & Isolation feature set. Core 
 - Schema validation / API surface
 - Observability instrumentation (baseline)
 - Evaluation harness + test execution pipeline (local)
+- Cost tracking with agent/session lifecycle integration
 
 ### Outstanding Gaps
 - CI/CD automation
-- Provider ecosystem expansion
+- Provider ecosystem expansion (real provider implementations needed)
 - Advanced governance (policy + tool lifecycle)
-- Cost tracking integration path
-- Operational deployment assets (Docker, infra guidance)
+- Container deployment assets (Docker, docker-compose)
+- Risk register runtime enforcement & monitoring integration
 
 **References:**  
 - docs/RoadmapAgentNet.md  
