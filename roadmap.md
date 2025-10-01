@@ -21,16 +21,16 @@ The AgentNet repository has extensive documentation, implementation summaries, a
 | 10. Representative API Endpoints          | ✅          | ✅         | 🟠     | Mostly Complete   | api/server.py, tests/test_p3_api.py                      | Some integration gaps |
 | 11. Multi-Agent Orchestration Logic       | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/core/orchestration/*                            | Broader scenario tests pending |
 | 12. Task Graph Execution                  | ✅          | ✅         | ✅     | Completed         | agentnet/core/orchestration/dag_planner.py               | networkx now in requirements.txt |
-| 13. LLM Provider Adapter Contract         | 🟠          | ✅         | 🔴     | Needs Work        | agentnet/providers/*                                     | Only example provider |
-| 14. Tool System                           | 🟠          | ✅         | 🔴     | Needs Work        | agentnet/tools/*                                         | Governance & advanced lifecycle incomplete |
-| 15. Policy & Governance Extensions        | 🟠          | ✅         | 🔴     | Needs Work        | agentnet/core/policy/*                                   | Advanced enforcement missing |
+| 13. LLM Provider Adapter Contract         | 🟠          | ✅         | 🔴     | Needs Work        | agentnet/providers/*                                     | Only example provider exists; needs OpenAI, Anthropic, Azure, local model adapters |
+| 14. Tool System                           | 🟠          | ✅         | 🔴     | Needs Work        | agentnet/tools/*                                         | Basic tools exist; needs advanced governance, lifecycle hooks, production providers |
+| 15. Policy & Governance Extensions        | 🟠          | ✅         | 🔴     | Needs Work        | agentnet/core/policy/*                                   | Basic policies exist; needs hierarchical composition, runtime enforcement engine |
 | 16. Security & Isolation                  | ✅          | ✅         | ✅     | Completed         | agentnet/core/auth/*; tests/test_security_integration.py | None (foundation delivered) |
 | 17. Deployment Topology                   | ✅          | ✅         | ✅     | Completed         | docs/RoadmapAgentNet.md, Dockerfile, docker-compose.yml | Container assets added |
-| 18. Observability Metrics                 | ✅          | ✅         | 🟠     | Working           | agentnet/performance/* (prometheus, otel)                | Advanced dashboards pending |
-| 19. Evaluation Harness                    | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/core/eval/*                                     | Extended benchmarks pending |
+| 18. Observability Metrics                 | ✅          | ✅         | 🟠     | Working           | agentnet/performance/* (prometheus, otel)                | Basic metrics/tracing working; needs Grafana dashboards, distributed trace correlation |
+| 19. Evaluation Harness                    | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/core/eval/*                                     | Basic harness working; needs expanded benchmarks, stress tests |
 | 20. Cost Tracking Flow                    | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/core/cost/*                                     | Integrated with agent/session lifecycle |
 | 21. CI/CD Pipeline                        | 🔴          | ✅         | 🔴     | Not Implemented   | (no .github/workflows/)                                  | No automation |
-| 22. Risk Register                         | 🟠          | ✅         | N/A    | Partially Implemented | agentnet/risk/__init__.py                           | Implemented but not tied to runtime enforcement |
+| 22. Risk Register                         | 🟠          | ✅         | N/A    | Partially Implemented | agentnet/risk/__init__.py                           | Risk register implemented; not tied to runtime enforcement or monitoring |
 | 23. Phase Roadmap                         | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md                                  | None |
 | 24. Sprint Breakdown                      | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md                                  | None |
 
@@ -59,10 +59,10 @@ pip install -e .[full,dev,docs]
 **Remaining Issues:**
 - CI/CD automation missing (no GitHub Actions workflows)
 - Tool, policy, and provider ecosystems need expansion:
-  - Tool System Extensions: advanced governance, real providers
-  - Policy & Governance: hierarchical policy composition, enforcement engine
-  - LLM Provider Adapters: OpenAI, Anthropic, Azure, local models
-  - Observability Enhancements: dashboards, distributed traces correlation
+  - Tool System Extensions: Tool capability registration, lifecycle hooks, real provider implementations, versioning
+  - Policy & Governance: Hierarchical policy composition, runtime enforcement engine, automated remediation, policy templates
+  - LLM Provider Adapters: OpenAI (GPT-4, streaming, function calling), Anthropic (Claude, tool use), Azure (managed identity), local models (Ollama, vLLM)
+  - Observability Enhancements: Grafana dashboards, distributed trace correlation, real-time alerting, custom exporters
 - Risk register not tied to runtime enforcement or monitoring
 - ✅ Container deployment assets added (Dockerfile, docker-compose.yml)
 - ✅ networkx added to requirements.txt (was only in pyproject.toml)
@@ -95,14 +95,29 @@ pip install -e .[full,dev,docs]
 ## 🟠 Medium Priority (Expansion & Maturity)
 
 6. Tool System Extensions (governance, lifecycle hooks, capability registration)
-   - Needs expansion: advanced governance, real providers
+   - Needs expansion: 
+     - Advanced governance: Tool capability registration system, lifecycle hooks (pre/post execution), custom validators beyond examples
+     - Real providers: Production-ready tool implementations (file system, database, API integrations) beyond example tools
+     - Tool versioning and deprecation management
 7. Policy & Governance (hierarchical policy composition, enforcement engine)
-   - Needs expansion: hierarchical policy composition, enforcement engine
+   - Needs expansion:
+     - Hierarchical policy composition: Parent-child policy inheritance, policy override mechanisms, tenant-level policy hierarchies
+     - Enforcement engine: Runtime policy enforcement with circuit breakers, policy violation tracking, automated remediation hooks
+     - Policy templates and libraries for common use cases
 8. LLM Provider Adapters (OpenAI, Anthropic, Azure, local models)
-   - Needs expansion: OpenAI, Anthropic, Azure, local models
+   - Needs expansion:
+     - OpenAI: GPT-4, GPT-3.5 adapters with streaming, function calling, vision support
+     - Anthropic: Claude adapter with prompt caching, tool use, extended context
+     - Azure: Azure OpenAI integration with managed identity, private endpoints
+     - Local models: Ollama, vLLM, LM Studio adapters with model management
+     - Provider fallback chains and cost optimization strategies
 9. ✅ Cost Tracking Integration (per-call metering, roll-up per agent/session) - COMPLETED
 10. Observability Enhancements (dashboards, distributed traces correlation)
-    - Needs expansion: dashboards, distributed traces correlation
+    - Needs expansion:
+      - Dashboards: Grafana dashboards for agent performance, cost metrics, error rates, system health
+      - Distributed traces correlation: Cross-service trace propagation, trace sampling strategies, trace-to-logs correlation
+      - Real-time alerting: Alert rules for anomalies, cost spikes, performance degradation
+      - Custom metrics exporters for various observability platforms (Datadog, New Relic, etc.)
 
 ## 🟢 Low Priority & Ongoing Maintenance
 
@@ -116,11 +131,11 @@ pip install -e .[full,dev,docs]
 
 ## In-Progress & Not Yet Integrated
 
-- Tool & Policy governance (partial scaffolding - needs advanced governance, real providers)
+- Tool & Policy governance (partial scaffolding - needs advanced governance with lifecycle hooks, capability registration, and production tool providers)
 - ✅ Cost flow instrumentation (COMPLETED - now integrated with agent/session lifecycle)
-- CI/CD automation (absent)
-- Risk Register (implemented but not tied to runtime enforcement or monitoring)
-- Advanced evaluation scenarios (benchmark harness partially populated)
+- CI/CD automation (absent - needs GitHub Actions workflows for lint, test, build, deploy)
+- Risk Register (implemented but not tied to runtime enforcement or monitoring - needs integration with policy engine and alerting)
+- Advanced evaluation scenarios (benchmark harness partially populated - needs expanded test scenarios, performance benchmarks, stress tests)
 
 ---
 
@@ -179,12 +194,25 @@ Updated audit reflects completion of Security & Isolation and Cost Tracking Inte
 - Cost tracking with agent/session lifecycle integration
 
 ### Outstanding Gaps
-- CI/CD automation
-- Provider ecosystem expansion (OpenAI, Anthropic, Azure, local models - real provider implementations needed)
-- Advanced governance (hierarchical policy composition, enforcement engine, advanced tool lifecycle)
+- CI/CD automation (GitHub Actions workflows for lint, test, build, deploy)
+- Provider ecosystem expansion:
+  - OpenAI: GPT-4, streaming, function calling, vision support
+  - Anthropic: Claude adapter with tool use and extended context
+  - Azure: Azure OpenAI with managed identity
+  - Local models: Ollama, vLLM, LM Studio adapters
+- Advanced governance:
+  - Hierarchical policy composition with inheritance
+  - Runtime enforcement engine with circuit breakers
+  - Advanced tool lifecycle (registration, versioning, hooks)
+  - Production tool providers beyond examples
 - ✅ Container deployment assets (Docker, docker-compose) - ADDED
 - Risk register runtime enforcement & monitoring integration
-- Observability enhancements (dashboards, distributed traces correlation)
+- Observability enhancements:
+  - Grafana dashboards for metrics visualization
+  - Distributed traces correlation across services
+  - Real-time alerting for anomalies and cost spikes
+  - Custom exporters for observability platforms
+- Advanced evaluation scenarios (expanded benchmarks, stress tests)
 
 **References:**  
 - docs/RoadmapAgentNet.md  
