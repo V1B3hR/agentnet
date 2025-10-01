@@ -33,7 +33,7 @@ from agentnet.tools.base import ToolSpec, ToolStatus
 class TestAdvancedPolicyRules:
     """Test advanced policy rule types implementation."""
 
-    def setUp(self):
+    def setup_method(self):
         self.policy_engine = PolicyEngine(name="test_advanced_policies")
 
     def test_semantic_similarity_rule_creation(self):
@@ -194,7 +194,7 @@ class TestAdvancedPolicyRules:
 class TestAgentOrchestrationPolicies:
     """Test agent orchestration and coordination policies."""
 
-    def setUp(self):
+    def setup_method(self):
         self.policy_engine = PolicyEngine(name="orchestration_test")
         
         # Add orchestration rules
@@ -286,7 +286,7 @@ class TestAgentOrchestrationPolicies:
 class TestToolGovernanceAndSecurity:
     """Test enhanced tool governance and security features."""
 
-    def setUp(self):
+    def setup_method(self):
         self.registry = ToolRegistry()
         self.policy_engine = PolicyEngine(name="tool_governance")
         self.tool_executor = ToolExecutor(
@@ -386,7 +386,7 @@ class TestToolGovernanceAndSecurity:
 class TestSecurityIsolationEnhancements:
     """Test enhanced security isolation mechanisms."""
 
-    def setUp(self):
+    def setup_method(self):
         self.rbac_manager = RBACManager()
         self.isolation_manager = SecurityIsolationManager()
         
