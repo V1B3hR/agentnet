@@ -4,116 +4,129 @@ Source-derived from: README.md and roadmap.md (commit 60f4da8)
 Scope: Only unimplemented, partial, planned, or explicitly outstanding work.  
 Priority scale:   P1 (High) < P2 (Medium) < P3 (Strategic / Long-Term)
 
-
 ---
 
 ## 🟠 P1 – High Priority (Stability, Safety, Core Feature Completion)
 
 ### 1. Mirror Agents with Noise Injection ("Dusty Mirror")
 - Purpose: Robustness & variance testing.
-- Implementation:
-  - MirrorAgent wrapper: clones base agent, injects perturbations (sampling temperature jitter, prompt paraphrasing, token dropout).
-  - Compare divergence scores (semantic similarity, factual variance).
-- Acceptance: Example in `examples/mirror_agents_demo.py`; test asserting diversity > threshold.
+- Implementation Plan:
+  - `MirrorAgent` wrapper: clone base agent; inject perturbations (temperature jitter, prompt paraphrasing, token dropout / masking).
+  - Divergence analysis module: semantic similarity (e.g., cosine on embeddings), factual variance heuristics, output structure delta.
+  - Optional adversarial noise profile (extreme temperature + paraphrase).
+- Acceptance:
+  - Example: `examples/mirror_agents_demo.py`
+  - Test: `tests/test_mirror_agents.py` asserting diversity score > configured threshold while maintaining semantic intent bounds.
 
-### 2. Complete Phase 9 Deep Learning Remaining Work
-Core scaffolding is complete with registry, trainer, embeddings, and neural reasoning modules. The following enhancements remain:
-- Model artifact version diffing & rollback
-- Distributed training orchestration templates (multi-node)
-- Embedding batch optimizer (adaptive batch size, precision)
-- Fine-tuning evaluation harness integration (auto-benchmark on finish)
-- GPU resource scheduler (multi-session fairness)
-- Full PyTorch trainer implementation (beyond stubs)
-- Actual embedding generation with sentence-transformers (beyond stubs)
-- Neural reasoning implementations (beyond stubs)
-- Acceptance: All features fully functional; `examples/phase9_training_pipeline_demo.py` demonstrates end-to-end training.
+### 2. Policy Engine Enhancements
+- Add:
+  - Rule priority / weighting & deterministic conflict resolution.
+  - Conflict explanation object (structured: triggering rules, resolution path, suppressed rules).
+  - Hot reload for policies without full process restart (file + registry watcher).
+- Notes:
+  - Baseline engine exists: `agentnet/core/policy/engine.py`
+  - No current priority arbitration or reload hooks.
+- Acceptance:
+  - Tests: conflicting policy scenario yields stable chosen rule.
+  - Reload test: modifying a rule file updates active policy set in-process.
+  - Explanation object present in violation events.
 
-### 3. Policy Engine Enhancements
-- Add: rule priority resolution, conflict explanation object, hot reload without restart.
-- Note: Basic policy engine exists (`agentnet/core/policy/engine.py`) but these specific enhancements are not yet implemented.
-- Acceptance: Tests for conflicting policy rules produce deterministic resolution.
+### 3. Complete Phase 9 Deep Learning Remaining Work
+Core scaffolding is present (registry, trainer stubs, embeddings, neural reasoning placeholders). Remaining:
+- Model artifact version diffing & rollback utility.
+- Distributed training orchestration templates (multi-node launcher).
+- Embedding batch optimizer (adaptive batch size, precision switching).
+- Fine-tuning evaluation harness integration (auto-run benchmarks on job completion).
+- GPU resource scheduler (fair-share across concurrent sessions).
+- Full PyTorch trainer (beyond stubs: optimizer lifecycle, gradients, mixed precision, checkpoints).
+- Actual embedding generation using `sentence-transformers` (replace stubs).
+- Neural reasoning module concrete strategies (chain-of-thought ranking, retrieval-conditioned reasoning).
+- Acceptance:
+  - End-to-end example: `examples/phase9_training_pipeline_demo.py` trains, evaluates, versions, rolls back.
+  - Tests cover: version diff, rollback, distributed launch dry-run, scheduler fairness.
 
 ---
 
 ## 🟡 P2 – Medium Priority (Expansion & Robustness)
 
 ### 9. Edge/Latency Optimization Pass
-- Implement adaptive batching for provider calls
-- Token usage prediction caching
-- Async I/O instrumentation (trace spans per await cluster)
-- Acceptance: Performance delta >10% improvement documented.
+- Implement adaptive batching for provider calls.
+- Token usage prediction caching layer.
+- Async I/O instrumentation (trace spans per await cluster).
+- Acceptance: Benchmark shows >10% latency or throughput improvement documented in `docs/performance/latency_report.md`.
 
 ### 10. Session Persistence & Replay Hardening
-- Add cryptographic integrity hash (session event chain)
-- Partial replay (range of turns)
-- Acceptance: `session.replay(range)` works; hash verified.
+- Cryptographic integrity hash chain for session events.
+- Partial replay (`session.replay(range)`) with deterministic reproduction.
+- Acceptance: Integrity hash validated; replay unit tests pass for arbitrary slice windows.
 
 ### 11. Advanced Risk Analytics
-- Consolidated risk score over time (trend)
-- Incident export bundle (JSONL of violation + context window)
-- Acceptance: `risk/report/generate` endpoint returns structured JSON.
+- Rolling consolidated risk score trend.
+- Incident export bundle (JSONL: violation + context window).
+- Acceptance: `risk/report/generate` endpoint returns structured JSON with schema doc.
 
 ### 12. Tool Lifecycle Governance Extensions
-- Add: tool capability JWT signing (optional), rate limiting, parameter schema linting.
-- Acceptance: Security doc updated.
+- Tool capability JWT signing (optional).
+- Rate limiting per tool or category.
+- Parameter schema linting (validation + suggestion).
+- Acceptance: Security doc updated; tests for signature + rate limit enforcement.
 
 ### 13. Cost Optimization Strategies
-- Implement dynamic provider selection (latency × cost × quality score)
-- Acceptance: Example scenario chooses cheaper provider with negligible quality delta (<2% drop).
+- Dynamic provider selection: latency × cost × quality scoring.
+- Acceptance: Scenario test picks cheaper provider (<2% quality delta) with documented metrics.
 
 ### 14. Memory Backends – Graph / Structured Finalization
-- networkx features integrated but enrich with:
-  - Node aging / salience eviction
-  - Cross-layer linking (episodic -> semantic -> graph)
-- Acceptance: `examples/memory_graph_enrichment.py`.
+- Node aging / salience-based eviction.
+- Cross-layer linking (episodic → semantic → graph edges).
+- Acceptance: `examples/memory_graph_enrichment.py` shows enrichment; tests assert aging removes low-salience nodes.
 
 ### 15. Chaos & Resilience Testing
 - Fault injection harness: random tool failure, provider timeout, memory backend disconnect.
-- Acceptance: Mean recovery time metrics recorded; doc added.
+- Recovery metrics collection (mean recovery time, failure containment).
+- Acceptance: Report generated with resilience KPIs.
 
 ---
 
 ## 🟢 P3 – Strategic / Growth / Ecosystem
 
 ### 16. Community Edition Packaging
-- Slim optional dependencies, separate extras tag.
-- Acceptance: `pip install agentnet[community]` < minimal size threshold.
+- Optional dependency slimming via extras.
+- Acceptance: `pip install agentnet[community]` size threshold documented.
 
 ### 17. Enterprise SaaS Path
-- Authn/OIDC integration placeholder
-- Billing event hooks
-- Acceptance: Architecture doc + stub modules.
+- Authn/OIDC integration placeholder.
+- Billing / usage metering hooks.
+- Acceptance: Architecture doc + stub modules compiled without runtime errors.
 
 ### 18. Partner Ecosystem Program
-- Plugin verification pipeline (signature, metadata validation)
-- Acceptance: `docs/ecosystem/plugins.md`.
+- Plugin verification pipeline (signature + metadata validation).
+- Acceptance: `docs/ecosystem/plugins.md` with lifecycle + verification steps.
 
 ### 19. Training & Certification Materials
-- Structured curriculum outline + sample lab.
+- Curriculum outline + sample lab exercise.
 - Acceptance: `docs/education/certification_outline.md`.
 
 ### 20. Research Partnerships Framework
-- Reproducible benchmark harness export
-- Dataset anonymization utilities
-- Acceptance: `agentnet/research/benchmark_runner.py`.
+- Reproducible benchmark harness export.
+- Dataset anonymization utilities.
+- Acceptance: `agentnet/research/benchmark_runner.py` demo + doc.
 
 ### 21. Global Expansion: Localization & Compliance
-- Multi-region config templates (EU/US)
-- Data residency flag in session config
-- Language-specific evaluation heuristics
+- Multi-region config templates (EU/US separation).
+- Data residency flag in session config.
+- Language-specific evaluation heuristics.
 - Acceptance: `docs/compliance/data_residency.md`.
 
 ### 22. Local Model & Regional Provider Support
-- Add pluggable registry (Ollama, Mistral-hosted, open router)
-- Acceptance: integration tests for at least 2 local providers.
+- Pluggable registry (e.g., Ollama, Mistral-hosted, OpenRouter).
+- Acceptance: Integration tests with ≥2 local providers.
 
 ### 23. Cultural Adaptation Layer (UI / Examples)
-- Localized examples in /examples/i18n/
-- Acceptance: at least 2 languages.
+- Localized examples under `/examples/i18n/`.
+- Acceptance: At least 2 non-English language examples.
 
-### 24. Quantum-Ready Stubs (If Not Already Real)
-- Abstraction layer for quantum job submission
-- Simulated adapter + placeholder solver
+### 24. Quantum-Ready Stubs (Exploratory)
+- Abstraction layer for quantum job submission + simulated adapter.
 - Acceptance: Demo script with abstract "quantum assist" step.
 
 ---
@@ -122,7 +135,7 @@ Core scaffolding is complete with registry, trainer, embeddings, and neural reas
 
 | Task | Description | Cadence | Acceptance |
 |------|-------------|---------|-----------|
-| Dependency Audit | Automated weekly vulnerability scan | Weekly | Report artifact in Actions | 
+| Dependency Audit | Automated weekly vulnerability scan | Weekly | Report artifact in Actions |
 | Coverage Trend | Track coverage diff vs main | Each PR | Delta comment posted |
 | Performance Baseline Refresh | Re-run performance benchmark suite | Monthly | Updated JSON snapshot |
 | Roadmap Sync | Reconcile README vs roadmap vs implementation | Quarterly | Changelog entry |
@@ -134,24 +147,25 @@ Core scaffolding is complete with registry, trainer, embeddings, and neural reas
 
 | Task ID | Source Snippet / Indicator | Status |
 |---------|----------------------------|--------|
-| P1-1 (formerly 4) | README: Inline marker `!!!Create "mirror agents"...` | 🔴 Not Implemented |
-| P1-2 (formerly 8) | Policy conflict resolution not explicitly claimed | 🔴 Not Implemented |
-| P1-3 (formerly 7) | README Phase 9 "scaffolding complete" (implies remaining implementation depth) | 🟡 Partially Complete |
-| P2-9–15 | Inference from partial / robustness / scaling ambitions & typical maturity path | 🔴 Not Implemented |
-| P3-16–24 | README "Growth Initiatives", "Global Expansion", Phase 10 research, roadmap future objectives | 🔴 Not Implemented |
+| P1-1 (formerly 4) | README marker: mirror agents concept not yet implemented | 🔴 Not Implemented |
+| P1-2 (formerly 8) | Policy conflict resolution + hot reload absent | 🔴 Not Implemented |
+| P1-3 (formerly 7) | Phase 9 scaffolding present; depth features missing | 🟡 Partially Complete |
+| P2-9–15 | Derived from scaling / robustness roadmap sections | 🔴 Not Implemented |
+| P3-16–24 | Growth initiatives & future objectives | 🔴 Not Implemented |
 
-### Recently Completed (moved to ✅ section):
+### Recently Completed (moved to ✅ section)
+
 | Task ID | Implementation | Status |
 |---------|----------------|--------|
 | P1-2 (old) | NFR Test Coverage: `tests/test_nfr_comprehensive.py`, `docs/testing/nfr_testing.md` | ✅ Complete |
 | P1-3 (old) | Dashboard: `agentnet/observability/dashboard.py`, demo HTML | ✅ Complete |
 | P1-5 (old) | Multi-Lingual Safety: `agentnet/core/multilingual_safety.py` (12 languages) | ✅ Complete |
-| P1-6 (old) | Streaming: `agentnet/streaming/` module with full collaboration | ✅ Complete |
+| P1-6 (old) | Streaming: `agentnet/streaming/` module with collaboration | ✅ Complete |
 
 ---
 
 ## ✅ Completed (Do Not Re-add Unless Regression)
-(From roadmap & README; excluded from active list)
+
 - Core architecture, orchestration, memory layers
 - Policy engine baseline & governance
 - Evaluation harness
@@ -162,39 +176,53 @@ Core scaffolding is complete with registry, trainer, embeddings, and neural reas
 - Provider adapters (OpenAI, Anthropic, Azure, etc.)
 - DAG planner w/ networkx
 - Deep learning scaffolding (registry, training pipeline, fine-tuning, embeddings – baseline)
-- **NFR Test Coverage**: Comprehensive test suite (`tests/test_nfr_comprehensive.py`) with 10 passing tests covering reliability, scalability, and security requirements. Documentation in `docs/testing/nfr_testing.md`.
-- **Live Dashboard (Observability UI)**: Dashboard implementation in `agentnet/observability/dashboard.py` with cost aggregation, performance metrics visualization, and violation tracking. Standalone demo in `demo_output/p5_standalone_dashboard.html`.
-- **Multi-Lingual Safety Policy Translation**: Full implementation in `agentnet/core/multilingual_safety.py` supporting 12 languages (EN, ES, FR, DE, IT, PT, RU, ZH, JA, KO, AR, HI) with pattern/keyword/description sets, language detection, and cultural adaptation.
-- **Streaming Partial-Output Collaboration**: Complete streaming module (`agentnet/streaming/`) with `StreamingCollaborator`, partial JSON parsing, collaboration handlers, and intervention capabilities. Tests in `tests/test_p6_streaming.py`.
+- NFR Test Coverage:
+  - Comprehensive suite (`tests/test_nfr_comprehensive.py`) with reliability, scalability, security cases
+  - Documentation: `docs/testing/nfr_testing.md`
+- Live Dashboard (Observability UI):
+  - Implementation: `agentnet/observability/dashboard.py`
+  - Features: cost aggregation, performance metrics, violation tracking
+  - Demo artifact (HTML) included
+- Multi-Lingual Safety Policy Translation:
+  - Implementation: `agentnet/core/multilingual_safety.py`
+  - 12 languages supported: EN, ES, FR, DE, IT, PT, RU, ZH, JA, KO, AR, HI
+  - Pattern + keyword mapping & fallback translation logic
+- Streaming Partial-Output Collaboration:
+  - Module: `agentnet/streaming/`
+  - Supports token/chunk streaming, mid-stream intervention, incremental memory buffering
+  - Associated tests validate intervention control
 
 ---
 
 ## 📌 Next Immediate Steps (Execution Order)
+
 1. Implement Mirror Agents with Noise Injection (P1 Task 1)
 2. Policy Engine Enhancements: priority resolution, conflict explanation, hot reload (P1 Task 2)
-3. Complete Phase 9 Deep Learning remaining work: full trainer implementations, embedding generation, neural reasoning (P1 Task 3)
+3. Complete Phase 9 Deep Learning remaining work (P1 Task 3)
 4. Edge/Latency Optimization Pass (P2 Task 9)
 5. Advanced Risk Analytics (P2 Task 11)
 
 ---
 
 ## 🧪 Suggested Branching Strategy
+
 - feature/mirror-agents
 - feature/policy-enhancements
 - feature/phase9-completion
 - feature/edge-optimization
 - feature/risk-analytics
 
-Each merges through PR with checklist referencing Task IDs.
+Each merges via PR with checklist referencing Task IDs.
 
 ---
 
 ## ✅ Definition of Done (Global)
+
 - Code + tests + docs updated
 - CI green across matrix
 - Coverage no regression >2% vs baseline
 - Security scan clean (no High/Critical)
-- Changelog entry appended (CHANGELOG.md)
+- Changelog entry appended (`CHANGELOG.md`)
 - Linked issue(s) closed automatically via PR description
 
 ---
