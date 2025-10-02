@@ -1,189 +1,228 @@
-# AgentNet Roadmap Audit & Status Report
+# AgentNet To-Do List (Actionable Backlog)
 
-## Summary
-The AgentNet repository has extensive documentation, implementation summaries, and clear roadmap tracking in both Markdown and HTML form. The audit below verifies each major roadmap item for implementation, documentation sufficiency, and (where applicable) test coverage. This document serves as a living status artifact.
+Source-derived from: README.md and roadmap.md (commit 60f4da8)  
+Scope: Only unimplemented, partial, planned, or explicitly outstanding work.  
+Priority scale:   P1 (High) < P2 (Medium) < P3 (Strategic / Long-Term)
 
----
-
-## Roadmap Item Status Table
-
-| Item / Feature                             | Implemented | Documented | Tested | Status            | Source Evidence                                           | Issues Found |
-|--------------------------------------------|-------------|------------|--------|-------------------|----------------------------------------------------------|--------------|
-| 1. Product Vision                          | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md, site                            | None |
-| 2. Core Use Cases                          | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md, site                            | None |
-| 3. Functional Requirements                 | ✅          | ✅         | ✅     | Completed         | agentnet/core/* (deps installed)                         | None |
-| 4. Non-Functional Requirements             | 🟠          | ✅         | 🟠     | Partially Working | tests/test_nfr_comprehensive.py                          | Some coverage gaps |
-| 5. High-Level Architecture                 | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md                                  | None |
-| 6. Component Specifications                | ✅          | ✅         | ✅     | Completed         | agentnet/* structure                                     | All deps now available |
-| 7. Data Model (Initial Schema)             | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md                                  | None |
-| 8. Memory Architecture                     | ✅          | ✅         | ✅     | Completed         | agentnet/memory/*                                        | All deps available |
-| 9. Message / Turn Schema (JSON Contract)   | ✅          | ✅         | ✅     | Working           | agentnet/schemas/* (pydantic)                            | None |
-| 10. Representative API Endpoints           | ✅          | ✅         | 🟠     | Mostly Complete   | api/server.py, tests/test_p3_api.py                      | Some integration gaps |
-| 11. Multi-Agent Orchestration Logic        | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/core/orchestration/*                            | Broader scenario tests pending |
-| 12. Task Graph Execution                   | ✅          | ✅         | ✅     | Completed         | agentnet/core/orchestration/dag_planner.py               | networkx now in requirements.txt |
-| 13. LLM Provider Adapter Contract          | ✅          | ✅         | ✅     | Completed         | agentnet/providers/*                                     | OpenAI, Anthropic, Azure, local models with fallback chains implemented |
-| 14. Tool System                            | ✅          | ✅         | ✅     | Completed         | agentnet/tools/*                                         | Advanced governance, lifecycle hooks implemented |
-| 15. Policy & Governance Extensions         | ✅          | ✅         | ✅     | Completed         | agentnet/core/policy/*                                   | Hierarchical composition, runtime enforcement |
-| 16. Security & Isolation                   | ✅          | ✅         | ✅     | Completed         | agentnet/core/auth/*; tests/test_security_integration.py | None (foundation delivered) |
-| 17. Deployment Topology                    | ✅          | ✅         | ✅     | Completed         | docs/RoadmapAgentNet.md, Dockerfile, docker-compose.yml  | Container assets added |
-| 18. Observability Metrics                  | ✅          | ✅         | ✅     | Completed         | agentnet/performance/* (prometheus, otel)                | Dashboards, trace correlation, alerting, exporters implemented |
-| 19. Evaluation Harness                     | ✅          | ✅         | ✅     | Completed         | agentnet/core/eval/*                                     | Expanded benchmarks, stress tests complete |
-| 20. Cost Tracking Flow                     | ✅          | ✅         | 🟠     | Mostly Complete   | agentnet/core/cost/*                                     | Integrated with agent/session lifecycle; advanced analytics pending |
-| 21. CI/CD Pipeline                         | 🔴          | ✅         | 🔴     | Not Implemented   | (no .github/workflows/)                                  | No automation |
-| 22. Risk Register                          | ✅          | ✅         | ✅     | Completed         | agentnet/risk/__init__.py                                | Integrated with runtime enforcement & monitoring |
-| 23. Phase Roadmap                          | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md                                  | None |
-| 24. Sprint Breakdown                       | ✅          | ✅         | N/A    | Completed         | docs/RoadmapAgentNet.md                                  | None |
-
-Legend: ✅ = Verifiably Complete (Green), 🟠 = Partially Implemented (Orange), 🔴 = Not Implemented/Blocked (Red), N/A = Not required/applicable
-
-**Critical Issues Found (RESOLVED in current version):**
-- ✅ Dependencies declared: pytest, pydantic, prometheus-client, opentelemetry-api, networkx
-- ✅ Test execution: pytest suite runnable after installation
-- ✅ Schema validation: pydantic-based models functioning
-- ✅ Observability: metrics/tracing imports work with declared dependencies
-- ✅ Security & Isolation: multi-tenant isolation, resource locking, network/data policy layers, isolation levels, unit + integration tests
-- ✅ DAG orchestration: networkx now in requirements.txt for task graph execution
-
-**How to Install Dependencies:**
-```bash
-# Core
-pip install -r requirements.txt
-
-# Editable dev
-pip install -e .
-
-# Full (optional extras)
-pip install -e .[full,dev,docs]
-```
-
-**Remaining Issues:**
-- CI/CD automation missing (no GitHub Actions workflows)
-- ✅ Container deployment assets added (Dockerfile, docker-compose.yml)
-- ✅ networkx added to requirements.txt
-
-**Recently Resolved:**
-- ✅ Provider ecosystem expansion (OpenAI, Anthropic, Azure, local models with fallback chains, cost-aware routing)
-- ✅ Observability enhancements (Grafana dashboards, distributed trace correlation, real-time alerting, custom exporters)
-- ✅ Cost tracking integrated with agent/session lifecycle (session_id, agent_name, cost breakdowns)
-- ✅ Container deployment assets (PostgreSQL, Redis, Prometheus, Grafana)
-- ✅ networkx dependency alignment (fixed DAG test failures)
-- ✅ Tool & Policy governance (capability registration, lifecycle hooks, custom validators, production providers, versioning, policy templates, enforcement engine)
-- ✅ Risk Register runtime integration (policy engine + alerting)
-- ✅ Advanced evaluation scenarios (benchmarks, performance, stress tests)
 
 ---
 
-# AgentNet Roadmap: Complete To-Do List (Priority Ordered)
+## 🟠 P1 – High Priority (Stability, Safety, Core Feature Completion)
 
-## 🔝 High Priority (Critical / Core Platform Integrity)
-1. ✅ Dependency Management Stabilization
-2. ✅ Security & Isolation Foundation
-   - Multi-tenant boundaries; isolation levels (basic/standard/strict)
-   - Resource locking; session lifecycle cleanup
-   - Network & data access policy layers
-   - Comprehensive unit + integration tests
-3. ✅ Message / Turn Schema (Stable JSON contract)
-4. ✅ Test Infrastructure (pytest + async)
-5. CI/CD Pipeline (Not Implemented)
-   - Lint, type-check, test, build workflows
-   - Coverage thresholds
-   - (Optional) build + publish stages
+### 2. Strengthen Non-Functional Requirement (NFR) Test Coverage
+- Gaps: Performance thresholds, concurrency stress, failure injection, memory footprint, latency variance.
+- Tasks:
+  - Add `tests/nfr/` suite: load test (orchestrator concurrency), memory retention stress, tool invocation saturation, policy violation burst.
+  - Add performance baselines (store JSON snapshot & compare drift)
+  - Introduce chaos tests (simulated provider timeout, tool failure)
+- Acceptance: CI job `nfr` passes; documented thresholds in `docs/nfr/metrics.md`.
 
-## 🟠 Medium Priority (Expansion & Maturity)
-6. ✅ Tool System Extensions (governance, lifecycle hooks, capability registration)
-7. ✅ Policy & Governance (hierarchical composition, enforcement engine)
-8. ✅ LLM Provider Adapters (OpenAI, Anthropic, Azure, local models)
-9. ✅ Cost Tracking Integration (per-call + roll-up)
-10. ✅ Observability Enhancements (dashboards, traces correlation, alerting, exporters)
+### 3. Implement Live Dashboard (Observability UI)
+- Current: "Dashboard (planned)" placeholder.
+- Features:
+  - Real-time event stream (WebSocket or SSE)
+  - Policy violations panel (filter by agent/session/severity)
+  - Metrics tiles (latency, token usage, cost, violation rate)
+  - Session replay selector
+- Backend: Reuse event bus; add `/ws/events` endpoint.
+- Frontend: Lightweight (FastAPI + HTMX or small React/Vite)
+- Acceptance: Launch `docker-compose up` -> dashboard accessible; doc in `docs/observability/dashboard.md`.
 
-## 🟢 Low Priority & Ongoing Maintenance
-11. Documentation depth (deployment guide, ops runbook, security hardening)
-12. Sprint & Phase Planning Iteration
-13. Test coverage expansion (edge cases, chaos/chaotic scenarios)
-14. Refactoring & performance optimization (orchestration hot paths)
-15. Periodic roadmap review & status verification
+### 4. Mirror Agents with Noise Injection ("Dusty Mirror")
+- Purpose: Robustness & variance testing.
+- Implementation:
+  - MirrorAgent wrapper: clones base agent, injects perturbations (sampling temperature jitter, prompt paraphrasing, token dropout).
+  - Compare divergence scores (semantic similarity, factual variance).
+- Acceptance: Example in `examples/mirror_agents_demo.py`; test asserting diversity > threshold.
 
----
+### 5. Multi-Lingual Safety Policy Translation (Planned)
+- Extend safety engine with i18n mapping.
+- Features:
+  - Language packs: pattern + keyword + description sets
+  - Confidence-backed translation fallback
+  - False-positive logging + adaptive refinement
+- Acceptance: Add `agentnet/policy/language/` with at least EN, ES; tests include detection in two languages.
 
-## In-Progress & Not Yet Integrated
-- ✅ Tool & Policy governance (COMPLETED)
-- ✅ Cost flow instrumentation (agent/session lifecycle)
-- CI/CD automation (absent)
-- ✅ Risk Register (runtime enforcement + monitoring)
-- ✅ Advanced evaluation scenarios (benchmarks & stress tests)
+### 6. Streaming Partial-Output Collaboration
+- Current: Marked "planned".
+- Requirements:
+  - Streaming token-level or chunk events
+  - Mid-stream evaluator intervention (halt / revise)
+  - Incremental memory buffering (low-latency)
+- Acceptance: `StreamingCollaborator` fully implemented with intervention test.
 
----
+### 7. Complete Phase 9 Deep Learning Remaining Work
+Although scaffolding exists, the following likely remain:
+- Model artifact version diffing & rollback
+- Distributed training orchestration templates (multi-node)
+- Embedding batch optimizer (adaptive batch size, precision)
+- Fine-tuning evaluation harness integration (auto-benchmark on finish)
+- GPU resource scheduler (multi-session fairness)
+- Acceptance: `docs/PHASE9_DEEP_LEARNING_PLAN.md` updated with "Delivered" stamps + demo script `examples/phase9_training_pipeline_demo.py`.
 
-## ✅ Completed (Monitor for Regression)
-- Product Vision / Core Use Cases
-- Functional & core Non-Functional baselines (some NFR test refinements pending)
-- Architecture & Component Layout
-- Memory Layer & Schema Foundations
-- Orchestration & Task Graph Execution
-- Security & Isolation
-- Tool System (advanced governance, lifecycle, validators, production providers, versioning)
-- Policy & Governance Extensions (hierarchy, enforcement engine, templates)
-- Provider Ecosystem (OpenAI, Anthropic, Azure, local models, fallback chains, cost-aware routing)
-- Observability (dashboards, trace correlation, alerting, custom exporters)
-- Evaluation Harness (benchmarks, performance, stress tests)
-- Risk Register (runtime integration)
-- Phase Roadmap & Sprint Breakdown
-- Cost Tracking (agent/session lifecycle)
-
----
-
-## Implementation Evidence
-- Security isolation: `agentnet/core/auth/*`, `tests/test_security_integration.py`, `demos/security_isolation_demo.py`
-- Orchestration & DAG: `agentnet/core/orchestration/`
-- Schemas: `agentnet/schemas/`
-- API endpoints: `api/server.py`, tests in `tests/test_p3_api.py`
-- Provider adapters: `agentnet/providers/*` (OpenAI, Anthropic, Azure, local models, fallback chains)
-- Observability: `agentnet/observability/*`, `tests/test_p5_observability.py` (dashboards, tracing, alerting, exporters)
-- Evaluation harness: `agentnet/core/eval/`
-- Cost tracking: `agentnet/core/cost/`
-- Governance & policy: `agentnet/tools/`, `agentnet/core/policy/`
-- Risk register: `agentnet/risk/`
-- Deployment: Dockerfile, docker-compose.yml
-- Docs: `docs/` (phase summaries, roadmap, implementation reports)
+### 8. Policy Engine Enhancements (If Not Yet Present)
+- Add: rule priority resolution, conflict explanation object, hot reload without restart.
+- Acceptance: Tests for conflicting policy rules produce deterministic resolution.
 
 ---
 
-## Documentation & Readme Status
-- README current (architecture, usage, links)
-- Roadmap documentation aligned with repository
-- Implementation summaries (P0–P5) present
-- Security implementation report & guide included
+## 🟡 P2 – Medium Priority (Expansion & Robustness)
+
+### 9. Edge/Latency Optimization Pass
+- Implement adaptive batching for provider calls
+- Token usage prediction caching
+- Async I/O instrumentation (trace spans per await cluster)
+- Acceptance: Performance delta >10% improvement documented.
+
+### 10. Session Persistence & Replay Hardening
+- Add cryptographic integrity hash (session event chain)
+- Partial replay (range of turns)
+- Acceptance: `session.replay(range)` works; hash verified.
+
+### 11. Advanced Risk Analytics
+- Consolidated risk score over time (trend)
+- Incident export bundle (JSONL of violation + context window)
+- Acceptance: `risk/report/generate` endpoint returns structured JSON.
+
+### 12. Tool Lifecycle Governance Extensions
+- Add: tool capability JWT signing (optional), rate limiting, parameter schema linting.
+- Acceptance: Security doc updated.
+
+### 13. Cost Optimization Strategies
+- Implement dynamic provider selection (latency × cost × quality score)
+- Acceptance: Example scenario chooses cheaper provider with negligible quality delta (<2% drop).
+
+### 14. Memory Backends – Graph / Structured Finalization
+- networkx features integrated but enrich with:
+  - Node aging / salience eviction
+  - Cross-layer linking (episodic -> semantic -> graph)
+- Acceptance: `examples/memory_graph_enrichment.py`.
+
+### 15. Chaos & Resilience Testing
+- Fault injection harness: random tool failure, provider timeout, memory backend disconnect.
+- Acceptance: Mean recovery time metrics recorded; doc added.
 
 ---
 
-## Conclusion
-Current audit confirms maturity across core architecture, governance, security, orchestration, evaluation, cost instrumentation, provider ecosystem, and observability. Primary remaining gap: CI/CD automation.
+## 🟢 P3 – Strategic / Growth / Ecosystem
 
-### Status Snapshot
-- Fully Implemented & Working: 19/24 (79.2%)
-- Partially Implemented: 2/24 (8.3%)
-- Not Implemented / Blocked: 1/24 (4.2%) (CI/CD)
-- Documentation Only: 2/24 (8.3%)
+### 16. Community Edition Packaging
+- Slim optional dependencies, separate extras tag.
+- Acceptance: `pip install agentnet[community]` < minimal size threshold.
 
-### Working Foundations
-- Multi-tenant isolation & access controls
-- Orchestration + task graph execution
-- Schema validation / API surface
-- Full observability stack (dashboards, trace correlation, alerting, exporters)
-- Provider ecosystem (OpenAI, Anthropic, Azure, local models, fallback chains)
-- Evaluation harness + test execution pipeline
-- Tool & Policy governance (advanced)
+### 17. Enterprise SaaS Path
+- Authn/OIDC integration placeholder
+- Billing event hooks
+- Acceptance: Architecture doc + stub modules.
+
+### 18. Partner Ecosystem Program
+- Plugin verification pipeline (signature, metadata validation)
+- Acceptance: `docs/ecosystem/plugins.md`.
+
+### 19. Training & Certification Materials
+- Structured curriculum outline + sample lab.
+- Acceptance: `docs/education/certification_outline.md`.
+
+### 20. Research Partnerships Framework
+- Reproducible benchmark harness export
+- Dataset anonymization utilities
+- Acceptance: `agentnet/research/benchmark_runner.py`.
+
+### 21. Global Expansion: Localization & Compliance
+- Multi-region config templates (EU/US)
+- Data residency flag in session config
+- Language-specific evaluation heuristics
+- Acceptance: `docs/compliance/data_residency.md`.
+
+### 22. Local Model & Regional Provider Support
+- Add pluggable registry (Ollama, Mistral-hosted, open router)
+- Acceptance: integration tests for at least 2 local providers.
+
+### 23. Cultural Adaptation Layer (UI / Examples)
+- Localized examples in /examples/i18n/
+- Acceptance: at least 2 languages.
+
+### 24. Quantum-Ready Stubs (If Not Already Real)
+- Abstraction layer for quantum job submission
+- Simulated adapter + placeholder solver
+- Acceptance: Demo script with abstract "quantum assist" step.
+
+---
+
+## ⚙️ Maintenance / Ongoing Improvements
+
+| Task | Description | Cadence | Acceptance |
+|------|-------------|---------|-----------|
+| Dependency Audit | Automated weekly vulnerability scan | Weekly | Report artifact in Actions | 
+| Coverage Trend | Track coverage diff vs main | Each PR | Delta comment posted |
+| Performance Baseline Refresh | Re-run performance benchmark suite | Monthly | Updated JSON snapshot |
+| Roadmap Sync | Reconcile README vs roadmap vs implementation | Quarterly | Changelog entry |
+| Security Review | Threat model & policy tuning | Quarterly | Updated `docs/security/threat_model.md` |
+
+---
+
+## 🔍 Traceability Matrix (Task ↔ Source Reference)
+
+| Task ID | Source Snippet / Indicator |
+|---------|----------------------------|
+
+| 2 | Roadmap: NFR partially working; coverage gaps |
+| 3 | README: "Dashboard (planned)" |
+| 4 | README: Inline marker `!!!Create "mirror agents"...` |
+| 5 | README: Fundamental Law #23 (planned) |
+| 6 | Fundamental Law #24 (planned) + streaming collaboration section (planned enhancements) |
+| 7 | README Phase 9 "scaffolding complete" (implies remaining implementation depth) |
+| 8 | Potential extension beyond current delivered features (policy conflict resolution not explicitly claimed) |
+| 9–15 | Inference from partial / robustness / scaling ambitions & typical maturity path (README performance & scalability emphasis) |
+| 16–24 | README "Growth Initiatives", "Global Expansion", Phase 10 research, roadmap future objectives |
+
+---
+
+## ✅ Completed (Do Not Re-add Unless Regression)
+(From roadmap & README; excluded from active list)
+- Core architecture, orchestration, memory layers
+- Policy engine baseline & governance
+- Evaluation harness
 - Risk register runtime integration
-- Cost tracking (agent/session lifecycle)
-
-### Outstanding Gaps
-- CI/CD automation (GitHub Actions workflows)
-
-**References:**
-- docs/RoadmapAgentNet.md
-- tests/test_security_integration.py
-- agentnet/core/auth/
-- tests/test_p3_api.py
-- docs/ (phase implementation summaries)
+- Observability metrics & tracing
+- Cost tracking integration
+- Tool system w/ governance
+- Provider adapters (OpenAI, Anthropic, Azure, etc.)
+- DAG planner w/ networkx
+- Deep learning scaffolding (registry, training pipeline, fine-tuning, embeddings – baseline)
 
 ---
+
+## 📌 Next Immediate Steps (Execution Order)
+1. P0-1 Sprint: Implement CI/CD (Task 1)
+2. Add NFR test suite & coverage gating (Task 2)
+3. Implement Mirror Agents + Dashboard (Tasks 4 & 3 parallel if team-split)
+4. Streaming partial-output + multi-lingual policy (Tasks 6 & 5)
+5. Phase 9 deep learning completion tasks (Task 7)
+
+---
+
+## 🧪 Suggested Branching Strategy
+- feature/ci-cd
+- feature/nfr-suite
+- feature/dashboard
+- feature/mirror-agents
+- feature/streaming-collab
+- feature/multilingual-policy
+- feature/phase9-completion
+
+Each merges through PR with checklist referencing Task IDs.
+
+---
+
+## ✅ Definition of Done (Global)
+- Code + tests + docs updated
+- CI green across matrix
+- Coverage no regression >2% vs baseline
+- Security scan clean (no High/Critical)
+- Changelog entry appended (CHANGELOG.md)
+- Linked issue(s) closed automatically via PR description
+
+---
+
+Let this file evolve; prune delivered tasks and append new planned work with explicit classification.
