@@ -79,6 +79,7 @@ nav:
   - Reference:
     - 25 AI Fundamental Laws: reference/fundamental-laws.md
     - Roadmap: reference/roadmap.md
+    - Technical Debt Implementation: TECHNICAL_DEBT_IMPLEMENTATION.md
     - Changelog: reference/changelog.md
     - FAQ: reference/faq.md
 
