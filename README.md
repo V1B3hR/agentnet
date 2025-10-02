@@ -503,6 +503,8 @@ See `docs/PHASE9_DEEP_LEARNING_PLAN.md` for complete details and `examples/phase
 - [x] Edge computing support for low-latency scenarios - Multi-region deployment with zone-based distribution
 - [x] Auto-scaling policies based on usage patterns - Full HPA/VPA with custom metrics and stabilization windows
 
+> 📖 **Detailed Documentation**: For comprehensive implementation details, examples, and performance metrics, see [docs/TECHNICAL_DEBT_IMPLEMENTATION.md](docs/TECHNICAL_DEBT_IMPLEMENTATION.md)
+
 ---
 
 ## Policy Model (Planned Shape)
