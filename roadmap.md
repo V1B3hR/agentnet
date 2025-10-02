@@ -9,49 +9,14 @@ Priority scale:   P1 (High) < P2 (Medium) < P3 (Strategic / Long-Term)
 
 ## 🟠 P1 – High Priority (Stability, Safety, Core Feature Completion)
 
-### 2. Strengthen Non-Functional Requirement (NFR) Test Coverage
-- Gaps: Performance thresholds, concurrency stress, failure injection, memory footprint, latency variance.
-- Tasks:
-  - Add `tests/nfr/` suite: load test (orchestrator concurrency), memory retention stress, tool invocation saturation, policy violation burst.
-  - Add performance baselines (store JSON snapshot & compare drift)
-  - Introduce chaos tests (simulated provider timeout, tool failure)
-- Acceptance: CI job `nfr` passes; documented thresholds in `docs/nfr/metrics.md`.
-
-### 3. Implement Live Dashboard (Observability UI)
-- Current: "Dashboard (planned)" placeholder.
-- Features:
-  - Real-time event stream (WebSocket or SSE)
-  - Policy violations panel (filter by agent/session/severity)
-  - Metrics tiles (latency, token usage, cost, violation rate)
-  - Session replay selector
-- Backend: Reuse event bus; add `/ws/events` endpoint.
-- Frontend: Lightweight (FastAPI + HTMX or small React/Vite)
-- Acceptance: Launch `docker-compose up` -> dashboard accessible; doc in `docs/observability/dashboard.md`.
-
-### 4. Mirror Agents with Noise Injection ("Dusty Mirror")
+### 1. Mirror Agents with Noise Injection ("Dusty Mirror")
 - Purpose: Robustness & variance testing.
 - Implementation:
   - MirrorAgent wrapper: clones base agent, injects perturbations (sampling temperature jitter, prompt paraphrasing, token dropout).
   - Compare divergence scores (semantic similarity, factual variance).
 - Acceptance: Example in `examples/mirror_agents_demo.py`; test asserting diversity > threshold.
 
-### 5. Multi-Lingual Safety Policy Translation (Planned)
-- Extend safety engine with i18n mapping.
-- Features:
-  - Language packs: pattern + keyword + description sets
-  - Confidence-backed translation fallback
-  - False-positive logging + adaptive refinement
-- Acceptance: Add `agentnet/policy/language/` with at least EN, ES; tests include detection in two languages.
-
-### 6. Streaming Partial-Output Collaboration
-- Current: Marked "planned".
-- Requirements:
-  - Streaming token-level or chunk events
-  - Mid-stream evaluator intervention (halt / revise)
-  - Incremental memory buffering (low-latency)
-- Acceptance: `StreamingCollaborator` fully implemented with intervention test.
-
-### 7. Complete Phase 9 Deep Learning Remaining Work
+### 2. Complete Phase 9 Deep Learning Remaining Work
 Although scaffolding exists, the following likely remain:
 - Model artifact version diffing & rollback
 - Distributed training orchestration templates (multi-node)
@@ -60,7 +25,7 @@ Although scaffolding exists, the following likely remain:
 - GPU resource scheduler (multi-session fairness)
 - Acceptance: `docs/PHASE9_DEEP_LEARNING_PLAN.md` updated with "Delivered" stamps + demo script `examples/phase9_training_pipeline_demo.py`.
 
-### 8. Policy Engine Enhancements (If Not Yet Present)
+### 3. Policy Engine Enhancements (If Not Yet Present)
 - Add: rule priority resolution, conflict explanation object, hot reload without restart.
 - Acceptance: Tests for conflicting policy rules produce deterministic resolution.
 
@@ -165,16 +130,17 @@ Although scaffolding exists, the following likely remain:
 
 | Task ID | Source Snippet / Indicator |
 |---------|----------------------------|
+| P1-1 | README: Inline marker `!!!Create "mirror agents"...` (robustness & variance testing) |
+| P1-2 | README Phase 9 "scaffolding complete" (implies remaining implementation depth) |
+| P1-3 | Potential extension beyond current delivered features (policy conflict resolution not explicitly claimed) |
+| P2 (9–15) | Inference from partial / robustness / scaling ambitions & typical maturity path (README performance & scalability emphasis) |
+| P3 (16–24) | README "Growth Initiatives", "Global Expansion", Phase 10 research, roadmap future objectives |
 
-| 2 | Roadmap: NFR partially working; coverage gaps |
-| 3 | README: "Dashboard (planned)" |
-| 4 | README: Inline marker `!!!Create "mirror agents"...` |
-| 5 | README: Fundamental Law #23 (planned) |
-| 6 | Fundamental Law #24 (planned) + streaming collaboration section (planned enhancements) |
-| 7 | README Phase 9 "scaffolding complete" (implies remaining implementation depth) |
-| 8 | Potential extension beyond current delivered features (policy conflict resolution not explicitly claimed) |
-| 9–15 | Inference from partial / robustness / scaling ambitions & typical maturity path (README performance & scalability emphasis) |
-| 16–24 | README "Growth Initiatives", "Global Expansion", Phase 10 research, roadmap future objectives |
+**Completed (moved to ✅ section):**
+- ~~Task 2~~ - NFR Test Coverage (fully implemented)
+- ~~Task 3~~ - Live Dashboard (fully implemented)
+- ~~Task 5~~ - Multi-Lingual Safety Policy (fully implemented with 12 languages)
+- ~~Task 6~~ - Streaming Collaboration (fully implemented with intervention support)
 
 ---
 
@@ -190,26 +156,28 @@ Although scaffolding exists, the following likely remain:
 - Provider adapters (OpenAI, Anthropic, Azure, etc.)
 - DAG planner w/ networkx
 - Deep learning scaffolding (registry, training pipeline, fine-tuning, embeddings – baseline)
+- **NFR Test Coverage**: Comprehensive test suite (`tests/test_nfr_comprehensive.py`) with 10 passing tests covering reliability, scalability, and security requirements. Performance baselines implemented (`agentnet/testing/regression.py`). Documentation in `docs/testing/nfr_testing.md`.
+- **Live Dashboard (Observability UI)**: Dashboard implementation in `agentnet/observability/dashboard.py` with cost aggregation, performance metrics visualization, and violation tracking. Standalone demo in `demo_output/p5_standalone_dashboard.html`.
+- **Multi-Lingual Safety Policy Translation**: Implemented in `agentnet/core/multilingual_safety.py` with support for 12 languages (EN, ES, FR, DE, IT, PT, RU, ZH, JA, KO, AR, HI). Includes language detection, policy translation, and cultural adaptation.
+- **Streaming Partial-Output Collaboration**: `StreamingCollaborator` fully implemented in `agentnet/streaming/collaboration.py` with token-level streaming, mid-stream intervention, and incremental memory buffering. Enhanced version in `agentnet/streaming/enhanced_collaboration.py`. Tests in `tests/test_p6_streaming.py`.
 
 ---
 
 ## 📌 Next Immediate Steps (Execution Order)
-1. P0-1 Sprint: Implement CI/CD (Task 1)
-2. Add NFR test suite & coverage gating (Task 2)
-3. Implement Mirror Agents + Dashboard (Tasks 4 & 3 parallel if team-split)
-4. Streaming partial-output + multi-lingual policy (Tasks 6 & 5)
-5. Phase 9 deep learning completion tasks (Task 7)
+1. Implement Mirror Agents with Noise Injection (P1 Task 1)
+2. Complete Phase 9 Deep Learning remaining work: full trainer implementations, embedding generation, neural reasoning (P1 Task 2)
+3. Policy Engine Enhancements: priority resolution, conflict explanation, hot reload (P1 Task 3)
+4. Edge/Latency Optimization Pass (P2 Task 9)
+5. Advanced Risk Analytics (P2 Task 11)
 
 ---
 
 ## 🧪 Suggested Branching Strategy
-- feature/ci-cd
-- feature/nfr-suite
-- feature/dashboard
 - feature/mirror-agents
-- feature/streaming-collab
-- feature/multilingual-policy
 - feature/phase9-completion
+- feature/policy-enhancements
+- feature/edge-optimization
+- feature/risk-analytics
 
 Each merges through PR with checklist referencing Task IDs.
 
