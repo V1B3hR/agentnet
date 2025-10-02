@@ -16,12 +16,7 @@ Priority scale:   P1 (High) < P2 (Medium) < P3 (Strategic / Long-Term)
   - Compare divergence scores (semantic similarity, factual variance).
 - Acceptance: Example in `examples/mirror_agents_demo.py`; test asserting diversity > threshold.
 
-### 2. Policy Engine Enhancements
-- Add: rule priority resolution, conflict explanation object, hot reload without restart.
-- Note: Basic policy engine exists (`agentnet/core/policy/engine.py`) but these specific enhancements are not yet implemented.
-- Acceptance: Tests for conflicting policy rules produce deterministic resolution.
-
-### 3. Complete Phase 9 Deep Learning Remaining Work
+### 2. Complete Phase 9 Deep Learning Remaining Work
 Core scaffolding is complete with registry, trainer, embeddings, and neural reasoning modules. The following enhancements remain:
 - Model artifact version diffing & rollback
 - Distributed training orchestration templates (multi-node)
@@ -32,6 +27,11 @@ Core scaffolding is complete with registry, trainer, embeddings, and neural reas
 - Actual embedding generation with sentence-transformers (beyond stubs)
 - Neural reasoning implementations (beyond stubs)
 - Acceptance: All features fully functional; `examples/phase9_training_pipeline_demo.py` demonstrates end-to-end training.
+
+### 3. Policy Engine Enhancements
+- Add: rule priority resolution, conflict explanation object, hot reload without restart.
+- Note: Basic policy engine exists (`agentnet/core/policy/engine.py`) but these specific enhancements are not yet implemented.
+- Acceptance: Tests for conflicting policy rules produce deterministic resolution.
 
 ---
 
@@ -164,8 +164,8 @@ Core scaffolding is complete with registry, trainer, embeddings, and neural reas
 - Deep learning scaffolding (registry, training pipeline, fine-tuning, embeddings – baseline)
 - **NFR Test Coverage**: Comprehensive test suite (`tests/test_nfr_comprehensive.py`) with 10 passing tests covering reliability, scalability, and security requirements. Documentation in `docs/testing/nfr_testing.md`.
 - **Live Dashboard (Observability UI)**: Dashboard implementation in `agentnet/observability/dashboard.py` with cost aggregation, performance metrics visualization, and violation tracking. Standalone demo in `demo_output/p5_standalone_dashboard.html`.
-- **Multi-Lingual Safety Policy Translation**: Full implementation in `agentnet/core/multilingual_safety.py` supporting 12 languages (EN, ES, FR, DE, IT, PT, RU, ZH, JA, KO, AR, HI) with pattern/keyword translation, cultural adaptations, and comprehensive tests.
-- **Streaming Partial-Output Collaboration**: Complete streaming module (`agentnet/streaming/`) with `StreamingCollaborator`, partial JSON parsing, collaboration handlers, and intervention capabilities. Tests pass with enhanced features available.
+- **Multi-Lingual Safety Policy Translation**: Full implementation in `agentnet/core/multilingual_safety.py` supporting 12 languages (EN, ES, FR, DE, IT, PT, RU, ZH, JA, KO, AR, HI) with pattern/keyword/description sets, language detection, and cultural adaptation.
+- **Streaming Partial-Output Collaboration**: Complete streaming module (`agentnet/streaming/`) with `StreamingCollaborator`, partial JSON parsing, collaboration handlers, and intervention capabilities. Tests in `tests/test_p6_streaming.py`.
 
 ---
 
