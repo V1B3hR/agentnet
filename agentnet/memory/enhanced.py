@@ -314,6 +314,7 @@ class MemoryConsolidationEngine:
             return {"status": "skipped", "reason": "too_soon"}
         
         consolidation_results = {
+            "status": "completed",
             "clusters_created": 0,
             "memories_consolidated": 0,
             "memories_forgotten": 0,
@@ -674,6 +675,25 @@ class EnhancedEpisodicMemory(MemoryLayer):
             "next_consolidation": self.consolidation_engine.last_consolidation + 
                                 self.consolidation_engine.consolidation_interval
         }
+    
+    def force_consolidate(self) -> Dict[str, Any]:
+        """Force memory consolidation to run immediately, bypassing time interval check."""
+        memories = [self._episode_to_memory_entry(ep) for ep in self._episodes]
+        
+        # Temporarily store the last consolidation time
+        original_last_consolidation = self.consolidation_engine.last_consolidation
+        
+        # Set last consolidation to a time that ensures consolidation will run
+        self.consolidation_engine.last_consolidation = 0
+        
+        # Run consolidation
+        result = self.consolidation_engine.consolidate_memories(memories)
+        
+        # If consolidation was skipped for any reason other than time, restore original time
+        if result.get("status") == "skipped" and result.get("reason") != "too_soon":
+            self.consolidation_engine.last_consolidation = original_last_consolidation
+        
+        return result
     
     def _initialize_enhanced_features(self) -> None:
         """Initialize enhanced memory features."""

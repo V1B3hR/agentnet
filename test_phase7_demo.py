@@ -170,8 +170,16 @@ def demo_enhanced_memory():
     for level, groups in hierarchy.items():
         print(f"  {level}: {len(groups)} concept groups")
     
+    # Force consolidation to run
+    print("\n4. Forcing Memory Consolidation:")
+    consolidation_result = enhanced_memory.force_consolidate()
+    print(f"  Status: {consolidation_result.get('status', 'completed')}")
+    print(f"  Clusters created: {consolidation_result.get('clusters_created', 0)}")
+    print(f"  Memories consolidated: {consolidation_result.get('memories_consolidated', 0)}")
+    print(f"  Memories forgotten: {consolidation_result.get('memories_forgotten', 0)}")
+    
     # Get consolidation status
-    print("\n4. Memory Consolidation Status:")
+    print("\n5. Memory Consolidation Status:")
     consolidation_status = enhanced_memory.get_consolidation_status()
     print(f"  Clusters: {consolidation_status['clusters_count']}")
     print(f"  Rules: {consolidation_status['consolidation_rules']}")
