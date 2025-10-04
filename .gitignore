@@ -4,6 +4,7 @@ sessions/
 test_sessions/
 telemetry/
 cache/
+demo_output/
 
 # ==============================
 # Python bytecode / caches
