@@ -618,5 +618,23 @@ __all__ = [
     "RiskDefinition",
     "RiskLevel",
     "RiskStatus",
-    "RiskCategory"
+    "RiskCategory",
+    # Enforcement module (optional import)
 ]
+
+# Optional enforcement module
+try:
+    from .enforcement import (
+        RiskEnforcementEngine,
+        EnforcementRule,
+        EnforcementAction,
+        create_default_enforcement_rules,
+    )
+    __all__.extend([
+        "RiskEnforcementEngine",
+        "EnforcementRule",
+        "EnforcementAction",
+        "create_default_enforcement_rules",
+    ])
+except ImportError:
+    pass
