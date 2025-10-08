@@ -246,7 +246,7 @@ class ToolExecutor:
         # Create governance context
         gov_context = {
             "tool_name": tool.spec.name,
-            "tool_category": tool.spec.category,
+            "tool_category": getattr(tool.spec, 'category', 'uncategorized'),
             "parameters": parameters,
             "user_id": user_id,
             "agent_name": context.get("agent_name", "") if context else "",
@@ -304,14 +304,15 @@ class ToolExecutor:
             "security_level": "standard",
             "warnings": [],
             "sandbox_required": False,
+            "risk_level": getattr(tool.spec, 'risk_level', None),
         }
 
         if not self.security_checks:
             return security_result
 
         # Check for high-risk operations
-        high_risk_categories = ["system", "file", "network", "exec"]
-        if tool.spec.category in high_risk_categories:
+        high_risk_categories = ["system", "file", "network", "exec", "data_access"]
+        if getattr(tool.spec, 'category', None) in high_risk_categories:
             security_result["security_level"] = "high_risk"
             security_result["sandbox_required"] = True
             security_result["warnings"].append(

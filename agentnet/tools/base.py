@@ -54,6 +54,8 @@ class ToolSpec:
     timeout_seconds: float = 30.0
     cached: bool = False
     tags: Optional[list] = None
+    category: Optional[str] = None  # Tool category for governance (e.g., "data_access", "external_api", "computation")
+    risk_level: Optional[str] = None  # Risk level: "low", "medium", "high", "critical"
 
     def validate_parameters(self, parameters: Dict[str, Any]) -> None:
         """Validate parameters against JSON schema."""
@@ -78,6 +80,8 @@ class ToolSpec:
             "timeout_seconds": self.timeout_seconds,
             "cached": self.cached,
             "tags": self.tags or [],
+            "category": self.category,
+            "risk_level": self.risk_level,
         }
 
 
