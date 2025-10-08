@@ -1,311 +1,226 @@
 """
-Turn Latency Measurement for AgentNet
+High-Performance Turn Latency Measurement for AgentNet
 
-Provides detailed latency tracking for individual turns, multi-agent interactions,
-and turn-to-turn performance analysis as specified in Phase 5.
+Provides automated, context-aware latency tracking using context managers,
+with advanced filtering, trend analysis, and production-ready features.
 """
 
 import time
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any
-from enum import Enum
-import statistics
 import logging
+import statistics
+from collections import deque
+from contextlib import contextmanager, asynccontextmanager
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Dict, List, Optional, Iterator, AsyncIterator
 
 logger = logging.getLogger(__name__)
 
 
 class LatencyComponent(str, Enum):
     """Components of turn latency that can be measured separately."""
-
-    TOTAL = "total"
     INFERENCE = "inference"
     POLICY_CHECK = "policy_check"
     TOOL_EXECUTION = "tool_execution"
     MEMORY_ACCESS = "memory_access"
     RESPONSE_PROCESSING = "response_processing"
+    ORCHESTRATION = "orchestration" # For strategy logic itself
 
 
 @dataclass
 class TurnLatencyMeasurement:
-    """Detailed latency measurement for a single turn."""
-
+    """Detailed latency measurement for a single agent turn."""
     turn_id: str
     agent_id: str
     start_time: float
     end_time: float
-
-    # Component latencies (in milliseconds)
+    
+    # Component latencies are stored in milliseconds
     component_latencies: Dict[LatencyComponent, float] = field(default_factory=dict)
-
-    # Metadata
-    prompt_length: int = 0
-    response_length: int = 0
-    tokens_processed: int = 0
-    policy_violations: int = 0
-    tools_used: List[str] = field(default_factory=list)
+    
+    # Rich, queryable metadata
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
     @property
     def total_latency_ms(self) -> float:
-        """Total turn latency in milliseconds."""
         return (self.end_time - self.start_time) * 1000
 
     @property
-    def latency_breakdown(self) -> Dict[str, float]:
-        """Breakdown of latency by component as percentages."""
+    def latency_breakdown_percent(self) -> Dict[str, float]:
+        """Breakdown of latency by component as percentages of the total."""
         total = self.total_latency_ms
         if total == 0:
             return {}
-
         return {
-            component.value: (latency / total) * 100
-            for component, latency in self.component_latencies.items()
+            comp.value: (lat / total) * 100
+            for comp, lat in self.component_latencies.items()
         }
 
 
 class LatencyTracker:
     """
-    Tracks and analyzes turn latency across agent interactions.
-
-    Provides detailed timing measurements for different components
-    of agent processing and turn execution.
+    Tracks and analyzes turn latency using automated context managers.
+    Implemented as a singleton for consistent, global access.
     """
+    _instance: Optional["LatencyTracker"] = None
 
-    def __init__(self):
-        self._measurements: List[TurnLatencyMeasurement] = []
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(LatencyTracker, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self, max_history: int = 10000):
+        if hasattr(self, "_initialized") and self._initialized:
+            return
+            
+        self._measurements: deque[TurnLatencyMeasurement] = deque(maxlen=max_history)
         self._active_measurements: Dict[str, Dict[str, Any]] = {}
+        self._initialized = True
 
-    def start_turn_measurement(
-        self, turn_id: str, agent_id: str, prompt_length: int = 0
-    ) -> None:
-        """Start measuring latency for a turn."""
-        start_time = time.time()
-
+    def start_turn_measurement(self, turn_id: str, agent_id: str, metadata: Optional[Dict[str, Any]] = None):
+        """Start measuring latency for a new turn with rich context."""
+        if turn_id in self._active_measurements:
+            logger.warning(f"Measurement for turn_id '{turn_id}' already started. Overwriting.")
+        
         self._active_measurements[turn_id] = {
             "agent_id": agent_id,
-            "start_time": start_time,
-            "prompt_length": prompt_length,
-            "component_starts": {},
+            "start_time": time.monotonic(),
             "component_latencies": {},
-            "tools_used": [],
-            "policy_violations": 0,
+            "metadata": metadata or {},
         }
 
-        logger.debug(f"Started turn latency measurement: {turn_id} for {agent_id}")
-
-    def start_component_measurement(
-        self, turn_id: str, component: LatencyComponent
-    ) -> None:
-        """Start measuring a specific component within a turn."""
+    @asynccontextmanager
+    async def measure(self, turn_id: str, component: LatencyComponent) -> AsyncIterator[None]:
+        """Automated, async-compatible context manager for measuring a component's latency."""
         if turn_id not in self._active_measurements:
-            logger.warning(f"No active measurement for turn {turn_id}")
+            logger.warning(f"Cannot measure component '{component.value}' for unknown turn '{turn_id}'.")
+            yield
             return
 
-        self._active_measurements[turn_id]["component_starts"][component] = time.time()
+        start_time = time.monotonic()
+        try:
+            yield
+        finally:
+            latency_ms = (time.monotonic() - start_time) * 1000
+            # Use .setdefault to handle cases where a component is measured multiple times (e.g., tool calls)
+            self._active_measurements[turn_id]["component_latencies"].setdefault(component, 0.0)
+            self._active_measurements[turn_id]["component_latencies"][component] += latency_ms
 
-    def end_component_measurement(
-        self, turn_id: str, component: LatencyComponent
-    ) -> float:
-        """End measuring a component and return its latency in ms."""
+    def end_turn_measurement(self, turn_id: str) -> Optional[TurnLatencyMeasurement]:
+        """End turn measurement and create the final, immutable measurement record."""
         if turn_id not in self._active_measurements:
-            logger.warning(f"No active measurement for turn {turn_id}")
-            return 0.0
+            logger.warning(f"No active measurement to end for turn '{turn_id}'.")
+            return None
 
-        measurement = self._active_measurements[turn_id]
-        if component not in measurement["component_starts"]:
-            logger.warning(f"Component {component} was not started for turn {turn_id}")
-            return 0.0
+        data = self._active_measurements.pop(turn_id)
+        end_time = time.monotonic()
 
-        start_time = measurement["component_starts"][component]
-        latency_ms = (time.time() - start_time) * 1000
-        measurement["component_latencies"][component] = latency_ms
-
-        return latency_ms
-
-    def record_tool_usage(self, turn_id: str, tool_name: str) -> None:
-        """Record tool usage for latency analysis."""
-        if turn_id in self._active_measurements:
-            self._active_measurements[turn_id]["tools_used"].append(tool_name)
-
-    def record_policy_violation(self, turn_id: str) -> None:
-        """Record policy violation for latency analysis."""
-        if turn_id in self._active_measurements:
-            self._active_measurements[turn_id]["policy_violations"] += 1
-
-    def end_turn_measurement(
-        self, turn_id: str, response_length: int = 0, tokens_processed: int = 0
-    ) -> TurnLatencyMeasurement:
-        """End turn measurement and create final measurement record."""
-        if turn_id not in self._active_measurements:
-            logger.warning(f"No active measurement for turn {turn_id}")
-            # Return dummy measurement
-            return TurnLatencyMeasurement(
-                turn_id=turn_id,
-                agent_id="unknown",
-                start_time=time.time(),
-                end_time=time.time(),
-            )
-
-        measurement_data = self._active_measurements.pop(turn_id)
-        end_time = time.time()
-
-        # Create measurement record
         measurement = TurnLatencyMeasurement(
             turn_id=turn_id,
-            agent_id=measurement_data["agent_id"],
-            start_time=measurement_data["start_time"],
+            agent_id=data["agent_id"],
+            start_time=data["start_time"],
             end_time=end_time,
-            component_latencies=measurement_data["component_latencies"],
-            prompt_length=measurement_data["prompt_length"],
-            response_length=response_length,
-            tokens_processed=tokens_processed,
-            policy_violations=measurement_data["policy_violations"],
-            tools_used=measurement_data["tools_used"],
+            component_latencies=data["component_latencies"],
+            metadata=data["metadata"],
         )
-
         self._measurements.append(measurement)
-
-        logger.debug(
-            f"Completed turn latency measurement: {turn_id} - "
-            f"{measurement.total_latency_ms:.2f}ms"
-        )
-
         return measurement
 
     def get_measurements(
-        self, agent_id: Optional[str] = None, limit: Optional[int] = None
-    ) -> List[TurnLatencyMeasurement]:
-        """Get latency measurements, optionally filtered by agent."""
-        measurements = self._measurements
-
-        if agent_id:
-            measurements = [m for m in measurements if m.agent_id == agent_id]
-
-        if limit:
-            measurements = measurements[-limit:]
-
-        return measurements
-
-    def get_latency_statistics(
         self,
         agent_id: Optional[str] = None,
-        component: Optional[LatencyComponent] = None,
-    ) -> Dict[str, float]:
-        """Get statistical summary of latency measurements."""
-        measurements = self.get_measurements(agent_id=agent_id)
+        min_latency_ms: Optional[float] = None,
+        tool_used: Optional[str] = None,
+        metadata_filter: Optional[Dict[str, Any]] = None,
+    ) -> List[TurnLatencyMeasurement]:
+        """Get latency measurements with advanced filtering capabilities."""
+        results = list(self._measurements)
 
-        if not measurements:
-            return {}
-
-        if component:
-            # Statistics for specific component
-            latencies = [
-                m.component_latencies.get(component, 0.0) for m in measurements
+        if agent_id:
+            results = [m for m in results if m.agent_id == agent_id]
+        if min_latency_ms:
+            results = [m for m in results if m.total_latency_ms >= min_latency_ms]
+        if tool_used:
+            results = [m for m in results if tool_used in m.metadata.get("tools_used", [])]
+        if metadata_filter:
+            results = [
+                m for m in results
+                if all(item in m.metadata.items() for item in metadata_filter.items())
             ]
-            latencies = [l for l in latencies if l > 0]  # Filter out missing components
-        else:
-            # Statistics for total latency
-            latencies = [m.total_latency_ms for m in measurements]
+        return results
 
+    def get_latency_statistics(self, agent_id: Optional[str] = None) -> Dict[str, Any]:
+        """Get a statistical summary of latencies, including trend analysis."""
+        measurements = self.get_measurements(agent_id=agent_id)
+        if not measurements:
+            return {"message": "No measurements found for the given filters."}
+
+        latencies = [m.total_latency_ms for m in measurements]
         if not latencies:
             return {}
 
-        return {
+        stats = {
             "count": len(latencies),
-            "mean": statistics.mean(latencies),
-            "median": statistics.median(latencies),
-            "min": min(latencies),
-            "max": max(latencies),
-            "stdev": statistics.stdev(latencies) if len(latencies) > 1 else 0.0,
-            "p95": sorted(latencies)[int(len(latencies) * 0.95)] if latencies else 0.0,
-            "p99": sorted(latencies)[int(len(latencies) * 0.99)] if latencies else 0.0,
+            "mean_ms": statistics.mean(latencies),
+            "median_ms": statistics.median(latencies),
+            "min_ms": min(latencies),
+            "max_ms": max(latencies),
+            "stdev_ms": statistics.stdev(latencies) if len(latencies) > 1 else 0.0,
+            "p95_ms": sorted(latencies)[int(len(latencies) * 0.95)] if latencies else 0.0,
         }
+        
+        # Trend analysis: compare last 10% of turns to overall p95
+        trend_slice_index = -max(1, len(latencies) // 10)
+        recent_latencies = latencies[trend_slice_index:]
+        if recent_latencies:
+            p95_recent = sorted(recent_latencies)[int(len(recent_latencies) * 0.95)]
+            stats["p95_recent_ms"] = p95_recent
+            stats["trend"] = "improving" if p95_recent < stats["p95_ms"] else "degrading"
 
-    def get_component_breakdown(
-        self, agent_id: Optional[str] = None
-    ) -> Dict[str, Dict[str, float]]:
-        """Get average latency breakdown by component."""
+        return stats
+
+    def get_component_breakdown(self, agent_id: Optional[str] = None) -> Dict[str, Dict[str, float]]:
+        """Get the average latency and percentage contribution of each component."""
         measurements = self.get_measurements(agent_id=agent_id)
-
         if not measurements:
             return {}
 
-        component_totals = {}
-        component_counts = {}
+        component_totals: Dict[LatencyComponent, float] = {}
+        component_counts: Dict[LatencyComponent, int] = {}
+        for m in measurements:
+            for comp, lat in m.component_latencies.items():
+                component_totals.setdefault(comp, 0.0)
+                component_counts.setdefault(comp, 0)
+                component_totals[comp] += lat
+                component_counts[comp] += 1
 
-        for measurement in measurements:
-            for component, latency in measurement.component_latencies.items():
-                if component not in component_totals:
-                    component_totals[component] = 0.0
-                    component_counts[component] = 0
-
-                component_totals[component] += latency
-                component_counts[component] += 1
-
-        # Calculate averages and percentages
-        total_avg_latency = sum(
-            component_totals[comp] / component_counts[comp] for comp in component_totals
-        )
-
-        result = {}
-        for component in component_totals:
-            avg_latency = component_totals[component] / component_counts[component]
-            percentage = (
-                (avg_latency / total_avg_latency * 100) if total_avg_latency > 0 else 0
-            )
-
-            result[component.value] = {
-                "avg_latency_ms": avg_latency,
-                "percentage": percentage,
-                "count": component_counts[component],
+        avg_total_latency = statistics.mean(m.total_latency_ms for m in measurements)
+        
+        breakdown = {}
+        for comp, total_lat in component_totals.items():
+            avg_lat = total_lat / component_counts[comp]
+            breakdown[comp.value] = {
+                "avg_latency_ms": avg_lat,
+                "percentage_of_total": (avg_lat / avg_total_latency) * 100 if avg_total_latency > 0 else 0,
+                "count": component_counts[comp],
             }
+        return breakdown
 
-        return result
-
-    def identify_performance_issues(
-        self, latency_threshold_ms: float = 1000.0, agent_id: Optional[str] = None
-    ) -> Dict[str, List[str]]:
-        """Identify potential performance issues from latency measurements."""
-        measurements = self.get_measurements(agent_id=agent_id)
-        issues = {
-            "high_latency_turns": [],
-            "policy_heavy_turns": [],
-            "tool_heavy_turns": [],
-            "memory_intensive_turns": [],
-        }
-
-        for measurement in measurements:
-            # High latency turns
-            if measurement.total_latency_ms > latency_threshold_ms:
-                issues["high_latency_turns"].append(
-                    f"{measurement.turn_id}: {measurement.total_latency_ms:.2f}ms"
-                )
-
-            # Policy-heavy turns
-            if measurement.policy_violations > 2:
-                issues["policy_heavy_turns"].append(
-                    f"{measurement.turn_id}: {measurement.policy_violations} violations"
-                )
-
-            # Tool-heavy turns
-            if len(measurement.tools_used) > 3:
-                issues["tool_heavy_turns"].append(
-                    f"{measurement.turn_id}: {len(measurement.tools_used)} tools"
-                )
-
-            # Memory-intensive turns (high memory access latency)
-            memory_latency = measurement.component_latencies.get(
-                LatencyComponent.MEMORY_ACCESS, 0.0
-            )
-            if memory_latency > latency_threshold_ms * 0.3:  # 30% of threshold
-                issues["memory_intensive_turns"].append(
-                    f"{measurement.turn_id}: {memory_latency:.2f}ms memory access"
-                )
-
-        return issues
-
-    def clear_measurements(self) -> None:
-        """Clear all stored measurements."""
+    def clear_measurements(self):
+        """Clear all stored and active measurements."""
         self._measurements.clear()
         self._active_measurements.clear()
-        logger.info("Cleared all latency measurements")
+        logger.info("Cleared all latency measurements.")
+
+# --- Global Singleton Management ---
+_global_tracker_instance: Optional[LatencyTracker] = None
+
+def get_latency_tracker(**kwargs) -> LatencyTracker:
+    """
+    Get the configured global latency tracker instance.
+    Initializes it on first call.
+    """
+    global _global_tracker_instance
+    if _global_tracker_instance is None:
+        _global_tracker_instance = LatencyTracker(**kwargs)
+    return _global_tracker_instance
