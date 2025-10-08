@@ -7,21 +7,24 @@ import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
-from ..memory.manager import MemoryManager
-from ..monitors.base import MonitorFn
-from ..persistence.agent_state import AgentStateManager
-from ..persistence.session import SessionManager
-from ..tools.executor import ToolExecutor
-from ..tools.registry import ToolRegistry
+from .memory.manager import MemoryManager
+from .monitors.base import MonitorFn
+from .persistence.agent_state import AgentStateManager
+from .persistence.session import SessionManager
+from .tools.executor import ToolExecutor
+from .tools.registry import ToolRegistry
 from .autoconfig import get_global_autoconfig
 from .cost.recorder import CostRecorder
 from .types import CognitiveFault
+from .planner import Planner
+from .self_reflection import SelfReflection
+from .skill_manager import SkillManager
 
 # Phase 7 Advanced Intelligence & Reasoning imports
 try:
-    from ..reasoning.advanced import AdvancedReasoningEngine
-    from ..reasoning.temporal import TemporalReasoning
-    from ..memory.enhanced import EnhancedEpisodicMemory
+    from .reasoning.advanced import AdvancedReasoningEngine
+    from .reasoning.temporal import TemporalReasoning
+    from .memory.enhanced import EnhancedEpisodicMemory
     from .evolution import AgentEvolutionManager
 
     _PHASE7_AVAILABLE = True
@@ -33,7 +36,7 @@ except ImportError:
     _PHASE7_AVAILABLE = False
 
 if TYPE_CHECKING:
-    from ..providers.base import ProviderAdapter
+    from .providers.base import ProviderAdapter
 
 logger = logging.getLogger("agentnet.core")
 
@@ -105,6 +108,9 @@ class AgentNet:
 
         # Initialize managers
         self.session_manager = SessionManager()
+        self.planner = Planner(self)
+        self.self_reflection = SelfReflection(self)
+        self.skill_manager = SkillManager(self)
 
         # Phase 7: Advanced Intelligence & Reasoning initialization
         self.advanced_reasoning_engine = None
@@ -227,7 +233,7 @@ class AgentNet:
             "style_influence": style_influence,
         }
 
-    def generate_reasoning_tree(
+    def _generate_reasoning_tree(
         self,
         task: str,
         include_monitor_trace: bool = False,
@@ -235,6 +241,8 @@ class AgentNet:
         confidence_threshold: float = 0.7,
         style_override: Optional[Dict[str, float]] = None,
         metadata: Optional[Dict[str, Any]] = None,
+        use_memory: bool = False,
+        memory_context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Generate a reasoning tree for the given task.
@@ -246,6 +254,8 @@ class AgentNet:
             confidence_threshold: Minimum confidence threshold
             style_override: Temporary style override
             metadata: Optional metadata that may include auto_config setting
+            use_memory: Whether to use memory retrieval
+            memory_context: Additional context for memory retrieval
 
         Returns:
             Reasoning tree dictionary
@@ -281,77 +291,75 @@ class AgentNet:
                     confidence_threshold, auto_config_params
                 )
 
+        # Retrieve relevant memories if enabled
+        memory_context_str = ""
+        memory_retrieval = None
+
+        if use_memory and self.memory_manager:
+            memory_retrieval = self.retrieve_memory(task, memory_context)
+            if memory_retrieval and memory_retrieval["entries"]:
+                memory_items = []
+                for entry in memory_retrieval["entries"]:
+                    memory_items.append(f"- {entry['content'][:200]}...")
+
+                memory_context_str = f"\n\nRelevant memory context:\n" + "\n".join(
+                    memory_items[:3]
+                )
+
+        # Enhanced task with memory context
+        enhanced_task = task + memory_context_str
+
         try:
             # Use engine if available, otherwise create simple response
             if self.engine:
-                raw_result = self.engine.infer(task, agent_name=self.name)
+                raw_result = self.engine.infer(enhanced_task, agent_name=self.name)
             else:
                 raw_result = {
-                    "content": f"[{self.name}] No engine available for task: {task}",
+                    "content": f"[{self.name}] No engine available for task: {enhanced_task}",
                     "confidence": 0.5,
                 }
 
             base_result = self._normalize_engine_result(raw_result)
 
             # Run pre-style monitors
-            self._run_pre_monitors(task, base_result)
+            self._run_pre_monitors(enhanced_task, base_result)
 
             # Apply style influence
-            styled_result = self._apply_style_influence(base_result, task)
+            styled_result = self._apply_style_influence(base_result, enhanced_task)
 
             # Run post-style monitors
-            self._run_post_monitors(task, styled_result)
+            self._run_post_monitors(enhanced_task, styled_result)
 
-            # Calculate runtime first
-            runtime = time.time() - start_time
+            # Store in memory if significant result
+            if self.memory_manager and styled_result.get("confidence", 0) > 0.7:
+                tags = ["reasoning", "high_confidence"]
+                if memory_context and "tags" in memory_context:
+                    tags.extend(memory_context["tags"])
 
-            # Record cost if engine was used
-            cost_record = None
-            if self.engine:
-                try:
-                    # Get cost information from engine
-                    cost_info = self.engine.get_cost_info(raw_result)
-
-                    # Record cost with cost recorder
-                    cost_record = self.cost_recorder.record_inference_cost(
-                        provider=cost_info.get("provider", "unknown"),
-                        model=cost_info.get("model", "unknown"),
-                        result=raw_result,
-                        agent_name=self.name,
-                        task_id=task[:50],  # Truncate task for ID
-                        tenant_id=self.tenant_id,
-                        metadata={
-                            "runtime": runtime,
-                            "confidence": styled_result.get("confidence", 0.0),
-                            "style": self.style.copy(),
-                        },
-                    )
-                except Exception as e:
-                    logger.warning(f"Failed to record cost: {e}")
+                self.store_memory(
+                    styled_result["content"],
+                    metadata={
+                        "task": task,
+                        "confidence": styled_result.get("confidence"),
+                    },
+                    tags=tags,
+                )
 
             # Build reasoning tree
+            runtime = time.time() - start_time
             reasoning_tree = {
                 "root": f"{self.name}_reasoning",
                 "result": styled_result,
                 "agent": self.name,
                 "task": task,
+                "enhanced_task": enhanced_task,
                 "runtime": runtime,
                 "timestamp": time.time(),
                 "style": self.style.copy(),
                 "monitor_trace": [] if include_monitor_trace else None,
+                "memory_retrieval": memory_retrieval,
+                "memory_used": bool(memory_context_str),
                 "metadata": metadata or {},
-                "cost_record": (
-                    {
-                        "total_cost": cost_record.total_cost if cost_record else 0.0,
-                        "provider": cost_record.provider if cost_record else None,
-                        "tokens_input": cost_record.tokens_input if cost_record else 0,
-                        "tokens_output": (
-                            cost_record.tokens_output if cost_record else 0
-                        ),
-                    }
-                    if cost_record
-                    else None
-                ),
             }
 
             # Inject auto-configuration data for observability
@@ -365,6 +373,7 @@ class AgentNet:
                     "task": task,
                     "result": styled_result,
                     "runtime": runtime,
+                    "memory_used": bool(memory_context_str),
                 }
             )
 
@@ -382,14 +391,16 @@ class AgentNet:
                 },
                 "agent": self.name,
                 "task": task,
+                "enhanced_task": enhanced_task,
                 "runtime": runtime,
                 "timestamp": time.time(),
                 "cognitive_fault": cf.to_dict(),
+                "memory_retrieval": memory_retrieval,
             }
 
             self.interaction_history.append(
                 {
-                    "type": "cognitive_fault",
+                    "type": "fault",
                     "task": task,
                     "fault": cf.to_dict(),
                     "runtime": runtime,
@@ -397,6 +408,97 @@ class AgentNet:
             )
 
             return fault_tree
+
+        except Exception as e:
+            # Handle unexpected errors
+            runtime = time.time() - start_time
+            error_tree = {
+                "root": f"{self.name}_error",
+                "result": {
+                    "content": f"[{self.name}] Unexpected error: {e}",
+                    "confidence": 0.0,
+                    "error": True,
+                },
+                "agent": self.name,
+                "task": task,
+                "enhanced_task": enhanced_task,
+                "runtime": runtime,
+                "timestamp": time.time(),
+                "error": str(e),
+                "memory_retrieval": memory_retrieval,
+            }
+
+            return error_tree
+
+    def generate_reasoning_tree(
+        self,
+        task: str,
+        include_monitor_trace: bool = False,
+        max_depth: int = 3,
+        confidence_threshold: float = 0.7,
+        style_override: Optional[Dict[str, float]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Generate a reasoning tree for the given task.
+
+        Args:
+            task: The task/prompt to reason about
+            include_monitor_trace: Whether to include monitor execution traces
+            max_depth: Maximum reasoning depth
+            confidence_threshold: Minimum confidence threshold
+            style_override: Temporary style override
+            metadata: Optional metadata that may include auto_config setting
+
+        Returns:
+            Reasoning tree dictionary
+        """
+        return self._generate_reasoning_tree(
+            task=task,
+            include_monitor_trace=include_monitor_trace,
+            max_depth=max_depth,
+            confidence_threshold=confidence_threshold,
+            style_override=style_override,
+            metadata=metadata,
+        )
+
+    def generate_reasoning_tree_enhanced(
+        self,
+        task: str,
+        include_monitor_trace: bool = False,
+        max_depth: int = 3,
+        confidence_threshold: float = 0.7,
+        style_override: Optional[Dict[str, float]] = None,
+        use_memory: bool = True,
+        memory_context: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Generate reasoning tree with memory retrieval integration.
+
+        Args:
+            task: The task/prompt to reason about
+            include_monitor_trace: Whether to include monitor execution traces
+            max_depth: Maximum reasoning depth
+            confidence_threshold: Minimum confidence threshold
+            style_override: Temporary style override
+            use_memory: Whether to use memory retrieval
+            memory_context: Additional context for memory retrieval
+            metadata: Optional metadata that may include auto_config setting
+
+        Returns:
+            Enhanced reasoning tree with memory context
+        """
+        return self._generate_reasoning_tree(
+            task=task,
+            include_monitor_trace=include_monitor_trace,
+            max_depth=max_depth,
+            confidence_threshold=confidence_threshold,
+            style_override=style_override,
+            metadata=metadata,
+            use_memory=use_memory,
+            memory_context=memory_context,
+        )
 
     # Persistence methods
     def save_state(self, path: str) -> None:
@@ -480,7 +582,7 @@ class AgentNet:
             return False
 
         if layer_type:
-            from ..memory.base import MemoryType
+            from .memory.base import MemoryType
 
             try:
                 memory_type = MemoryType(layer_type)
@@ -580,204 +682,6 @@ class AgentNet:
             return None
 
         return spec.to_dict()
-
-    # Enhanced reasoning with memory and tools
-    def generate_reasoning_tree_enhanced(
-        self,
-        task: str,
-        include_monitor_trace: bool = False,
-        max_depth: int = 3,
-        confidence_threshold: float = 0.7,
-        style_override: Optional[Dict[str, float]] = None,
-        use_memory: bool = True,
-        memory_context: Optional[Dict[str, Any]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
-        """
-        Generate reasoning tree with memory retrieval integration.
-
-        Args:
-            task: The task/prompt to reason about
-            include_monitor_trace: Whether to include monitor execution traces
-            max_depth: Maximum reasoning depth
-            confidence_threshold: Minimum confidence threshold
-            style_override: Temporary style override
-            use_memory: Whether to use memory retrieval
-            memory_context: Additional context for memory retrieval
-            metadata: Optional metadata that may include auto_config setting
-
-        Returns:
-            Enhanced reasoning tree with memory context
-        """
-        start_time = time.time()
-
-        # Auto-configure parameters based on task difficulty if enabled
-        autoconfig = get_global_autoconfig()
-        auto_config_params = None
-
-        if autoconfig.should_auto_configure(metadata):
-            # Create context from metadata and confidence
-            context = {"confidence": confidence_threshold}
-            if metadata:
-                context.update(metadata)
-
-            auto_config_params = autoconfig.configure_scenario(
-                task=task,
-                context=context,
-                base_max_depth=max_depth,
-                base_confidence_threshold=(
-                    confidence_threshold if confidence_threshold != 0.7 else None
-                ),
-            )
-
-            # Apply auto-configured parameters
-            max_depth = auto_config_params.max_depth
-            # For confidence threshold, use auto-config value if it's for default threshold
-            if confidence_threshold == 0.7:  # Default threshold
-                confidence_threshold = auto_config_params.confidence_threshold
-            else:  # User-specified threshold, preserve or raise
-                confidence_threshold = autoconfig.preserve_confidence_threshold(
-                    confidence_threshold, auto_config_params
-                )
-
-        # Retrieve relevant memories if enabled
-        memory_context_str = ""
-        memory_retrieval = None
-
-        if use_memory and self.memory_manager:
-            memory_retrieval = self.retrieve_memory(task, memory_context)
-            if memory_retrieval and memory_retrieval["entries"]:
-                memory_items = []
-                for entry in memory_retrieval["entries"]:
-                    memory_items.append(f"- {entry['content'][:200]}...")
-
-                memory_context_str = f"\n\nRelevant memory context:\n" + "\n".join(
-                    memory_items[:3]
-                )
-
-        # Enhanced task with memory context
-        enhanced_task = task + memory_context_str
-
-        try:
-            # Use engine if available, otherwise create simple response
-            if self.engine:
-                raw_result = self.engine.infer(enhanced_task, agent_name=self.name)
-            else:
-                raw_result = {
-                    "content": f"[{self.name}] No engine available for task: {enhanced_task}",
-                    "confidence": 0.5,
-                }
-
-            base_result = self._normalize_engine_result(raw_result)
-
-            # Run pre-style monitors
-            self._run_pre_monitors(enhanced_task, base_result)
-
-            # Apply style influence
-            styled_result = self._apply_style_influence(base_result, enhanced_task)
-
-            # Run post-style monitors
-            self._run_post_monitors(enhanced_task, styled_result)
-
-            # Store in memory if significant result
-            if self.memory_manager and styled_result.get("confidence", 0) > 0.7:
-                tags = ["reasoning", "high_confidence"]
-                if memory_context and "tags" in memory_context:
-                    tags.extend(memory_context["tags"])
-
-                self.store_memory(
-                    styled_result["content"],
-                    metadata={
-                        "task": task,
-                        "confidence": styled_result.get("confidence"),
-                    },
-                    tags=tags,
-                )
-
-            # Build enhanced reasoning tree
-            runtime = time.time() - start_time
-            reasoning_tree = {
-                "root": f"{self.name}_reasoning_enhanced",
-                "result": styled_result,
-                "agent": self.name,
-                "task": task,
-                "enhanced_task": enhanced_task,
-                "runtime": runtime,
-                "timestamp": time.time(),
-                "style": self.style.copy(),
-                "monitor_trace": [] if include_monitor_trace else None,
-                "memory_retrieval": memory_retrieval,
-                "memory_used": bool(memory_context_str),
-                "metadata": metadata or {},
-            }
-
-            # Inject auto-configuration data for observability
-            if auto_config_params:
-                autoconfig.inject_autoconfig_data(reasoning_tree, auto_config_params)
-
-            # Record in interaction history
-            self.interaction_history.append(
-                {
-                    "type": "reasoning_tree_enhanced",
-                    "task": task,
-                    "result": styled_result,
-                    "runtime": runtime,
-                    "memory_used": bool(memory_context_str),
-                }
-            )
-
-            return reasoning_tree
-
-        except CognitiveFault as cf:
-            # Handle cognitive faults
-            runtime = time.time() - start_time
-            fault_tree = {
-                "root": f"{self.name}_fault_enhanced",
-                "result": {
-                    "content": f"[{self.name}] Cognitive fault: {cf}",
-                    "confidence": 0.1,
-                    "fault": True,
-                },
-                "agent": self.name,
-                "task": task,
-                "enhanced_task": enhanced_task,
-                "runtime": runtime,
-                "timestamp": time.time(),
-                "cognitive_fault": cf.to_dict(),
-                "memory_retrieval": memory_retrieval,
-            }
-
-            self.interaction_history.append(
-                {
-                    "type": "fault_enhanced",
-                    "task": task,
-                    "fault": cf.to_dict(),
-                    "runtime": runtime,
-                }
-            )
-
-            return fault_tree
-
-        except Exception as e:
-            # Handle unexpected errors
-            runtime = time.time() - start_time
-            error_tree = {
-                "root": f"{self.name}_error_enhanced",
-                "result": {
-                    "content": f"[{self.name}] Unexpected error: {e}",
-                    "confidence": 0.0,
-                    "error": True,
-                },
-                "agent": self.name,
-                "task": task,
-                "enhanced_task": enhanced_task,
-                "runtime": runtime,
-                "timestamp": time.time(),
-                "error": str(e),
-                "memory_retrieval": memory_retrieval,
-            }
-
-            return error_tree
 
     # Phase 7: Advanced Intelligence & Reasoning Methods
 
