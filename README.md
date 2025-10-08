@@ -556,25 +556,35 @@ AgentNet provides a unified CLI for all development tasks:
 
 ```bash
 # Lint code
-python -m cli.main lint
+python -m cli lint
 
 # Format code
-python -m cli.main format
+python -m cli format
 
 # Run tests
-python -m cli.main test
+python -m cli test
 
 # Validate security features
-python -m cli.main validate-security
+python -m cli validate-security
 
 # Verify roadmap issues
-python -m cli.main validate-roadmap
+python -m cli validate-roadmap
 
 # Train debate model
-python -m cli.main train-debate-model --datasets-dir datasets
+python -m cli train-debate-model --datasets-dir datasets
 
 # Get help
-python -m cli.main --help
+python -m cli --help
+```
+
+### Using Makefile Targets
+
+```bash
+# Use new CLI-based targets
+make cli-lint       # Lint code
+make cli-format     # Format code
+make cli-test       # Run tests
+make check          # Format, lint, and test
 ```
 
 ### Using Legacy Scripts (Deprecated)
@@ -591,8 +601,10 @@ python scripts/format.py
 # Run tests
 python scripts/test.py
 
-# Regenerate event schema (planned)
-python scripts/gen_schema.py
+# Deprecated Makefile targets (show warnings)
+make lint           # Use 'make cli-lint' instead
+make format         # Use 'make cli-format' instead
+make test           # Use 'make cli-test' instead
 ```
 
 **Note**: Legacy scripts will show deprecation warnings and will be removed in a future release. Please migrate to the unified CLI.
