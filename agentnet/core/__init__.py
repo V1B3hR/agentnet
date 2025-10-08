@@ -9,13 +9,24 @@ from .types import CognitiveFault, Severity
 try:
     from .cache import CacheManager, CacheEntry, InMemoryCache, FileCache
     from .telemetry import (
-        TelemetryCollector, TelemetryEvent, EventType, MetricType,
-        init_telemetry, get_telemetry, record_event, record_metric
+        TelemetryCollector,
+        TelemetryEvent,
+        EventType,
+        MetricType,
+        init_telemetry,
+        get_telemetry,
+        record_event,
+        record_metric,
     )
     from .multimodal import (
-        MultiModalManager, MultiModalMessage, ModalityContent, ModalityType,
-        ModalityProcessor, get_multimodal_manager
+        MultiModalManager,
+        MultiModalMessage,
+        ModalityContent,
+        ModalityType,
+        ModalityProcessor,
+        get_multimodal_manager,
     )
+
     _PHASE3_4_AVAILABLE = True
 except ImportError:
     # Stub classes if dependencies are missing
@@ -29,29 +40,51 @@ except ImportError:
 # Phase 6 advanced features with graceful fallback
 try:
     from .metacontroller import (
-        MetaController, AgentRole, ReconfigurationTrigger, AgentNode, ReconfigurationEvent
+        MetaController,
+        AgentRole,
+        ReconfigurationTrigger,
+        AgentNode,
+        ReconfigurationEvent,
     )
     from .human_loop import (
-        HumanApprovalGate, ApprovalStatus, EscalationLevel, RiskLevel,
-        ApprovalRequest, Approver
+        HumanApprovalGate,
+        ApprovalStatus,
+        EscalationLevel,
+        RiskLevel,
+        ApprovalRequest,
+        Approver,
     )
     from .reward_modeling import (
-        RewardModel, FeedbackType, RewardSignal, FeedbackEntry,
-        EvaluationBatch
+        RewardModel,
+        FeedbackType,
+        RewardSignal,
+        FeedbackEntry,
+        EvaluationBatch,
     )
     from .adaptive_orchestration import (
-        PerformanceFeedbackCollector, AdaptiveOrchestrator,
-        PerformanceMetric, OrchestrationStrategy, OptimizationObjective,
-        PerformanceSnapshot, StrategyPerformanceProfile
+        PerformanceFeedbackCollector,
+        AdaptiveOrchestrator,
+        PerformanceMetric,
+        OrchestrationStrategy,
+        OptimizationObjective,
+        PerformanceSnapshot,
+        StrategyPerformanceProfile,
     )
     from .multilingual_safety import (
-        MultiLingualPolicyTranslator, SupportedLanguage, PolicyViolationType,
-        SafetyRule, PolicyViolation, LanguageDetector
+        MultiLingualPolicyTranslator,
+        SupportedLanguage,
+        PolicyViolationType,
+        SafetyRule,
+        PolicyViolation,
+        LanguageDetector,
     )
+
     _PHASE6_AVAILABLE = True
 except ImportError:
     # Stub classes if dependencies are missing
-    MetaController = AgentRole = ReconfigurationTrigger = AgentNode = ReconfigurationEvent = None
+    MetaController = AgentRole = ReconfigurationTrigger = AgentNode = (
+        ReconfigurationEvent
+    ) = None
     HumanApprovalGate = ApprovalStatus = EscalationLevel = RiskLevel = None
     ApprovalRequest = Approver = None
     RewardModel = FeedbackType = RewardSignal = FeedbackEntry = EvaluationBatch = None
@@ -79,65 +112,69 @@ __all__ = [
 
 # Add Phase 3 & 4 exports if available
 if _PHASE3_4_AVAILABLE:
-    __all__.extend([
-        # Cache
-        "CacheManager",
-        "CacheEntry",
-        "InMemoryCache", 
-        "FileCache",
-        # Telemetry
-        "TelemetryCollector",
-        "TelemetryEvent",
-        "EventType",
-        "MetricType",
-        "init_telemetry",
-        "get_telemetry",
-        "record_event",
-        "record_metric",
-        # Multi-modal
-        "MultiModalManager",
-        "MultiModalMessage",
-        "ModalityContent",
-        "ModalityType",
-        "ModalityProcessor",
-        "get_multimodal_manager",
-    ])
+    __all__.extend(
+        [
+            # Cache
+            "CacheManager",
+            "CacheEntry",
+            "InMemoryCache",
+            "FileCache",
+            # Telemetry
+            "TelemetryCollector",
+            "TelemetryEvent",
+            "EventType",
+            "MetricType",
+            "init_telemetry",
+            "get_telemetry",
+            "record_event",
+            "record_metric",
+            # Multi-modal
+            "MultiModalManager",
+            "MultiModalMessage",
+            "ModalityContent",
+            "ModalityType",
+            "ModalityProcessor",
+            "get_multimodal_manager",
+        ]
+    )
 
 # Add Phase 6 exports if available
 if _PHASE6_AVAILABLE:
-    __all__.extend([
-        # Meta-controller
-        "MetaController",
-        "AgentRole",
-        "ReconfigurationTrigger",
-        "AgentNode",
-        "ReconfigurationEvent",
-        # Human-in-loop
-        "HumanApprovalGate",
-        "ApprovalStatus",
-        "EscalationLevel",
-        "RiskLevel",
-        "ApprovalRequest",
-        "Approver",
-        # Reward modeling
-        "RewardModel",
-        "FeedbackType",
-        "RewardSignal",
-        "FeedbackEntry",
-        "EvaluationBatch",
-        # Adaptive orchestration
-        "PerformanceFeedbackCollector",
-        "AdaptiveOrchestrator",
-        "PerformanceMetric",
-        "OrchestrationStrategy",
-        "OptimizationObjective",
-        "PerformanceSnapshot",
-        "StrategyPerformanceProfile",
-        # Multi-lingual safety
-        "MultiLingualPolicyTranslator",
-        "SupportedLanguage",
-        "PolicyViolationType",
-        "SafetyRule",
-        "PolicyViolation",
-        "LanguageDetector",
-    ])
+    __all__.extend(
+        [
+            # Meta-controller
+            "MetaController",
+            "AgentRole",
+            "ReconfigurationTrigger",
+            "AgentNode",
+            "ReconfigurationEvent",
+            # Human-in-loop
+            "HumanApprovalGate",
+            "ApprovalStatus",
+            "EscalationLevel",
+            "RiskLevel",
+            "ApprovalRequest",
+            "Approver",
+            # Reward modeling
+            "RewardModel",
+            "FeedbackType",
+            "RewardSignal",
+            "FeedbackEntry",
+            "EvaluationBatch",
+            # Adaptive orchestration
+            "PerformanceFeedbackCollector",
+            "AdaptiveOrchestrator",
+            "PerformanceMetric",
+            "OrchestrationStrategy",
+            "OptimizationObjective",
+            "PerformanceSnapshot",
+            "StrategyPerformanceProfile",
+            # Multi-lingual safety
+            "MultiLingualPolicyTranslator",
+            "SupportedLanguage",
+            "PolicyViolationType",
+            "SafetyRule",
+            "PolicyViolation",
+            "LanguageDetector",
+        ]
+    )

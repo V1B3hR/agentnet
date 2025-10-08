@@ -12,7 +12,7 @@ from enum import Enum
 
 class Mode(str, Enum):
     """Problem-solving modes for AgentNet orchestration."""
-    
+
     BRAINSTORM = "brainstorm"
     DEBATE = "debate"
     CONSENSUS = "consensus"
@@ -22,7 +22,7 @@ class Mode(str, Enum):
 
 class ProblemSolvingStyle(str, Enum):
     """Problem-solving styles that influence agent behavior."""
-    
+
     CLARIFIER = "clarifier"
     IDEATOR = "ideator"
     DEVELOPER = "developer"
@@ -31,7 +31,7 @@ class ProblemSolvingStyle(str, Enum):
 
 class ProblemTechnique(str, Enum):
     """Problem-solving techniques for different scenarios."""
-    
+
     SIMPLE = "simple"
     COMPLEX = "complex"
     TROUBLESHOOTING = "troubleshooting"

@@ -14,8 +14,8 @@ from .dialogue import DialogueStrategy
 __all__ = [
     "BaseStrategy",
     "BrainstormStrategy",
-    "DebateStrategy", 
+    "DebateStrategy",
     "ConsensusStrategy",
     "WorkflowStrategy",
-    "DialogueStrategy"
+    "DialogueStrategy",
 ]

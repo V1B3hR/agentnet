@@ -12,11 +12,11 @@ from .fundamental_laws import FundamentalLawsEngine, create_all_fundamental_laws
 
 __all__ = [
     "PolicyEngine",
-    "PolicyAction", 
+    "PolicyAction",
     "PolicyResult",
     "ConstraintRule",
-    "RuleResult", 
+    "RuleResult",
     "Severity",
     "FundamentalLawsEngine",
-    "create_all_fundamental_laws"
+    "create_all_fundamental_laws",
 ]

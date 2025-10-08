@@ -50,6 +50,7 @@ try:
         TemporalEvent,
         TemporalRelation,
     )
+
     _ADVANCED_REASONING_AVAILABLE = True
 except ImportError:
     # Graceful fallback if Phase 7 components are not available
@@ -86,20 +87,22 @@ __all__ = [
 
 # Add Phase 7 exports if available
 if _ADVANCED_REASONING_AVAILABLE:
-    __all__.extend([
-        "ChainOfThoughtReasoning",
-        "MultiHopReasoning",
-        "CounterfactualReasoning",
-        "SymbolicReasoning",
-        "AdvancedReasoningEngine",
-        "StepValidation",
-        "KnowledgeGraph",
-        "ReasoningStep",
-        "ValidationResult",
-        "TemporalReasoning",
-        "TemporalPattern",
-        "TemporalSequence",
-        "TemporalRule",
-        "TemporalEvent",
-        "TemporalRelation",
-    ])
+    __all__.extend(
+        [
+            "ChainOfThoughtReasoning",
+            "MultiHopReasoning",
+            "CounterfactualReasoning",
+            "SymbolicReasoning",
+            "AdvancedReasoningEngine",
+            "StepValidation",
+            "KnowledgeGraph",
+            "ReasoningStep",
+            "ValidationResult",
+            "TemporalReasoning",
+            "TemporalPattern",
+            "TemporalSequence",
+            "TemporalRule",
+            "TemporalEvent",
+            "TemporalRelation",
+        ]
+    )

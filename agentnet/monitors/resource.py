@@ -36,11 +36,7 @@ def create_resource_monitor(spec: MonitorSpec) -> MonitorFn:
         if MonitorFactory._should_cooldown(spec, task):
             return
 
-        runtime = (
-            float(result.get("runtime", 0.0))
-            if isinstance(result, dict)
-            else 0.0
-        )
+        runtime = float(result.get("runtime", 0.0)) if isinstance(result, dict) else 0.0
         budget = float(agent.style.get(budget_key, 0.0))
 
         if budget <= 0:
@@ -60,8 +56,7 @@ def create_resource_monitor(spec: MonitorSpec) -> MonitorFn:
                     name=violation_name,
                     vtype="resource",
                     severity=spec.severity,
-                    description=spec.description
-                    or "Resource usage exceeded threshold",
+                    description=spec.description or "Resource usage exceeded threshold",
                     rationale=rationale,
                     meta={
                         "runtime": runtime,
@@ -75,8 +70,6 @@ def create_resource_monitor(spec: MonitorSpec) -> MonitorFn:
                 "outcome": {"runtime": runtime},
                 "violations": violations,
             }
-            MonitorFactory._handle(
-                spec, agent, task, passed=False, detail=detail
-            )
+            MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
 
     return monitor

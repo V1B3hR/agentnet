@@ -3,6 +3,11 @@
 Debate Model Training Script for AgentNet
 Integrates Kaggle debate datasets into AgentNet's debate functionality.
 
+DEPRECATED: This script is deprecated and will be removed in a future release.
+Please use the unified CLI instead:
+    python -m cli.main train-debate-model [--datasets-dir DATASETS]
+    or: python cli/main.py train-debate-model [--datasets-dir DATASETS]
+
 This script:
 1. Loads and preprocesses debate datasets from Kaggle
 2. Prepares training data for AgentNet debate model
@@ -46,6 +51,18 @@ logging.basicConfig(
     ],
 )
 logger = logging.getLogger(__name__)
+
+
+def main():
+    """Main training pipeline execution."""
+    print("⚠️  DEPRECATION WARNING: This script is deprecated.")
+    print("    Please use: python -m cli.main train-debate-model")
+    print()
+
+    # Import and run the training
+    from devtools.training import train_debate_model
+
+    return train_debate_model()
 
 
 class DebateDatasetProcessor:
@@ -461,57 +478,6 @@ class DebateModelTrainer:
             f.write("- Add model evaluation metrics\n")
 
         logger.info(f"Training artifacts saved to: {self.training_output_dir}")
-
-
-def main():
-    """Main training pipeline execution."""
-    logger.info("=" * 60)
-    logger.info("AgentNet Debate Model Training Pipeline Started")
-    logger.info("=" * 60)
-
-    try:
-        # Step 1: Initialize dataset processor
-        processor = DebateDatasetProcessor()
-
-        # Step 2: Load all datasets
-        datasets = processor.load_all_datasets()
-
-        if not datasets:
-            logger.error("No datasets could be loaded. Please check dataset files.")
-            sys.exit(1)
-
-        # Step 3: Preprocess data for training
-        training_data = processor.preprocess_for_debate_training(datasets)
-
-        # Step 4: Initialize trainer
-        trainer = DebateModelTrainer(training_data)
-
-        # Step 5: Prepare training scenarios
-        scenarios = trainer.prepare_training_scenarios()
-
-        # Step 6: Run training simulation
-        training_results = trainer.run_training_simulation(scenarios)
-
-        # Step 7: Save artifacts
-        trainer.save_training_artifacts(training_results)
-
-        # Step 8: Summary
-        logger.info("=" * 60)
-        logger.info("Training Pipeline Completed Successfully")
-        logger.info(f"Processed {training_results['scenarios_processed']} scenarios")
-        logger.info(
-            f"Successful: {training_results['training_metrics']['successful_simulations']}"
-        )
-        logger.info(
-            f"Failed: {training_results['training_metrics']['failed_simulations']}"
-        )
-        logger.info("=" * 60)
-
-        return 0
-
-    except Exception as e:
-        logger.error(f"Training pipeline failed: {e}")
-        return 1
 
 
 if __name__ == "__main__":

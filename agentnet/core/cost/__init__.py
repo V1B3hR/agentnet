@@ -5,6 +5,7 @@ from .recorder import CostAggregator, CostRecorder, TenantCostTracker
 
 try:
     from .predictions import CostPredictor
+
     _predictions_available = True
 except ImportError:
     _predictions_available = False
@@ -12,7 +13,7 @@ except ImportError:
 
 __all__ = [
     "PricingEngine",
-    "ProviderPricing", 
+    "ProviderPricing",
     "CostRecord",
     "CostRecorder",
     "CostAggregator",

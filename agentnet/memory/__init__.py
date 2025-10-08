@@ -17,10 +17,16 @@ from .short_term import ShortTermMemory
 # Phase 3 retention features with graceful fallback
 try:
     from .retention import (
-        RetentionManager, RetentionPolicy, RetentionStrategy,
-        LRURetentionPolicy, LFURetentionPolicy, SemanticSalienceRetentionPolicy,
-        TimeDecayRetentionPolicy, HybridRetentionPolicy
+        RetentionManager,
+        RetentionPolicy,
+        RetentionStrategy,
+        LRURetentionPolicy,
+        LFURetentionPolicy,
+        SemanticSalienceRetentionPolicy,
+        TimeDecayRetentionPolicy,
+        HybridRetentionPolicy,
     )
+
     _RETENTION_AVAILABLE = True
 except ImportError:
     RetentionManager = RetentionPolicy = RetentionStrategy = None
@@ -40,8 +46,9 @@ try:
         ConsolidationStrategy,
         CrossModalLink,
         MemoryCluster,
-        ConsolidationRule
+        ConsolidationRule,
     )
+
     _ENHANCED_MEMORY_AVAILABLE = True
 except ImportError:
     EnhancedEpisodicMemory = None
@@ -65,27 +72,31 @@ __all__ = [
 
 # Add retention exports if available
 if _RETENTION_AVAILABLE:
-    __all__.extend([
-        "RetentionManager",
-        "RetentionPolicy", 
-        "RetentionStrategy",
-        "LRURetentionPolicy",
-        "LFURetentionPolicy",
-        "SemanticSalienceRetentionPolicy",
-        "TimeDecayRetentionPolicy",
-        "HybridRetentionPolicy",
-    ])
+    __all__.extend(
+        [
+            "RetentionManager",
+            "RetentionPolicy",
+            "RetentionStrategy",
+            "LRURetentionPolicy",
+            "LFURetentionPolicy",
+            "SemanticSalienceRetentionPolicy",
+            "TimeDecayRetentionPolicy",
+            "HybridRetentionPolicy",
+        ]
+    )
 
 # Add Phase 7 enhanced memory exports if available
 if _ENHANCED_MEMORY_AVAILABLE:
-    __all__.extend([
-        "EnhancedEpisodicMemory",
-        "HierarchicalKnowledgeOrganizer",
-        "CrossModalMemoryLinker",
-        "MemoryConsolidationEngine",
-        "ModalityType",
-        "ConsolidationStrategy",
-        "CrossModalLink",
-        "MemoryCluster",
-        "ConsolidationRule",
-    ])
+    __all__.extend(
+        [
+            "EnhancedEpisodicMemory",
+            "HierarchicalKnowledgeOrganizer",
+            "CrossModalMemoryLinker",
+            "MemoryConsolidationEngine",
+            "ModalityType",
+            "ConsolidationStrategy",
+            "CrossModalLink",
+            "MemoryCluster",
+            "ConsolidationRule",
+        ]
+    )

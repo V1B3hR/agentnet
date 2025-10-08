@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 # Try to import PyTorch
 try:
     import torch
+
     PYTORCH_AVAILABLE = True
     PYTORCH_VERSION = torch.__version__
 except ImportError:
@@ -30,6 +31,7 @@ except ImportError:
 # Try to import TensorFlow (optional)
 try:
     import tensorflow as tf
+
     TENSORFLOW_AVAILABLE = True
     TENSORFLOW_VERSION = tf.__version__
 except ImportError:
@@ -40,6 +42,7 @@ except ImportError:
 # Try to import transformers
 try:
     import transformers
+
     TRANSFORMERS_AVAILABLE = True
     TRANSFORMERS_VERSION = transformers.__version__
 except ImportError:
@@ -50,6 +53,7 @@ except ImportError:
 # Try to import sentence-transformers
 try:
     import sentence_transformers
+
     SENTENCE_TRANSFORMERS_AVAILABLE = True
 except ImportError:
     SENTENCE_TRANSFORMERS_AVAILABLE = False
@@ -88,7 +92,7 @@ def get_framework_info() -> dict:
         },
         "sentence_transformers": {
             "available": SENTENCE_TRANSFORMERS_AVAILABLE,
-        }
+        },
     }
 
 
@@ -96,139 +100,143 @@ def get_framework_info() -> dict:
 # Note: Registry module doesn't need PyTorch, so import it separately
 try:
     from .registry import ModelRegistry, ModelMetadata, ModelArtifact
+
     _REGISTRY_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"Registry not available: {e}")
     _REGISTRY_AVAILABLE = False
+
     # Provide stub classes
     class ModelRegistry:
         def __init__(self, *args, **kwargs):
-            raise ImportError(
-                "ModelRegistry import failed. Check dependencies."
-            )
-    
+            raise ImportError("ModelRegistry import failed. Check dependencies.")
+
     class ModelMetadata:
         def __init__(self, *args, **kwargs):
-            raise ImportError(
-                "ModelMetadata import failed. Check dependencies."
-            )
-    
+            raise ImportError("ModelMetadata import failed. Check dependencies.")
+
     class ModelArtifact:
         def __init__(self, *args, **kwargs):
-            raise ImportError(
-                "ModelArtifact import failed. Check dependencies."
-            )
+            raise ImportError("ModelArtifact import failed. Check dependencies.")
+
 
 if PYTORCH_AVAILABLE:
     try:
         from .trainer import DeepLearningTrainer, TrainingConfig, TrainingCallback
         from .embeddings import EmbeddingGenerator, EmbeddingCache, SemanticSearch
-        
+
         _CORE_AVAILABLE = True
     except ImportError as e:
         logger.warning(f"Some deep learning components not available: {e}")
         _CORE_AVAILABLE = False
+
         # Provide stub classes
         class DeepLearningTrainer:
             def __init__(self, *args, **kwargs):
                 raise ImportError(
                     "DeepLearningTrainer requires PyTorch. Install with: pip install agentnet[deeplearning]"
                 )
-        
+
         class TrainingConfig:
             def __init__(self, *args, **kwargs):
                 raise ImportError(
                     "TrainingConfig requires PyTorch. Install with: pip install agentnet[deeplearning]"
                 )
-        
+
         class TrainingCallback:
             def __init__(self, *args, **kwargs):
                 raise ImportError(
                     "TrainingCallback requires PyTorch. Install with: pip install agentnet[deeplearning]"
                 )
-        
+
         class EmbeddingGenerator:
             def __init__(self, *args, **kwargs):
                 raise ImportError(
                     "EmbeddingGenerator requires sentence-transformers. Install with: pip install agentnet[deeplearning]"
                 )
-        
+
         class EmbeddingCache:
             def __init__(self, *args, **kwargs):
                 raise ImportError(
                     "EmbeddingCache requires PyTorch. Install with: pip install agentnet[deeplearning]"
                 )
-        
+
         class SemanticSearch:
             def __init__(self, *args, **kwargs):
                 raise ImportError(
                     "SemanticSearch requires FAISS. Install with: pip install agentnet[deeplearning]"
                 )
+
 else:
     _CORE_AVAILABLE = False
+
     # Provide stub classes when PyTorch not available
     class DeepLearningTrainer:
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "DeepLearningTrainer requires PyTorch. Install with: pip install agentnet[deeplearning]"
             )
-    
+
     class TrainingConfig:
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "TrainingConfig requires PyTorch. Install with: pip install agentnet[deeplearning]"
             )
-    
+
     class TrainingCallback:
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "TrainingCallback requires PyTorch. Install with: pip install agentnet[deeplearning]"
             )
-    
+
     class EmbeddingGenerator:
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "EmbeddingGenerator requires sentence-transformers. Install with: pip install agentnet[deeplearning]"
             )
-    
+
     class EmbeddingCache:
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "EmbeddingCache requires PyTorch. Install with: pip install agentnet[deeplearning]"
             )
-    
+
     class SemanticSearch:
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "SemanticSearch requires FAISS. Install with: pip install agentnet[deeplearning]"
             )
 
+
 # Fine-tuning components (require transformers + peft)
 try:
     if PYTORCH_AVAILABLE and TRANSFORMERS_AVAILABLE:
         from .finetuning import FineTuner, LoRAConfig, InstructionDataset
+
         _FINETUNING_AVAILABLE = True
     else:
         raise ImportError("Fine-tuning requires PyTorch and Transformers")
 except ImportError:
     _FINETUNING_AVAILABLE = False
+
     class FineTuner:
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "FineTuner requires transformers and peft. Install with: pip install agentnet[deeplearning]"
             )
-    
+
     class LoRAConfig:
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "LoRAConfig requires peft. Install with: pip install agentnet[deeplearning]"
             )
-    
+
     class InstructionDataset:
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "InstructionDataset requires datasets. Install with: pip install agentnet[deeplearning]"
             )
+
 
 # Neural reasoning components
 try:
@@ -236,25 +244,27 @@ try:
         from .neural_reasoning import (
             NeuralReasoner,
             AttentionReasoning,
-            GraphNeuralReasoning
+            GraphNeuralReasoning,
         )
+
         _NEURAL_REASONING_AVAILABLE = True
     else:
         raise ImportError("Neural reasoning requires PyTorch")
 except ImportError:
     _NEURAL_REASONING_AVAILABLE = False
+
     class NeuralReasoner:
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "NeuralReasoner requires PyTorch. Install with: pip install agentnet[deeplearning]"
             )
-    
+
     class AttentionReasoning:
         def __init__(self, *args, **kwargs):
             raise ImportError(
                 "AttentionReasoning requires PyTorch. Install with: pip install agentnet[deeplearning]"
             )
-    
+
     class GraphNeuralReasoning:
         def __init__(self, *args, **kwargs):
             raise ImportError(
@@ -298,6 +308,4 @@ if not PYTORCH_AVAILABLE:
         "Install with: pip install agentnet[deeplearning]"
     )
 elif _CORE_AVAILABLE:
-    logger.info(
-        f"AgentNet Deep Learning initialized (PyTorch {PYTORCH_VERSION})"
-    )
+    logger.info(f"AgentNet Deep Learning initialized (PyTorch {PYTORCH_VERSION})")

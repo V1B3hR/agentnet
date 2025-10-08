@@ -1,7 +1,7 @@
 # AgentNet Development Makefile
 # Phase 0 Development Utilities
 
-.PHONY: help install install-dev install-full clean format lint test test-p0 build dist publish
+.PHONY: help install install-dev install-full clean format lint test test-p0 build dist publish cli-format cli-lint cli-test
 
 help:  ## Show this help message
 	@echo "AgentNet Development Commands:"
@@ -12,7 +12,7 @@ install:  ## Install core dependencies (Phase 0)
 	pip install pydantic pyyaml typing-extensions
 
 install-dev:  ## Install development dependencies
-	pip install pytest black isort flake8 mypy coverage
+	pip install pytest black isort flake8 mypy coverage click
 
 install-full:  ## Install all dependencies (all phases)
 	pip install -e ".[all]"
@@ -25,14 +25,26 @@ clean:  ## Clean build artifacts and cache
 	find . -type d -name "__pycache__" -delete
 	find . -type d -name ".pytest_cache" -delete
 
-format:  ## Format code with black and isort
+format:  ## Format code with black and isort (DEPRECATED: use cli-format)
+	@echo "⚠️  DEPRECATED: Use 'make cli-format' instead"
 	python scripts/format.py
 
-lint:  ## Lint code with flake8
+cli-format:  ## Format code with black and isort (unified CLI)
+	python -m cli.main format
+
+lint:  ## Lint code with flake8 (DEPRECATED: use cli-lint)
+	@echo "⚠️  DEPRECATED: Use 'make cli-lint' instead"
 	python scripts/lint.py
 
-test:  ## Run all tests
+cli-lint:  ## Lint code with flake8 (unified CLI)
+	python -m cli.main lint
+
+test:  ## Run all tests (DEPRECATED: use cli-test)
+	@echo "⚠️  DEPRECATED: Use 'make cli-test' instead"
 	python scripts/test.py
+
+cli-test:  ## Run all tests (unified CLI)
+	python -m cli.main test
 
 test-p0:  ## Run Phase 0 tests only
 	PYTHONPATH=. python -m pytest tests/test_p0_implementation.py -v
@@ -53,9 +65,9 @@ dev-setup: install install-dev  ## Setup development environment
 	@echo "Run 'make test-p0' to verify Phase 0 functionality"
 
 # Development workflow shortcuts
-check: format lint test-minimal  ## Run format, lint, and minimal tests
+check: cli-format cli-lint test-minimal  ## Run format, lint, and minimal tests
 
-quick-check: format test-p0  ## Quick check with format and P0 tests
+quick-check: cli-format test-p0  ## Quick check with format and P0 tests
 
 # Version and status info
 status:  ## Show AgentNet phase status

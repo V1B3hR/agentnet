@@ -210,17 +210,17 @@ class SessionManager:
         checkpoint_id = f"{session_id}_checkpoint_{int(time.time() * 1000)}"
         checkpoint_dir = self.storage_dir / "checkpoints"
         checkpoint_dir.mkdir(exist_ok=True)
-        
+
         checkpoint_file = checkpoint_dir / f"{checkpoint_id}.json"
-        
+
         checkpoint_record = {
             "checkpoint_id": checkpoint_id,
             "session_id": session_id,
             "timestamp": time.time(),
             "data": checkpoint_data,
-            "version": "1.0"
+            "version": "1.0",
         }
-        
+
         checkpoint_file.write_text(json.dumps(checkpoint_record, indent=2))
         logger.info(f"Created checkpoint '{checkpoint_id}' for session '{session_id}'")
         return checkpoint_id
@@ -236,11 +236,11 @@ class SessionManager:
         """
         checkpoint_dir = self.storage_dir / "checkpoints"
         checkpoint_file = checkpoint_dir / f"{checkpoint_id}.json"
-        
+
         if not checkpoint_file.exists():
             logger.warning(f"Checkpoint '{checkpoint_id}' not found")
             return None
-            
+
         try:
             data = json.loads(checkpoint_file.read_text())
             logger.info(f"Loaded checkpoint '{checkpoint_id}'")
@@ -264,21 +264,23 @@ class SessionManager:
         checkpoint = self.load_checkpoint(checkpoint_id)
         if not checkpoint:
             return None
-            
+
         session_data = checkpoint["data"]
-        
+
         # Merge additional context if provided
         if additional_context:
             session_data.update(additional_context)
-            
+
         # Mark as resumed
         session_data["resumed_from_checkpoint"] = checkpoint_id
         session_data["resume_timestamp"] = time.time()
-        
+
         logger.info(f"Session resumed from checkpoint '{checkpoint_id}'")
         return session_data
 
-    def list_checkpoints(self, session_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    def list_checkpoints(
+        self, session_id: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
         """List available checkpoints.
 
         Args:
@@ -290,14 +292,12 @@ class SessionManager:
         checkpoint_dir = self.storage_dir / "checkpoints"
         if not checkpoint_dir.exists():
             return []
-            
+
         checkpoints = []
         pattern = f"{session_id}_checkpoint_*.json" if session_id else "*.json"
-        
+
         for checkpoint_file in sorted(
-            checkpoint_dir.glob(pattern),
-            key=lambda p: p.stat().st_mtime,
-            reverse=True
+            checkpoint_dir.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True
         ):
             try:
                 data = json.loads(checkpoint_file.read_text())
@@ -310,5 +310,5 @@ class SessionManager:
                 checkpoints.append(metadata)
             except (json.JSONDecodeError, IOError) as e:
                 logger.error(f"Failed to read checkpoint file {checkpoint_file}: {e}")
-                
+
         return checkpoints

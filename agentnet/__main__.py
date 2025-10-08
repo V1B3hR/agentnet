@@ -23,10 +23,10 @@ sys.path.insert(0, str(root_dir))
 try:
     # Import and execute the main CLI function from AgentNet.py
     from AgentNet import main
-    
+
     if __name__ == "__main__":
         main()
-        
+
 except ImportError as e:
     print(f"Error importing AgentNet CLI: {e}")
     print("Make sure AgentNet.py is available in the root directory.")

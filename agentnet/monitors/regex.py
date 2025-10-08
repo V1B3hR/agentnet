@@ -44,17 +44,13 @@ def create_regex_monitor(spec: MonitorSpec) -> MonitorFn:
             return
 
         content = (
-            str(result.get("content", ""))
-            if isinstance(result, dict)
-            else str(result)
+            str(result.get("content", "")) if isinstance(result, dict) else str(result)
         )
         matches = list(rx.finditer(content))
 
         if matches:
             first = matches[0].group(0)
-            rationale = (
-                f"Pattern matched {len(matches)} time(s); first='{first}'"
-            )
+            rationale = f"Pattern matched {len(matches)} time(s); first='{first}'"
             violations = [
                 MonitorFactory._build_violation(
                     name=violation_name,
@@ -73,8 +69,6 @@ def create_regex_monitor(spec: MonitorSpec) -> MonitorFn:
                 "outcome": {"content": content},
                 "violations": violations,
             }
-            MonitorFactory._handle(
-                spec, agent, task, passed=False, detail=detail
-            )
+            MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
 
     return monitor
