@@ -1,413 +1,215 @@
 """
-Performance Harness for AgentNet
+Production-Ready Performance Harness for AgentNet
 
-Provides configurable benchmarking framework for measuring turn latency,
-token utilization, and multi-agent performance as specified in Phase 5.
+Provides a statistically robust, async-native benchmarking framework that
+integrates directly with the observability stack (latency and token trackers)
+to produce accurate and actionable performance reports.
 """
 
 import asyncio
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
-from enum import Enum
-from typing import Any, Dict, List, Optional, Callable, Union
 import logging
+import statistics
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Callable, Union, AsyncGenerator
+
+from ..observability.latency import get_latency_tracker, LatencyComponent
+from ..observability.tokens import get_token_tracker
 
 logger = logging.getLogger(__name__)
 
 
 class BenchmarkType(str, Enum):
     """Types of benchmarks supported by the performance harness."""
-
     SINGLE_TURN = "single_turn"
-    MULTI_TURN = "multi_turn"
-    MULTI_AGENT = "multi_agent"
     CONCURRENT_AGENTS = "concurrent_agents"
-    TOOL_HEAVY = "tool_heavy"
-    MEMORY_INTENSIVE = "memory_intensive"
 
 
 @dataclass
 class BenchmarkConfig:
-    """Configuration for a performance benchmark."""
-
+    """Configuration for a performance benchmark run."""
     name: str
     benchmark_type: BenchmarkType
-    iterations: int = 10
+    
+    # Execution control
+    min_rounds: int = 5
+    min_time_per_round_s: float = 1.0
+    warmup_rounds: int = 1
     concurrency_level: int = 1
-    warmup_iterations: int = 2
-    timeout_seconds: float = 30.0
-
-    # Agent configuration
-    agent_count: int = 1
-    turn_count: int = 3
-
-    # Test parameters
-    test_prompts: List[str] = field(
-        default_factory=lambda: [
-            "Analyze the benefits of distributed systems",
-            "Explain machine learning algorithms",
-            "Describe cybersecurity best practices",
-        ]
-    )
-
-    # Performance thresholds
-    max_turn_latency_ms: float = 5000.0
-    max_tokens_per_turn: int = 1000
-    min_success_rate: float = 0.95
-
-    # Additional metadata
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    
+    # Test data
+    test_prompts: List[str] = field(default_factory=lambda: ["Analyze the benefits of distributed systems."])
+    
+    # Performance thresholds for pass/fail
+    max_p95_latency_ms: float = 5000.0
+    max_avg_cost_usd: float = 0.05
+    min_success_rate: float = 0.98
 
 
 @dataclass
 class BenchmarkResult:
-    """Results from a performance benchmark run."""
-
+    """Detailed results from a performance benchmark run."""
     config: BenchmarkConfig
-    start_time: float
-    end_time: float
-    total_duration: float
-
-    # Performance metrics
-    avg_turn_latency_ms: float
-    min_turn_latency_ms: float
-    max_turn_latency_ms: float
-    p95_turn_latency_ms: float
-
-    # Token metrics
-    total_tokens_consumed: int
-    avg_tokens_per_turn: float
-    token_efficiency_score: float
-
+    total_duration_s: float
+    
     # Success metrics
-    total_operations: int
-    successful_operations: int
-    failed_operations: int
-    success_rate: float
-
-    # Throughput
-    operations_per_second: float
-    tokens_per_second: float
-
-    # Detailed results
-    individual_results: List[Dict[str, Any]] = field(default_factory=list)
+    total_iterations: int
+    successful_iterations: int
+    failed_iterations: int
+    
+    # Latency statistics (from LatencyTracker)
+    latency_stats: Dict[str, float]
+    
+    # Cost & Token statistics (from TokenUtilizationTracker)
+    token_stats: Dict[str, Any]
+    
+    # Detailed breakdowns
+    component_latency_breakdown: Dict[str, Dict[str, float]]
     error_details: List[str] = field(default_factory=list)
 
     @property
-    def passed_thresholds(self) -> bool:
-        """Check if benchmark passed all configured thresholds."""
-        return (
-            self.avg_turn_latency_ms <= self.config.max_turn_latency_ms
-            and self.avg_tokens_per_turn <= self.config.max_tokens_per_turn
-            and self.success_rate >= self.config.min_success_rate
-        )
+    def success_rate(self) -> float:
+        return self.successful_iterations / self.total_iterations if self.total_iterations > 0 else 0.0
 
+    @property
+    def passed(self) -> bool:
+        """Check if the benchmark passed all configured thresholds."""
+        latency_ok = self.latency_stats.get("p95_ms", 0) <= self.config.max_p95_latency_ms
+        cost_ok = self.token_stats.get("avg_cost_per_turn_usd", 0) <= self.config.max_avg_cost_usd
+        success_ok = self.success_rate >= self.config.min_success_rate
+        return latency_ok and cost_ok and success_ok
+
+
+# Type alias for the agent setup/teardown fixture
+AgentFixture = Callable[[], AsyncGenerator[Any, None]]
 
 class PerformanceHarness:
     """
-    Configurable performance harness for AgentNet benchmarking.
-
-    Supports various benchmark types including single/multi-turn operations,
-    multi-agent scenarios, and concurrent execution patterns.
+    A statistically robust performance harness for AgentNet that integrates
+    with the observability stack for precise measurements.
     """
-
-    def __init__(self, output_dir: str = "benchmark_results"):
-        self.output_dir = output_dir
+    def __init__(self):
         self._results_history: List[BenchmarkResult] = []
+        self.latency_tracker = get_latency_tracker()
+        self.token_tracker = get_token_tracker()
 
     async def run_benchmark(
         self,
         config: BenchmarkConfig,
-        agent_factory: Callable[[], Any],
-        operation_func: Optional[Callable] = None,
+        agent_fixture: AgentFixture,
+        operation_func: Callable[[Any, str], Awaitable[Any]],
     ) -> BenchmarkResult:
         """
-        Run a performance benchmark with the given configuration.
+        Run a performance benchmark using the specified configuration.
 
         Args:
-            config: Benchmark configuration
-            agent_factory: Function that creates agent instances
-            operation_func: Optional custom operation function
+            config: The benchmark configuration.
+            agent_fixture: An async generator function that yields an agent instance.
+            operation_func: The async function to benchmark, which takes an agent and a prompt.
 
         Returns:
-            BenchmarkResult with detailed performance metrics
+            A BenchmarkResult with detailed, accurate performance metrics.
         """
-        logger.info(f"Starting benchmark: {config.name}")
-        start_time = time.time()
+        logger.info(f"--- Starting Benchmark: {config.name} ---")
+        
+        # Clear trackers to isolate this benchmark run
+        self.latency_tracker.clear_measurements()
+        self.token_tracker.clear_metrics()
 
-        # Warmup phase
-        if config.warmup_iterations > 0:
-            logger.info(f"Running {config.warmup_iterations} warmup iterations...")
-            await self._run_warmup(config, agent_factory, operation_func)
+        start_time = time.monotonic()
+        
+        # --- Warmup Phase ---
+        if config.warmup_rounds > 0:
+            logger.info(f"Running {config.warmup_rounds} warmup round(s)...")
+            await self._execute_round(config.warmup_rounds, config, agent_fixture, operation_func)
+            # Clear trackers again after warmup
+            self.latency_tracker.clear_measurements()
+            self.token_tracker.clear_metrics()
 
-        # Main benchmark phase
-        individual_results = []
-        errors = []
+        # --- Main Benchmark Phase ---
+        logger.info(f"Running main benchmark for at least {config.min_rounds} rounds...")
+        all_errors = await self._execute_round(config.min_rounds, config, agent_fixture, operation_func)
 
-        if config.concurrency_level > 1:
-            individual_results, errors = await self._run_concurrent_benchmark(
-                config, agent_factory, operation_func
-            )
-        else:
-            individual_results, errors = await self._run_sequential_benchmark(
-                config, agent_factory, operation_func
-            )
-
-        end_time = time.time()
-        total_duration = end_time - start_time
-
-        # Calculate metrics
-        result = self._calculate_benchmark_metrics(
-            config, start_time, end_time, total_duration, individual_results, errors
-        )
-
+        total_duration_s = time.monotonic() - start_time
+        
+        # --- Analysis Phase ---
+        logger.info("Benchmark execution complete. Analyzing results...")
+        result = self._analyze_results(config, total_duration_s, all_errors)
         self._results_history.append(result)
-        logger.info(
-            f"Benchmark completed: {config.name} - Success rate: {result.success_rate:.2%}"
-        )
 
+        logger.info(f"--- Benchmark Complete: {config.name} ---")
+        logger.info(f"  - Passed: {result.passed}")
+        logger.info(f"  - Success Rate: {result.success_rate:.2%}")
+        logger.info(f"  - P95 Latency: {result.latency_stats.get('p95_ms', 0):.2f} ms")
+        logger.info(f"  - Avg Cost/Turn: ${result.token_stats.get('avg_cost_per_turn_usd', 0):.6f}")
+        
         return result
 
-    async def _run_warmup(
-        self,
-        config: BenchmarkConfig,
-        agent_factory: Callable,
-        operation_func: Optional[Callable],
-    ) -> None:
-        """Run warmup iterations to stabilize performance measurements."""
-        for i in range(config.warmup_iterations):
-            try:
-                agent = agent_factory()
-                if operation_func:
-                    await operation_func(agent, config.test_prompts[0])
-                else:
-                    await self._default_operation(agent, config.test_prompts[0], config)
-            except Exception as e:
-                logger.debug(f"Warmup iteration {i} failed: {e}")
-
-    async def _run_sequential_benchmark(
-        self,
-        config: BenchmarkConfig,
-        agent_factory: Callable,
-        operation_func: Optional[Callable],
-    ) -> tuple[List[Dict[str, Any]], List[str]]:
-        """Run benchmark iterations sequentially."""
-        individual_results = []
-        errors = []
-
-        for i in range(config.iterations):
-            try:
-                prompt = config.test_prompts[i % len(config.test_prompts)]
-                agent = agent_factory()
-
-                iteration_start = time.time()
-
-                if operation_func:
-                    result = await operation_func(agent, prompt)
-                else:
-                    result = await self._default_operation(agent, prompt, config)
-
-                iteration_duration = time.time() - iteration_start
-
-                individual_results.append(
-                    {
-                        "iteration": i,
-                        "duration_ms": iteration_duration * 1000,
-                        "prompt": prompt,
-                        "result": result,
-                        "success": True,
-                    }
+    async def _execute_round(
+        self, num_rounds: int, config: BenchmarkConfig, agent_fixture: AgentFixture, operation_func: Callable
+    ) -> List[str]:
+        """Execute a number of benchmark rounds."""
+        all_errors = []
+        for i in range(num_rounds):
+            iterations_in_round = self._determine_iterations_for_round(i)
+            logger.debug(f"Round {i+1}/{num_rounds}, running {iterations_in_round} iterations...")
+            
+            tasks = [
+                self._run_single_iteration(
+                    f"round{i}-iter{j}",
+                    config.test_prompts[j % len(config.test_prompts)],
+                    agent_fixture,
+                    operation_func,
                 )
+                for j in range(iterations_in_round)
+            ]
+            
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            for res in results:
+                if isinstance(res, Exception):
+                    all_errors.append(str(res))
+        return all_errors
 
-            except Exception as e:
-                error_msg = f"Iteration {i} failed: {str(e)}"
-                errors.append(error_msg)
-                logger.warning(error_msg)
-
-                individual_results.append(
-                    {
-                        "iteration": i,
-                        "duration_ms": 0.0,
-                        "prompt": prompt,
-                        "result": None,
-                        "success": False,
-                        "error": str(e),
-                    }
-                )
-
-        return individual_results, errors
-
-    async def _run_concurrent_benchmark(
-        self,
-        config: BenchmarkConfig,
-        agent_factory: Callable,
-        operation_func: Optional[Callable],
-    ) -> tuple[List[Dict[str, Any]], List[str]]:
-        """Run benchmark iterations concurrently."""
-        individual_results = []
-        errors = []
-
-        # Create tasks for concurrent execution
-        tasks = []
-        for i in range(config.iterations):
-            prompt = config.test_prompts[i % len(config.test_prompts)]
-            task = self._run_single_iteration(
-                i, prompt, agent_factory, operation_func, config
-            )
-            tasks.append(task)
-
-        # Execute with concurrency limit
-        semaphore = asyncio.Semaphore(config.concurrency_level)
-
-        async def limited_task(task):
-            async with semaphore:
-                return await task
-
-        results = await asyncio.gather(
-            *[limited_task(task) for task in tasks], return_exceptions=True
-        )
-
-        # Process results
-        for i, result in enumerate(results):
-            if isinstance(result, Exception):
-                error_msg = f"Iteration {i} failed: {str(result)}"
-                errors.append(error_msg)
-                individual_results.append(
-                    {
-                        "iteration": i,
-                        "duration_ms": 0.0,
-                        "success": False,
-                        "error": str(result),
-                    }
-                )
-            else:
-                individual_results.append(result)
-
-        return individual_results, errors
+    def _determine_iterations_for_round(self, round_index: int) -> int:
+        """Simple logic to increase iterations in later rounds for stability."""
+        # A more advanced version could adapt based on timing of previous rounds.
+        return 1 * (2 ** min(round_index, 3))
 
     async def _run_single_iteration(
-        self,
-        iteration: int,
-        prompt: str,
-        agent_factory: Callable,
-        operation_func: Optional[Callable],
-        config: BenchmarkConfig,
-    ) -> Dict[str, Any]:
-        """Run a single benchmark iteration."""
-        agent = agent_factory()
-        iteration_start = time.time()
+        self, turn_id: str, prompt: str, agent_fixture: AgentFixture, operation_func: Callable
+    ):
+        """Run and measure a single, isolated iteration."""
+        async with self.latency_tracker.measure(turn_id, LatencyComponent.ORCHESTRATION):
+            async for agent in agent_fixture():
+                try:
+                    self.latency_tracker.start_turn_measurement(turn_id, agent.name)
+                    await operation_func(agent, prompt)
+                finally:
+                    self.latency_tracker.end_turn_measurement(turn_id)
 
-        if operation_func:
-            result = await operation_func(agent, prompt)
-        else:
-            result = await self._default_operation(agent, prompt, config)
-
-        iteration_duration = time.time() - iteration_start
-
-        return {
-            "iteration": iteration,
-            "duration_ms": iteration_duration * 1000,
-            "prompt": prompt,
-            "result": result,
-            "success": True,
-        }
-
-    async def _default_operation(
-        self, agent: Any, prompt: str, config: BenchmarkConfig
-    ) -> Dict[str, Any]:
-        """Default operation for benchmarking - adapts to agent type."""
-
-        # Try different agent operation methods
-        if hasattr(agent, "generate_reasoning_tree"):
-            return agent.generate_reasoning_tree(prompt)
-        elif hasattr(agent, "process"):
-            return await agent.process(prompt)
-        elif hasattr(agent, "infer"):
-            return agent.infer(prompt)
-        else:
-            # Fallback - just return the agent response
-            return {"content": f"Processed: {prompt}", "confidence": 0.8}
-
-    def _calculate_benchmark_metrics(
-        self,
-        config: BenchmarkConfig,
-        start_time: float,
-        end_time: float,
-        total_duration: float,
-        individual_results: List[Dict[str, Any]],
-        errors: List[str],
+    def _analyze_results(
+        self, config: BenchmarkConfig, total_duration_s: float, errors: List[str]
     ) -> BenchmarkResult:
-        """Calculate comprehensive benchmark metrics from individual results."""
+        """Analyze data from trackers to produce the final result."""
+        measurements = self.latency_tracker.get_measurements()
+        successful_iterations = len(measurements)
+        failed_iterations = len(errors)
+        total_iterations = successful_iterations + failed_iterations
 
-        successful_results = [r for r in individual_results if r.get("success", False)]
-
-        # Latency metrics
-        latencies = [r["duration_ms"] for r in successful_results]
-        if latencies:
-            avg_latency = sum(latencies) / len(latencies)
-            min_latency = min(latencies)
-            max_latency = max(latencies)
-            # Simple p95 calculation
-            sorted_latencies = sorted(latencies)
-            p95_index = int(len(sorted_latencies) * 0.95)
-            p95_latency = sorted_latencies[p95_index] if sorted_latencies else 0.0
-        else:
-            avg_latency = min_latency = max_latency = p95_latency = 0.0
-
-        # Token metrics (estimated - would need actual token counting)
-        total_tokens = 0
-        for result in successful_results:
-            # Estimate tokens from result content if available
-            result_data = result.get("result", {})
-            if isinstance(result_data, dict):
-                content = result_data.get("content", "")
-                # Rough token estimation: ~4 chars per token
-                estimated_tokens = len(str(content)) // 4
-                total_tokens += estimated_tokens
-
-        avg_tokens_per_turn = (
-            total_tokens / len(successful_results) if successful_results else 0.0
-        )
-
-        # Success metrics
-        total_ops = len(individual_results)
-        successful_ops = len(successful_results)
-        failed_ops = total_ops - successful_ops
-        success_rate = successful_ops / total_ops if total_ops > 0 else 0.0
-
-        # Throughput
-        ops_per_second = total_ops / total_duration if total_duration > 0 else 0.0
-        tokens_per_second = total_tokens / total_duration if total_duration > 0 else 0.0
-
-        # Token efficiency (higher is better - more content per token)
-        token_efficiency = 1.0 / avg_tokens_per_turn if avg_tokens_per_turn > 0 else 0.0
+        token_summary = self.token_tracker.get_system_overview()
 
         return BenchmarkResult(
             config=config,
-            start_time=start_time,
-            end_time=end_time,
-            total_duration=total_duration,
-            avg_turn_latency_ms=avg_latency,
-            min_turn_latency_ms=min_latency,
-            max_turn_latency_ms=max_latency,
-            p95_turn_latency_ms=p95_latency,
-            total_tokens_consumed=total_tokens,
-            avg_tokens_per_turn=avg_tokens_per_turn,
-            token_efficiency_score=token_efficiency,
-            total_operations=total_ops,
-            successful_operations=successful_ops,
-            failed_operations=failed_ops,
-            success_rate=success_rate,
-            operations_per_second=ops_per_second,
-            tokens_per_second=tokens_per_second,
-            individual_results=individual_results,
+            total_duration_s=total_duration_s,
+            total_iterations=total_iterations,
+            successful_iterations=successful_iterations,
+            failed_iterations=failed_iterations,
+            latency_stats=self.latency_tracker.get_latency_statistics(),
+            token_stats=token_summary.get("overview", {}),
+            component_latency_breakdown=self.latency_tracker.get_component_breakdown(),
             error_details=errors,
         )
-
-    def get_results_history(self) -> List[BenchmarkResult]:
-        """Get all benchmark results from this session."""
-        return self._results_history.copy()
 
     def get_latest_result(self) -> Optional[BenchmarkResult]:
         """Get the most recent benchmark result."""
