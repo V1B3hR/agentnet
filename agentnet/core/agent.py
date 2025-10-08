@@ -38,12 +38,12 @@ from typing import (
     TypedDict,
 )
 
-from .memory.manager import MemoryManager
-from .monitors.base import MonitorFn
-from .persistence.agent_state import AgentStateManager
-from .persistence.session import SessionManager
-from .tools.executor import ToolExecutor
-from .tools.registry import ToolRegistry
+from ..memory.manager import MemoryManager
+from ..monitors.base import MonitorFn
+from ..persistence.agent_state import AgentStateManager
+from ..persistence.session import SessionManager
+from ..tools.executor import ToolExecutor
+from ..tools.registry import ToolRegistry
 from .autoconfig import get_global_autoconfig
 from .cost.recorder import CostRecorder
 from .types import CognitiveFault
@@ -55,7 +55,7 @@ from .skill_manager import SkillManager
 try:
     from .reasoning.advanced import AdvancedReasoningEngine
     from .reasoning.temporal import TemporalReasoning
-    from .memory.enhanced import EnhancedEpisodicMemory
+    from ..memory.enhanced import EnhancedEpisodicMemory
     from .evolution import AgentEvolutionManager
 
     _PHASE7_AVAILABLE = True
@@ -982,7 +982,7 @@ class AgentNet:
         if not self.memory_manager:
             return False
         if layer_type:
-            from .memory.base import MemoryType
+            from ..memory.base import MemoryType
             try:
                 memory_type = MemoryType(layer_type)
                 self.memory_manager.clear_layer(memory_type)

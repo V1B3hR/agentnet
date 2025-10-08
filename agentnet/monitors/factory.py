@@ -6,7 +6,7 @@ monitor types and provides advanced features like configurable cooldown scopes
 and actionable violation handling.
 """
 
-from __future- import annotations
+from __future__ import annotations
 
 import logging
 import time
