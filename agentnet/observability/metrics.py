@@ -1,20 +1,15 @@
 """
-Prometheus Metrics Collection for AgentNet.
+Enhanced, production-ready Prometheus Metrics Collection for AgentNet.
 
-Implements metrics specified in docs/RoadmapAgentNet.md section 18:
-- inference_latency_ms (model, provider, agent)
-- tokens_consumed_total (model, provider, tenant)
-- violations_total (severity, rule_name)
-- cost_usd_total (provider, model, tenant)
-- session_rounds (mode, converged)
-- tool_invocations_total (tool_name, status)
-- dag_node_duration_ms (agent, node_type)
+This module provides a robust, singleton-based metrics collection system with
+richly labeled metrics for deep observability into agent performance, cost,
+errors, and behavior.
 """
 
 import logging
 import time
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
@@ -28,57 +23,44 @@ try:
         Histogram,
         start_http_server,
     )
-
     PROMETHEUS_AVAILABLE = True
 except ImportError:
-    logger.warning("prometheus_client not available - metrics will be logged only")
+    logger.warning("prometheus_client not available - metrics will be logged as debug messages.")
     PROMETHEUS_AVAILABLE = False
 
-    # Mock classes for when Prometheus is not available
-    class Counter:
-        def __init__(self, *args, **kwargs):
-            self.name = kwargs.get("name", "mock")
+    # --- Enhanced Mock Classes for Testing and Fallback ---
+    @dataclass
+    class MockMetric:
+        name: str
+        _last_labels: Dict[str, Any] = field(default_factory=dict)
+        _last_value: float = 0.0
 
         def labels(self, **kwargs):
+            self._last_labels = kwargs
             return self
 
         def inc(self, amount=1):
-            logger.info(f"METRIC: {self.name} increment by {amount}")
-
-    class Histogram:
-        def __init__(self, *args, **kwargs):
-            self.name = kwargs.get("name", "mock")
-
-        def labels(self, **kwargs):
-            return self
+            self._last_value = amount
+            logger.debug(f"METRIC_INC: {self.name}{self._last_labels} by {amount}")
 
         def observe(self, value):
-            logger.info(f"METRIC: {self.name} observe {value}")
-
-    class Gauge:
-        def __init__(self, *args, **kwargs):
-            self.name = kwargs.get("name", "mock")
-
-        def labels(self, **kwargs):
-            return self
+            self._last_value = value
+            logger.debug(f"METRIC_OBSERVE: {self.name}{self._last_labels} value={value}")
 
         def set(self, value):
-            logger.info(f"METRIC: {self.name} set to {value}")
+            self._last_value = value
+            logger.debug(f"METRIC_SET: {self.name}{self._last_labels} to {value}")
 
-        def inc(self, amount=1):
-            logger.info(f"METRIC: {self.name} increment by {amount}")
-
-    class CollectorRegistry:
-        pass
+    Counter = Histogram = Gauge = MockMetric
+    CollectorRegistry = object
 
     def start_http_server(port, registry=None):
-        logger.info(f"Mock metrics server would start on port {port}")
+        logger.info(f"Mock Prometheus server would start on port {port}. Metrics will be logged.")
 
 
 @dataclass
 class MetricValue:
-    """Simple metric value holder for when Prometheus is not available."""
-
+    """A simple data class for holding a metric value when Prometheus is not available."""
     name: str
     value: float
     labels: Dict[str, str]
@@ -87,11 +69,14 @@ class MetricValue:
 
 class AgentNetMetrics:
     """
-    Centralized metrics collection for AgentNet operations.
-
-    Provides both Prometheus integration (when available) and structured logging
-    for all key metrics defined in the roadmap.
+    Centralized, singleton-aware metrics collection for AgentNet operations.
     """
+    _instance: Optional["AgentNetMetrics"] = None
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(AgentNetMetrics, cls).__new__(cls)
+        return cls._instance
 
     def __init__(
         self,
@@ -99,320 +84,174 @@ class AgentNetMetrics:
         enable_server: bool = False,
         port: int = 8000,
     ):
-        """
-        Initialize metrics collection.
-
-        Args:
-            registry: Prometheus registry (optional)
-            enable_server: Whether to start Prometheus HTTP server
-            port: Port for Prometheus server
-        """
-        self.registry = registry
+        # Prevent re-initialization of the singleton
+        if hasattr(self, "_initialized") and self._initialized:
+            return
+        
+        self.registry = registry or (CollectorRegistry() if PROMETHEUS_AVAILABLE else None)
         self.enable_prometheus = PROMETHEUS_AVAILABLE
-        self._local_metrics: List[MetricValue] = []
+        self._local_metrics_log: List[MetricValue] = []
 
         if self.enable_prometheus:
             self._setup_prometheus_metrics()
             if enable_server:
-                start_http_server(port, registry=registry)
-                logger.info(f"Prometheus metrics server started on port {port}")
-        else:
-            logger.info("Using local metrics collection (Prometheus not available)")
+                try:
+                    start_http_server(port, registry=self.registry)
+                    logger.info(f"Prometheus metrics server started on http://localhost:{port}")
+                except OSError as e:
+                    logger.error(f"Could not start Prometheus server on port {port}: {e}. Server may already be running.")
+        
+        self._initialized = True
 
     def _setup_prometheus_metrics(self):
-        """Initialize Prometheus metrics."""
-        registry_kwargs = {"registry": self.registry} if self.registry else {}
-
-        # Inference latency histogram
+        """Initialize all Prometheus metric objects with rich labels."""
+        # Latency buckets in seconds, from 100ms to 30s
+        latency_buckets = (0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, float("inf"))
+        
         self.inference_latency = Histogram(
-            "agentnet_inference_latency_seconds",
-            "Time spent on agent inference",
-            labelnames=["model", "provider", "agent"],
-            **registry_kwargs,
+            "agentnet_inference_latency_seconds", "Agent inference duration.",
+            ["model", "provider", "agent", "status"], buckets=latency_buckets, registry=self.registry
         )
-
-        # Token consumption counter
-        self.tokens_consumed = Counter(
-            "agentnet_tokens_consumed_total",
-            "Total tokens consumed by provider",
-            labelnames=["model", "provider", "tenant"],
-            **registry_kwargs,
+        self.tokens_input_total = Counter(
+            "agentnet_tokens_input_total", "Input tokens consumed by an agent.",
+            ["model", "provider", "tenant", "agent"], registry=self.registry
         )
-
-        # Violations counter
+        self.tokens_output_total = Counter(
+            "agentnet_tokens_output_total", "Output tokens generated by an agent.",
+            ["model", "provider", "tenant", "agent"], registry=self.registry
+        )
         self.violations_total = Counter(
-            "agentnet_violations_total",
-            "Total policy violations detected",
-            labelnames=["severity", "rule_name"],
-            **registry_kwargs,
+            "agentnet_violations_total", "Policy violations detected by monitors.",
+            ["severity", "monitor_name", "agent"], registry=self.registry
         )
-
-        # Cost tracking
         self.cost_usd_total = Counter(
-            "agentnet_cost_usd_total",
-            "Total cost in USD",
-            labelnames=["provider", "model", "tenant"],
-            **registry_kwargs,
+            "agentnet_cost_usd_total", "Estimated cost in USD.",
+            ["provider", "model", "tenant", "agent"], registry=self.registry
         )
-
-        # Session rounds
-        self.session_rounds = Counter(
-            "agentnet_session_rounds_total",
-            "Total session rounds completed",
-            labelnames=["mode", "converged"],
-            **registry_kwargs,
+        self.session_rounds_total = Counter(
+            "agentnet_session_rounds_total", "Session rounds completed.",
+            ["mode", "converged"], registry=self.registry
         )
-
-        # Tool invocations
-        self.tool_invocations = Counter(
-            "agentnet_tool_invocations_total",
-            "Total tool invocations",
-            labelnames=["tool_name", "status"],
-            **registry_kwargs,
+        self.tool_invocations_total = Counter(
+            "agentnet_tool_invocations_total", "Tool invocations.",
+            ["tool_name", "status", "agent"], registry=self.registry
         )
-
-        # DAG node duration
-        self.dag_node_duration = Histogram(
-            "agentnet_dag_node_duration_seconds",
-            "Time spent executing DAG nodes",
-            labelnames=["agent", "node_type"],
-            **registry_kwargs,
+        self.dag_node_duration_seconds = Histogram(
+            "agentnet_dag_node_duration_seconds", "DAG node execution duration.",
+            ["agent", "node_type", "status"], buckets=latency_buckets, registry=self.registry
         )
-
-        # System health metrics
+        self.exceptions_total = Counter(
+            "agentnet_exceptions_total", "Unhandled exceptions.",
+            ["exception_type", "location"], registry=self.registry
+        )
         self.active_sessions = Gauge(
-            "agentnet_active_sessions",
-            "Number of currently active sessions",
-            **registry_kwargs,
+            "agentnet_active_sessions", "Currently active sessions.", registry=self.registry
         )
+        logger.info("Prometheus metrics initialized.")
 
-        logger.info("Prometheus metrics initialized")
+    def _record(self, name: str, value: float, labels: Dict[str, str]):
+        """Internal helper to log metrics when Prometheus is unavailable."""
+        if not self.enable_prometheus:
+            metric = MetricValue(name=name, value=value, labels=labels, timestamp=datetime.now())
+            self._local_metrics_log.append(metric)
+            if len(self._local_metrics_log) > 2000: # Memory guard
+                self._local_metrics_log = self._local_metrics_log[-1000:]
 
-    def record_inference_latency(
-        self, duration_seconds: float, model: str, provider: str, agent: str
-    ):
-        """Record inference latency metric."""
-        if self.enable_prometheus:
-            self.inference_latency.labels(
-                model=model, provider=provider, agent=agent
-            ).observe(duration_seconds)
-        else:
-            self._record_local_metric(
-                "inference_latency_seconds",
-                duration_seconds,
-                {"model": model, "provider": provider, "agent": agent},
-            )
+    # --- Public Metric Recording Methods ---
 
-        logger.debug(
-            f"Recorded inference latency: {duration_seconds:.3f}s for {agent} using {model} on {provider}"
-        )
+    def record_inference_latency(self, duration_s: float, model: str, provider: str, agent: str, status: str = "success"):
+        self.inference_latency.labels(model=model, provider=provider, agent=agent, status=status).observe(duration_s)
+        self._record("inference_latency_seconds", duration_s, {"model": model, "provider": provider, "agent": agent, "status": status})
 
-    def record_tokens_consumed(
-        self, token_count: int, model: str, provider: str, tenant: Optional[str] = None
-    ):
-        """Record token consumption metric."""
-        tenant = tenant or "default"
+    def record_tokens(self, in_tokens: int, out_tokens: int, model: str, provider: str, agent: str, tenant: str = "default"):
+        self.tokens_input_total.labels(model=model, provider=provider, tenant=tenant, agent=agent).inc(in_tokens)
+        self.tokens_output_total.labels(model=model, provider=provider, tenant=tenant, agent=agent).inc(out_tokens)
+        self._record("tokens_input_total", in_tokens, {"model": model, "provider": provider, "tenant": tenant, "agent": agent})
+        self._record("tokens_output_total", out_tokens, {"model": model, "provider": provider, "tenant": tenant, "agent": agent})
 
-        if self.enable_prometheus:
-            self.tokens_consumed.labels(
-                model=model, provider=provider, tenant=tenant
-            ).inc(token_count)
-        else:
-            self._record_local_metric(
-                "tokens_consumed_total",
-                token_count,
-                {"model": model, "provider": provider, "tenant": tenant},
-            )
+    def record_violation(self, severity: str, monitor_name: str, agent: str):
+        self.violations_total.labels(severity=severity, monitor_name=monitor_name, agent=agent).inc()
+        self._record("violations_total", 1, {"severity": severity, "monitor_name": monitor_name, "agent": agent})
 
-        logger.debug(
-            f"Recorded {token_count} tokens consumed for {model} on {provider} (tenant: {tenant})"
-        )
-
-    def record_violation(self, severity: str, rule_name: str):
-        """Record policy violation metric."""
-        if self.enable_prometheus:
-            self.violations_total.labels(severity=severity, rule_name=rule_name).inc()
-        else:
-            self._record_local_metric(
-                "violations_total", 1, {"severity": severity, "rule_name": rule_name}
-            )
-
-        logger.info(f"Recorded violation: {severity} severity for rule {rule_name}")
-
-    def record_cost(
-        self, cost_usd: float, provider: str, model: str, tenant: Optional[str] = None
-    ):
-        """Record cost metric."""
-        tenant = tenant or "default"
-
-        if self.enable_prometheus:
-            self.cost_usd_total.labels(
-                provider=provider, model=model, tenant=tenant
-            ).inc(cost_usd)
-        else:
-            self._record_local_metric(
-                "cost_usd_total",
-                cost_usd,
-                {"provider": provider, "model": model, "tenant": tenant},
-            )
-
-        logger.debug(
-            f"Recorded cost: ${cost_usd:.4f} for {model} on {provider} (tenant: {tenant})"
-        )
+    def record_cost(self, cost_usd: float, provider: str, model: str, agent: str, tenant: str = "default"):
+        self.cost_usd_total.labels(provider=provider, model=model, tenant=tenant, agent=agent).inc(cost_usd)
+        self._record("cost_usd_total", cost_usd, {"provider": provider, "model": model, "tenant": tenant, "agent": agent})
 
     def record_session_round(self, mode: str, converged: bool):
-        """Record session round completion."""
         converged_str = "true" if converged else "false"
+        self.session_rounds_total.labels(mode=mode, converged=converged_str).inc()
+        self._record("session_rounds_total", 1, {"mode": mode, "converged": converged_str})
 
-        if self.enable_prometheus:
-            self.session_rounds.labels(mode=mode, converged=converged_str).inc()
-        else:
-            self._record_local_metric(
-                "session_rounds_total", 1, {"mode": mode, "converged": converged_str}
-            )
+    def record_tool_invocation(self, tool_name: str, status: str, agent: str):
+        self.tool_invocations_total.labels(tool_name=tool_name, status=status, agent=agent).inc()
+        self._record("tool_invocations_total", 1, {"tool_name": tool_name, "status": status, "agent": agent})
 
-        logger.debug(f"Recorded session round: mode={mode}, converged={converged}")
+    def record_dag_node_duration(self, duration_s: float, agent: str, node_type: str, status: str = "success"):
+        self.dag_node_duration_seconds.labels(agent=agent, node_type=node_type, status=status).observe(duration_s)
+        self._record("dag_node_duration_seconds", duration_s, {"agent": agent, "node_type": node_type, "status": status})
 
-    def record_tool_invocation(self, tool_name: str, status: str):
-        """Record tool invocation metric."""
-        if self.enable_prometheus:
-            self.tool_invocations.labels(tool_name=tool_name, status=status).inc()
-        else:
-            self._record_local_metric(
-                "tool_invocations_total", 1, {"tool_name": tool_name, "status": status}
-            )
-
-        logger.debug(f"Recorded tool invocation: {tool_name} -> {status}")
-
-    def record_dag_node_duration(
-        self, duration_seconds: float, agent: str, node_type: str
-    ):
-        """Record DAG node execution duration."""
-        if self.enable_prometheus:
-            self.dag_node_duration.labels(agent=agent, node_type=node_type).observe(
-                duration_seconds
-            )
-        else:
-            self._record_local_metric(
-                "dag_node_duration_seconds",
-                duration_seconds,
-                {"agent": agent, "node_type": node_type},
-            )
-
-        logger.debug(
-            f"Recorded DAG node duration: {duration_seconds:.3f}s for {agent} node {node_type}"
-        )
+    def record_exception(self, exception: Exception, location: str):
+        exc_type = type(exception).__name__
+        self.exceptions_total.labels(exception_type=exc_type, location=location).inc()
+        self._record("exceptions_total", 1, {"exception_type": exc_type, "location": location})
 
     def set_active_sessions(self, count: int):
-        """Set current active session count."""
-        if self.enable_prometheus:
-            self.active_sessions.set(count)
-        else:
-            self._record_local_metric("active_sessions", count, {})
+        self.active_sessions.set(count)
+        self._record("active_sessions", count, {})
 
-        logger.debug(f"Set active sessions count: {count}")
-
-    def _record_local_metric(self, name: str, value: float, labels: Dict[str, str]):
-        """Record metric locally when Prometheus is not available."""
-        metric = MetricValue(
-            name=name, value=value, labels=labels, timestamp=datetime.now()
-        )
-        self._local_metrics.append(metric)
-
-        # Keep only last 1000 metrics to prevent memory growth
-        if len(self._local_metrics) > 1000:
-            self._local_metrics = self._local_metrics[-1000:]
-
-    def get_local_metrics(self) -> List[MetricValue]:
-        """Get locally stored metrics (when Prometheus not available)."""
-        return self._local_metrics.copy()
-
-    def clear_local_metrics(self):
-        """Clear locally stored metrics."""
-        self._local_metrics.clear()
-
-
-class MetricsCollector:
-    """
-    Context manager and decorator for automatic metrics collection.
-
-    Provides easy instrumentation of agent operations with timing and metrics.
-    """
-
-    def __init__(self, metrics: AgentNetMetrics):
-        self.metrics = metrics
+    # --- Smart Context Managers ---
 
     @contextmanager
     def measure_inference(self, model: str, provider: str, agent: str):
-        """Context manager for measuring inference duration."""
-        start_time = time.time()
+        start_time = time.monotonic()
+        status = "success"
         try:
             yield
+        except Exception as e:
+            status = "error"
+            self.record_exception(e, location=f"inference:{agent}")
+            raise
         finally:
-            duration = time.time() - start_time
-            self.metrics.record_inference_latency(duration, model, provider, agent)
+            duration = time.monotonic() - start_time
+            self.record_inference_latency(duration, model, provider, agent, status)
 
     @contextmanager
     def measure_dag_node(self, agent: str, node_type: str):
-        """Context manager for measuring DAG node execution."""
-        start_time = time.time()
+        start_time = time.monotonic()
+        status = "success"
         try:
             yield
         finally:
-            duration = time.time() - start_time
-            self.metrics.record_dag_node_duration(duration, agent, node_type)
-
-    def record_operation_metrics(self, operation_result: Dict[str, Any]):
-        """
-        Record metrics from a completed operation result.
-
-        Expected keys in operation_result:
-        - tokens_input, tokens_output: int
-        - model, provider: str
-        - agent_name: str
-        - cost_usd: float (optional)
-        - tenant_id: str (optional)
-        - violations: List[Dict] (optional)
-        """
-        model = operation_result.get("model", "unknown")
-        provider = operation_result.get("provider", "unknown")
-        agent = operation_result.get("agent_name", "unknown")
-        tenant = operation_result.get("tenant_id")
-
-        # Record token consumption
-        tokens_input = operation_result.get("tokens_input", 0)
-        tokens_output = operation_result.get("tokens_output", 0)
-        total_tokens = tokens_input + tokens_output
-
-        if total_tokens > 0:
-            self.metrics.record_tokens_consumed(total_tokens, model, provider, tenant)
-
-        # Record cost if provided
-        cost_usd = operation_result.get("cost_usd")
-        if cost_usd is not None:
-            self.metrics.record_cost(cost_usd, provider, model, tenant)
-
-        # Record violations if any
-        violations = operation_result.get("violations", [])
-        for violation in violations:
-            severity = violation.get("severity", "unknown")
-            rule_name = violation.get("rule_name", "unknown")
-            self.metrics.record_violation(severity, rule_name)
+            duration = time.monotonic() - start_time
+            self.record_dag_node_duration(duration, agent, node_type, status)
 
 
-# Global metrics instance (can be overridden)
-_global_metrics: Optional[AgentNetMetrics] = None
+# --- Global Singleton Management ---
 
+_global_metrics_instance: Optional[AgentNetMetrics] = None
+
+def configure_global_metrics(**kwargs):
+    """
+    Configure and initialize the global metrics singleton instance.
+    Should be called once at application startup.
+
+    Args:
+        registry: Optional Prometheus registry.
+        enable_server (bool): If True, starts the Prometheus HTTP server.
+        port (int): Port for the HTTP server.
+    """
+    global _global_metrics_instance
+    if _global_metrics_instance is None:
+        _global_metrics_instance = AgentNetMetrics(**kwargs)
+    return _global_metrics_instance
 
 def get_global_metrics() -> AgentNetMetrics:
-    """Get or create global metrics instance."""
-    global _global_metrics
-    if _global_metrics is None:
-        _global_metrics = AgentNetMetrics()
-    return _global_metrics
-
-
-def set_global_metrics(metrics: AgentNetMetrics):
-    """Set global metrics instance."""
-    global _global_metrics
-    _global_metrics = metrics
+    """
+    Get the configured global metrics instance.
+    Initializes a default instance if not already configured.
+    """
+    global _global_metrics_instance
+    if _global_metrics_instance is None:
+        logger.warning("Global metrics not configured. Initializing with default settings.")
+        _global_metrics_instance = AgentNetMetrics()
+    return _global_metrics_instance
