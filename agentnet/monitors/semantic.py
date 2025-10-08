@@ -1,9 +1,13 @@
-"""Semantic similarity monitor implementation."""
+"""
+Advanced semantic similarity monitor with model caching, batch processing, and
+reference text comparison for powerful content guardrails.
+"""
 
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Dict
+from collections import deque
+from typing import TYPE_CHECKING, Any, Dict, List, Deque
 
 from .base import MonitorFn, MonitorSpec
 
@@ -12,131 +16,132 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("agentnet.monitors.semantic")
 
+# --- Global Caches for Performance ---
+# Cache for loaded sentence transformer models to avoid reloading
+_model_cache: Dict[str, Any] = {}
+# Cache for historical embeddings/text, managed by deque
+_history_cache: Dict[str, Deque] = {}
+# Cache for pre-computed embeddings of reference texts
+_reference_embedding_cache: Dict[str, Any] = {}
+
+
+def _get_model(model_name: str):
+    """
+    Lazily loads and caches a sentence transformer model.
+    Returns the model instance or None if dependencies are not available.
+    """
+    if model_name in _model_cache:
+        return _model_cache[model_name]
+
+    try:
+        from sentence_transformers import SentenceTransformer
+        model = SentenceTransformer(model_name)
+        _model_cache[model_name] = model
+        logger.info(f"Successfully loaded and cached sentence transformer model: {model_name}")
+        return model
+    except ImportError:
+        if not _model_cache: # Log only once
+             logger.warning(
+                "sentence-transformers library not found. Semantic monitor will use Jaccard similarity fallback."
+            )
+        _model_cache[model_name] = None
+        return None
+    except Exception as e:
+        logger.error(f"Failed to download or load sentence transformer model '{model_name}': {e}")
+        _model_cache[model_name] = None
+        return None
+
 
 def create_semantic_similarity_monitor(spec: MonitorSpec) -> MonitorFn:
-    """Create a semantic similarity monitor.
+    """
+    Create an advanced semantic similarity monitor.
 
-    This monitor tracks content similarity over time and triggers violations
-    when new content is too similar to previous outputs.
+    This monitor can detect repetitive content by comparing against recent history,
+    or enforce content guardrails by comparing against a fixed set of reference texts.
 
     Args:
         spec: Monitor specification with parameters:
-            - max_similarity: Maximum allowed similarity (default: 0.9)
-            - window_size: Number of historical items to compare against (default: 5)
-            - embedding_set: Name of embedding set to use (default: "restricted_corpora")
-            - violation_name: Name for violation (optional)
-
-    Returns:
-        Monitor function
+            - model_name (str): Name of the sentence-transformers model to use.
+              Defaults to "all-MiniLM-L6-v2".
+            - max_similarity (float): Trigger violation if similarity exceeds this.
+              Useful for preventing repetition or forbidden topics.
+            - min_similarity (float): Trigger violation if similarity is below this.
+              Useful for ensuring topic adherence with reference_texts.
+            - window_size (int): Number of historical items to compare against.
+              Defaults to 5.
+            - reference_texts (List[str]): A list of texts to compare against
+              instead of the agent's history.
+            - violation_name (str): Custom name for the violation.
     """
-    max_similarity = float(spec.params.get("max_similarity", 0.9))
+    # --- 1. Configuration ---
+    model_name = spec.params.get("model_name", "all-MiniLM-L6-v2")
+    max_similarity = spec.params.get("max_similarity")
+    min_similarity = spec.params.get("min_similarity")
     window_size = int(spec.params.get("window_size", 5))
-    embedding_set = spec.params.get("embedding_set", "restricted_corpora")
-    violation_name = spec.params.get("violation_name", f"{spec.name}_semantic")
+    reference_texts = spec.params.get("reference_texts")
+    violation_name = spec.params.get("violation_name", f"{spec.name}_semantic_violation")
 
-    # Storage for content history per agent-task combination
-    if not hasattr(create_semantic_similarity_monitor, "_semantic_history"):
-        create_semantic_similarity_monitor._semantic_history = {}
+    if max_similarity is None and min_similarity is None:
+        raise ValueError("Semantic monitor requires at least one of 'max_similarity' or 'min_similarity' to be set.")
 
-    # Try to import sentence-transformers for semantic similarity
-    try:
-        import numpy as np
-        from sentence_transformers import SentenceTransformer
+    model = _get_model(model_name)
 
-        # Try to load model, but handle download failures gracefully
-        try:
-            model = SentenceTransformer("all-MiniLM-L6-v2")
-            use_semantic = True
-        except Exception as model_error:
-            logger.warning(f"Failed to load sentence transformer model: {model_error}")
-            model = None
-            use_semantic = False
-    except ImportError:
-        logger.warning(
-            "sentence-transformers not available, falling back to Jaccard similarity"
+    # --- 2. Return the appropriate monitor function (semantic or fallback) ---
+    if model:
+        return _create_semantic_monitor_impl(
+            spec, model, model_name, max_similarity, min_similarity,
+            window_size, reference_texts, violation_name
         )
-        model = None
-        use_semantic = False
+    else:
+        return _create_jaccard_fallback_monitor(
+            spec, max_similarity, window_size, violation_name
+        )
 
-    def semantic_similarity(text1: str, text2: str) -> float:
-        """Compute semantic similarity."""
-        if not use_semantic:
-            # Fallback to Jaccard similarity
-            set1 = set(text1.lower().split())
-            set2 = set(text2.lower().split())
-            if not set1 and not set2:
-                return 1.0
-            if not set1 or not set2:
-                return 0.0
-            return len(set1 & set2) / len(set1 | set2)
 
-        embeddings = model.encode([text1, text2])
-        dot_product = np.dot(embeddings[0], embeddings[1])
-        norm_a = np.linalg.norm(embeddings[0])
-        norm_b = np.linalg.norm(embeddings[1])
+def _create_semantic_monitor_impl(
+    spec, model, model_name, max_similarity, min_similarity,
+    window_size, reference_texts, violation_name
+) -> MonitorFn:
+    """Creates the primary monitor function that uses sentence embeddings."""
+    from sentence_transformers.util import cos_sim
+    import torch
 
-        if norm_a == 0 or norm_b == 0:
-            return 0.0
-
-        return dot_product / (norm_a * norm_b)
+    # Pre-compute reference embeddings if provided
+    reference_embeddings = None
+    if reference_texts:
+        ref_cache_key = f"{model_name}_{hash(tuple(reference_texts))}"
+        if ref_cache_key not in _reference_embedding_cache:
+            _reference_embedding_cache[ref_cache_key] = model.encode(reference_texts, convert_to_tensor=True)
+        reference_embeddings = _reference_embedding_cache[ref_cache_key]
 
     def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
-        # Import here to avoid circular imports
         from .factory import MonitorFactory
-
         if MonitorFactory._should_cooldown(spec, task):
             return
 
-        content = (
-            str(result.get("content", "")) if isinstance(result, dict) else str(result)
-        )
+        content = str(result.get("content", "")) if isinstance(result, dict) else str(result)
         if not content.strip():
             return
 
-        agent_key = f"{agent.name}_{task}_semantic"
+        current_embedding = model.encode(content, convert_to_tensor=True)
+        comparison_embeddings = None
+        comparison_mode = "history"
 
-        # Initialize history for this agent-task combination
-        history_store = create_semantic_similarity_monitor._semantic_history
-        if agent_key not in history_store:
-            history_store[agent_key] = []
+        if reference_embeddings is not None:
+            comparison_embeddings = reference_embeddings
+            comparison_mode = "reference"
+        else:
+            agent_key = f"{agent.name}_{task}_{model_name}"
+            if agent_key not in _history_cache:
+                _history_cache[agent_key] = deque(maxlen=window_size)
+            
+            history = _history_cache[agent_key]
+            if history:
+                comparison_embeddings = torch.stack(list(history))
 
-        history = history_store[agent_key]
-
-        # Check semantic similarity against recent history
-        violations = []
-        for i, historical_content in enumerate(history[-window_size:]):
-            similarity = semantic_similarity(content, historical_content)
-            if similarity > max_similarity:
-                violations.append(
-                    MonitorFactory._build_violation(
-                        name=violation_name,
-                        vtype="semantic_similarity",
-                        severity=spec.severity,
-                        description=spec.description
-                        or f"Semantic similarity {similarity:.2f} exceeds threshold",
-                        rationale=f"Current content semantically too similar to content from {len(history)-i} turns ago",
-                        meta={
-                            "similarity_score": similarity,
-                            "threshold": max_similarity,
-                            "historical_index": len(history) - i,
-                            "embedding_set": embedding_set,
-                            "window_size": window_size,
-                        },
-                    )
-                )
-
-        # Add current content to history
-        history.append(content)
-
-        # Limit history size to prevent unbounded growth
-        if len(history) > window_size * 2:
-            history[:] = history[-window_size:]
-
-        if violations:
-            detail = {
-                "outcome": {"content": content},
-                "violations": violations,
-            }
-            MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
-
-    return monitor
+        if comparison_embeddings is not None:
+            similarities = cos_sim(current_embedding, comparison_embeddings)[0]
+            max_score = torch.max(similarities).item()
+            
+            # Check for max_similarity violation
+            if m
