@@ -37,10 +37,9 @@ class DescribedEnum(str, Enum):
     - Each member stores a `description` attribute
     - Utility classmethods for choices, lookups, serialization, and docs
     - Graceful membership testing with raw strings (e.g. `'retry' in FailureRecoveryPolicy`)
+    
+    Note: Subclasses can define a `synonyms_map` dict as a class variable before enum members
     """
-
-    # Allow subclasses to define optional synonyms mapping if desired
-    _synonyms_: ClassVar[Dict[str, str]] = {}
 
     def __new__(cls, value: str, description: str = ""):
         obj = str.__new__(cls, value)
@@ -93,8 +92,9 @@ class DescribedEnum(str, Enum):
         """
         if isinstance(value, cls):
             return value
-        if value in cls._synonyms_:
-            value = cls._synonyms_[value]
+        synonyms_map = getattr(cls, 'synonyms_map', {})
+        if value in synonyms_map:
+            value = synonyms_map[value]
         try:
             return cls(value)  # type: ignore[arg-type]
         except ValueError:
@@ -173,7 +173,8 @@ class DescribedEnum(str, Enum):
             if item in cls.values():
                 return True
             # Accept synonyms
-            if item in cls._synonyms_ and cls._synonyms_[item] in cls.values():
+            synonyms_map = getattr(cls, 'synonyms_map', {})
+            if item in synonyms_map and synonyms_map[item] in cls.values():
                 return True
         return False
 

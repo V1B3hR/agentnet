@@ -23,8 +23,8 @@ from tenacity import (
 
 # --- Observability Imports ---
 # The base class is now directly responsible for instrumentation.
-from ..observability.latency import get_latency_tracker, LatencyComponent
-from ..observability.tokens import get_token_tracker
+from ..performance.latency import get_latency_tracker, LatencyComponent
+from ..performance.tokens import get_token_tracker
 from ..observability.tracing import get_global_tracer, trace_agent_operation
 from ..observability.logging import get_correlation_logger
 

@@ -47,9 +47,22 @@ from ..tools.registry import ToolRegistry
 from .autoconfig import get_global_autoconfig
 from .cost.recorder import CostRecorder
 from .types import CognitiveFault
-from .planner import Planner
-from .self_reflection import SelfReflection
-from .skill_manager import SkillManager
+
+# Optional modules that may not exist
+try:
+    from .planner import Planner
+except ImportError:
+    Planner = None  # type: ignore
+
+try:
+    from .self_reflection import SelfReflection
+except ImportError:
+    SelfReflection = None  # type: ignore
+
+try:
+    from .skill_manager import SkillManager
+except ImportError:
+    SkillManager = None  # type: ignore
 
 # Phase 7 Advanced Intelligence & Reasoning imports
 try:

@@ -1,0 +1,8 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting tenacity
+  Downloading tenacity-9.1.2-py3-none-any.whl.metadata
+     - 1.2 kB ? 0:00:00
+Downloading tenacity-9.1.2-py3-none-any.whl
+   - 28.2 kB 181.8 MB/s 0:00:00
+Installing collected packages: tenacity
+Successfully installed tenacity-9.1.2

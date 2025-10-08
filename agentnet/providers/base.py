@@ -24,8 +24,9 @@ from tenacity import (
     retry_if_exception_type,
 )
 
-from ..observability.latency import get_latency_tracker, LatencyComponent
-from ..observability.tokens import get_token_tracker
+# Import directly from modules to avoid circular import through performance/__init__.py
+from ..performance.latency import get_latency_tracker, LatencyComponent
+from ..performance.tokens import get_token_tracker
 
 # Define common, transient API errors that should be retried.
 RETRYABLE_EXCEPTIONS = (

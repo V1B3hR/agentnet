@@ -2,16 +2,11 @@
 
 from .base import ProviderAdapter
 from .example import ExampleEngine
-from .instrumented import (
-    InstrumentedProviderAdapter,
-    InstrumentedProviderMixin,
-    instrument_provider,
-)
+
+# TODO: InstrumentedProviderAdapter, InstrumentedProviderMixin, instrument_provider
+# are not implemented in instrumented.py - need to add them or remove from exports
 
 __all__ = [
     "ProviderAdapter",
     "ExampleEngine",
-    "InstrumentedProviderAdapter",
-    "InstrumentedProviderMixin",
-    "instrument_provider",
 ]

@@ -144,4 +144,29 @@ def _create_semantic_monitor_impl(
             max_score = torch.max(similarities).item()
             
             # Check for max_similarity violation
-            if m
+            if max_similarity is not None and max_score > max_similarity:
+                factory.trigger_violation(
+                    name=name,
+                    severity=severity,
+                    message=f"Semantic similarity {max_score:.3f} exceeds maximum {max_similarity:.3f} ({comparison_mode})",
+                    task=task,
+                    result=result,
+                    agent=agent,
+                )
+            
+            # Check for min_similarity violation
+            if min_similarity is not None and max_score < min_similarity:
+                factory.trigger_violation(
+                    name=name,
+                    severity=severity,
+                    message=f"Semantic similarity {max_score:.3f} below minimum {min_similarity:.3f} ({comparison_mode})",
+                    task=task,
+                    result=result,
+                    agent=agent,
+                )
+
+        # Update history cache if using history mode
+        if reference_embeddings is None and comparison_mode == "history":
+            _history_cache[agent_key].append(current_embedding)
+
+    return monitor_fn
