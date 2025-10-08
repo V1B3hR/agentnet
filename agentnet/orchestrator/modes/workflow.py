@@ -1,12 +1,14 @@
 """
-Workflow strategy implementation.
+Enhanced, asynchronous Workflow strategy implementation.
 
-Focuses on structured process execution and step-by-step problem solving with AgentNet.
+This strategy transforms a high-level task into a structured plan and then
+executes that plan step-by-step, carrying context between steps and handling
+both tool-based and reasoning-based actions.
 """
 
 from __future__ import annotations
 
-import time
+import json
 from typing import Any, Dict, List, Optional, TYPE_CHECKING
 
 from ...core.enums import Mode, ProblemSolvingStyle, ProblemTechnique
@@ -17,84 +19,142 @@ if TYPE_CHECKING:
 
 
 class WorkflowStrategy(BaseStrategy):
-    """Strategy for workflow mode - focuses on structured process execution."""
+    """
+    An advanced strategy that first plans a sequence of steps and then executes
+    them sequentially to achieve a complex goal.
+
+    The process involves:
+    1. Planning Phase: An agent breaks the task into a structured JSON plan.
+    2. Execution Phase: The strategy iterates through the plan, executing each
+       step using either agent reasoning or a specified tool, and carries the
+       context from one step to the next.
+    """
 
     def __init__(
         self,
-        style: Optional[ProblemSolvingStyle] = None,
+        style: Optional[ProblemSolvingStyle] = ProblemSolvingStyle.IMPLEMENTOR,
         technique: Optional[ProblemTechnique] = None,
+        **config: Any,
     ):
-        """Initialize workflow strategy."""
-        super().__init__(Mode.WORKFLOW, style, technique)
+        """
+        Initialize the workflow strategy.
 
-    def execute(
+        Args:
+            style: The default style is 'implementor' for its focus on execution.
+            technique: Optional problem-solving technique.
+            **config: Configuration for the strategy, e.g.,
+                - max_steps (int): A safeguard to limit the number of steps. Defaults to 10.
+        """
+        super().__init__(Mode.WORKFLOW, style, technique, **config)
+
+    async def _execute(
         self,
         agent: "AgentNet",
         task: str,
+        context: Dict[str, Any],
         agents: Optional[List["AgentNet"]] = None,
-        max_depth: int = 4,  # Deeper for step-by-step analysis
-        confidence_threshold: float = 0.8,  # Higher threshold for workflow steps
-        **kwargs,
     ) -> Dict[str, Any]:
         """
-        Execute workflow strategy.
-
-        Args:
-            agent: Primary agent for execution
-            task: Task description
-            agents: Optional list of agents for workflow execution
-            max_depth: Maximum reasoning depth
-            confidence_threshold: Confidence threshold for workflow steps
-            **kwargs: Additional parameters
-
-        Returns:
-            Result dictionary with workflow output
+        Executes the planning and execution phases of the workflow.
         """
-        start_time = time.time()
-        self._log_strategy_execution(task, **kwargs)
+        max_steps = self.config.get("max_steps", 10)
 
-        # Prepare metadata with workflow-specific tags
-        metadata = self._prepare_metadata(**kwargs)
-        metadata["workflow_focus"] = "process_execution"
-        metadata["structured_mode"] = True
+        # --- Phase 1: Planning ---
+        self.logger.info(f"Phase 1: Generating workflow plan for task: {task[:100]}...")
+        plan = await self._generate_plan(agent, task, context)
+        
+        if not plan or len(plan) > max_steps:
+            raise ValueError(f"Failed to generate a valid plan or plan exceeds max_steps ({max_steps}).")
 
-        # Remove metadata from kwargs to avoid duplicate parameter
-        filtered_kwargs = {k: v for k, v in kwargs.items() if k != "metadata"}
+        self.logger.info(f"Plan generated with {len(plan)} steps. Starting execution.")
 
-        # Modify task prompt for workflow context
-        workflow_task = f"""Execute a structured workflow for: {task}
+        # --- Phase 2: Execution ---
+        execution_trace = []
+        for i, step in enumerate(plan):
+            step_name = step.get("step_name", f"step_{i+1}")
+            self.logger.info(f"Executing Step {i+1}/{len(plan)}: {step_name}")
 
-Approach this systematically:
-1. Break down into clear, manageable steps
-2. Define prerequisites and dependencies
-3. Identify required resources and capabilities
-4. Plan execution sequence and timing
-5. Consider quality checkpoints and validation
-6. Plan for contingencies and error handling
+            try:
+                # The state contains results from all previous steps
+                previous_steps_context = self.get_state("previous_steps_context", {})
+                
+                if "tool_name" in step and step["tool_name"]:
+                    result = await agent.execute_tool(
+                        tool_name=step["tool_name"],
+                        parameters=step.get("parameters", {}),
+                        context=previous_steps_context,
+                    )
+                    if not result or result.get("status") != "success":
+                        raise RuntimeError(f"Tool '{step['tool_name']}' failed: {result.get('error_message', 'Unknown error')}")
+                    step_output = result.get("data")
+                else:
+                    step_prompt = self._create_step_prompt(task, step, previous_steps_context)
+                    result = await agent.async_generate_reasoning_tree(
+                        task=step_prompt,
+                        confidence_threshold=0.8,
+                        metadata={"workflow_step": i + 1, "step_name": step_name},
+                    )
+                    step_output = result.get("result", {}).get("content")
 
-Provide a detailed, actionable workflow with clear milestones."""
+                # --- Update State and Trace ---
+                execution_trace.append({"step": step_name, "status": "success", "output": step_output})
+                previous_steps_context[step_name] = step_output
+                self.update_state("previous_steps_context", previous_steps_context)
 
-        # Execute reasoning with workflow-optimized parameters
-        result = agent.generate_reasoning_tree(
-            task=workflow_task,
-            max_depth=max_depth,
-            confidence_threshold=confidence_threshold,
-            metadata=metadata,
-            **filtered_kwargs,
-        )
+            except Exception as e:
+                self.logger.error(f"Workflow failed at step '{step_name}': {e}")
+                execution_trace.append({"step": step_name, "status": "failed", "error": str(e)})
+                # Re-raise to be caught by the base strategy's run method
+                raise RuntimeError(f"Workflow failed at step '{step_name}'. See trace for details.") from e
 
-        # Add workflow-specific metadata to result
-        result["strategy"] = {
-            "mode": self.mode.value,
-            "style": self.style.value if self.style else None,
-            "technique": self.technique.value if self.technique else None,
-            "focus": "process_execution",
-            "execution_time": time.time() - start_time,
+        return {
+            "initial_plan": plan,
+            "execution_trace": execution_trace,
+            "final_output": execution_trace[-1].get("output") if execution_trace else None,
         }
 
-        # Calculate and attach flow metrics
-        result = self._calculate_and_attach_flow_metrics(
-            result, time.time() - start_time
+    async def _generate_plan(self, agent: "AgentNet", task: str, context: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Prompts an agent to create a structured, step-by-step plan in JSON format."""
+        
+        tools_list = agent.list_available_tools()
+        tools_str = json.dumps(tools_list, indent=2) if tools_list else "No tools available."
+
+        planning_prompt = (
+            f"You are a meticulous workflow planner. Your task is to break down the following high-level goal into a sequence of concrete, executable steps. You must respond with only a valid JSON array.\n\n"
+            f"**High-Level Goal:** {task}\n\n"
+            f"**Available Tools:**\n{tools_str}\n\n"
+            f"**Instructions:**\n"
+            f"1. Think step-by-step to achieve the goal.\n"
+            f"2. For each step, define a unique `step_name`.\n"
+            f"3. If a tool is the best way to perform a step, specify the `tool_name` and the required `parameters`.\n"
+            f"4. If a step requires reasoning or summarization, omit the `tool_name` and provide a clear `description` of the task for another AI agent.\n"
+            f"5. Ensure the output is a single, valid JSON array of step objects.\n\n"
+            f"**JSON Object Schema:**\n"
+            f"{{ \"step_name\": string, \"description\": string, \"tool_name\": Optional[string], \"parameters\": Optional[Dict[string, any]] }}\n\n"
+            f"Begin."
         )
 
-        return result
+        plan_result = await agent.async_generate_reasoning_tree(
+            task=planning_prompt,
+            confidence_threshold=0.8,
+            metadata={"workflow_phase": "planning"},
+        )
+        
+        plan_content = plan_result.get("result", {}).get("content", "[]")
+        try:
+            # Clean the content to extract only the JSON part
+            json_match = re.search(r'\[.*\]', plan_content, re.DOTALL)
+            if not json_match:
+                raise json.JSONDecodeError("No JSON array found in the response.", plan_content, 0)
+            
+            return json.loads(json_match.group(0))
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Failed to decode plan from agent response: {e}\nResponse was:\n{plan_content}")
+            return []
+
+    def _create_step_prompt(self, original_task: str, step: Dict, context: Dict) -> str:
+        """Creates a prompt for a reasoning-based workflow step."""
+        context_str = "\n".join(f" - Result of '{name}': {str(res)[:200]}..." for name, res in context.items())
+        
+        return (
+            f"**Original Goal
