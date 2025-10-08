@@ -41,22 +41,14 @@ def create_keyword_monitor(spec: MonitorSpec) -> MonitorFn:
             return
 
         content = (
-            str(result.get("content", ""))
-            if isinstance(result, dict)
-            else str(result)
+            str(result.get("content", "")) if isinstance(result, dict) else str(result)
         )
         lower = content.lower()
         present = [kw for kw in keywords if kw in lower]
-        failed = (
-            (len(present) > 0)
-            if match_any
-            else (len(present) == len(keywords))
-        )
+        failed = (len(present) > 0) if match_any else (len(present) == len(keywords))
 
         if failed:
-            rationale = (
-                f"Matched keyword(s): {', '.join(sorted(set(present)))}"
-            )
+            rationale = f"Matched keyword(s): {', '.join(sorted(set(present)))}"
             violations = [
                 MonitorFactory._build_violation(
                     name=violation_name,
@@ -71,8 +63,6 @@ def create_keyword_monitor(spec: MonitorSpec) -> MonitorFn:
                 "outcome": {"content": content},
                 "violations": violations,
             }
-            MonitorFactory._handle(
-                spec, agent, task, passed=False, detail=detail
-            )
+            MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
 
     return monitor

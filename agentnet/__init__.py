@@ -25,9 +25,19 @@ _p6_available = True
 
 try:
     # Import P1 features: Turn Engine, Policy Engine, Events
-    from .core.orchestration.turn_engine import TurnEngine, TurnMode, TurnResult, SessionResult, TerminationReason
-    from .core.policy.engine import PolicyEngine, PolicyAction, PolicyResult  
-    from .core.policy.rules import ConstraintRule, RuleResult, Severity as PolicySeverity
+    from .core.orchestration.turn_engine import (
+        TurnEngine,
+        TurnMode,
+        TurnResult,
+        SessionResult,
+        TerminationReason,
+    )
+    from .core.policy.engine import PolicyEngine, PolicyAction, PolicyResult
+    from .core.policy.rules import (
+        ConstraintRule,
+        RuleResult,
+        Severity as PolicySeverity,
+    )
     from .events.bus import EventBus, Event, EventType
     from .events.sinks import ConsoleSink, FileSink, EventSink
 except ImportError:
@@ -88,10 +98,14 @@ try:
         TaskNode,
         TaskScheduler,
     )
+
     # New Phase 3 features
     from .core.cache import CacheManager, CacheEntry, InMemoryCache, FileCache
     from .core.multimodal import (
-        MultiModalManager, MultiModalMessage, ModalityContent, ModalityType
+        MultiModalManager,
+        MultiModalMessage,
+        ModalityContent,
+        ModalityType,
     )
     from .memory.retention import RetentionManager, RetentionPolicy, RetentionStrategy
 except ImportError:
@@ -113,15 +127,16 @@ try:
         PricingEngine,
         TenantCostTracker,
     )
-    
+
     # Import enhanced cost prediction features (with graceful fallback)
     try:
         from .core.cost import CostPredictor
+
         _cost_predictions_available = True
     except ImportError:
         _cost_predictions_available = False
         CostPredictor = None
-    
+
     # Import MLops workflow capabilities
     from .mlops import (
         MLopsWorkflow,
@@ -130,7 +145,7 @@ try:
         ModelStage,
         DeploymentStatus,
     )
-    
+
     # Import risk management system
     from .risk import (
         RiskRegister,
@@ -141,18 +156,26 @@ try:
         RiskStatus,
         RiskCategory,
     )
-    
+
     # New Phase 4 features
     from .core.telemetry import (
-        TelemetryCollector, TelemetryEvent, EventType, MetricType,
-        init_telemetry, get_telemetry, record_event, record_metric
+        TelemetryCollector,
+        TelemetryEvent,
+        EventType,
+        MetricType,
+        init_telemetry,
+        get_telemetry,
+        record_event,
+        record_metric,
     )
 except ImportError:
     _p4_available = False
     # Stub classes for P4 functionality
     PricingEngine = CostRecorder = CostAggregator = TenantCostTracker = None
     CostPredictor = None
-    MLopsWorkflow = ModelVersion = DeploymentRecord = ModelStage = DeploymentStatus = None
+    MLopsWorkflow = ModelVersion = DeploymentRecord = ModelStage = DeploymentStatus = (
+        None
+    )
     RiskRegister = RiskEvent = RiskMitigation = RiskDefinition = None
     RiskLevel = RiskStatus = RiskCategory = None
     Role = Permission = RBACManager = User = AuthMiddleware = None
@@ -291,7 +314,6 @@ try:
         IntegrationConfig,
         Message,
         Document,
-        
         # Developer Platform
         WorkflowDesigner,
         LowCodeInterface,
@@ -301,7 +323,6 @@ try:
         WorkflowDefinition,
         AgentTemplate,
         MarketplacePlugin,
-        
         # Cloud-Native Deployment
         KubernetesOperator,
         AutoScaler,
@@ -316,7 +337,9 @@ except ImportError:
     _p8_available = False
     # Stub classes for P8 functionality
     SlackConnector = TeamsConnector = SalesforceConnector = HubSpotConnector = None
-    JiraConnector = ServiceNowConnector = Office365Connector = GoogleWorkspaceConnector = None
+    JiraConnector = ServiceNowConnector = Office365Connector = (
+        GoogleWorkspaceConnector
+    ) = None
     IntegrationConfig = Message = Document = None
     WorkflowDesigner = LowCodeInterface = AgentMarketplace = IDEExtension = None
     WorkflowNode = WorkflowDefinition = AgentTemplate = MarketplacePlugin = None
@@ -333,27 +356,22 @@ try:
         pytorch_available,
         tensorflow_available,
         get_framework_info,
-        
         # Model registry
         ModelRegistry,
         ModelMetadata,
         ModelArtifact,
-        
         # Training
         DeepLearningTrainer,
         TrainingConfig,
         TrainingCallback,
-        
         # Fine-tuning
         FineTuner,
         LoRAConfig,
         InstructionDataset,
-        
         # Embeddings
         EmbeddingGenerator,
         EmbeddingCache,
         SemanticSearch,
-        
         # Neural reasoning
         NeuralReasoner,
         AttentionReasoning,
@@ -406,14 +424,14 @@ if _p1_available:
         [
             # Turn Engine
             "TurnEngine",
-            "TurnMode", 
+            "TurnMode",
             "TurnResult",
             "SessionResult",
             "TerminationReason",
             # Policy Engine
             "PolicyEngine",
             "PolicyAction",
-            "PolicyResult", 
+            "PolicyResult",
             "ConstraintRule",
             "RuleResult",
             "PolicySeverity",
@@ -421,9 +439,9 @@ if _p1_available:
             "EventBus",
             "Event",
             "EventType",
-            "ConsoleSink", 
+            "ConsoleSink",
             "FileSink",
-            "EventSink"
+            "EventSink",
         ]
     )
 
@@ -455,11 +473,11 @@ if _p2_available:
             "RevisionEvaluator",
             "CritiqueResult",
             "DebateManager",
-            "DebateRole", 
+            "DebateRole",
             "DebateResult",
             "Arbitrator",
             "ArbitrationStrategy",
-            "ArbitrationResult"
+            "ArbitrationResult",
         ]
     )
 
@@ -519,7 +537,7 @@ if _p4_available:
             "MLopsWorkflow",
             "ModelVersion",
             "DeploymentRecord",
-            "ModelStage", 
+            "ModelStage",
             "DeploymentStatus",
             # Risk Management
             "RiskRegister",
@@ -531,7 +549,7 @@ if _p4_available:
             "RiskCategory",
         ]
     )
-    
+
     # Add cost predictions if available
     if _cost_predictions_available:
         __all__.extend(["CostPredictor"])

@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Development utility: Code formatting with black and isort."""
+"""Development utility: Code formatting with black and isort.
+
+DEPRECATED: This script is deprecated and will be removed in a future release.
+Please use the unified CLI instead:
+    python -m cli.main format
+    or: python cli/main.py format
+"""
 
 import subprocess
 import sys
@@ -8,6 +14,10 @@ from pathlib import Path
 
 def main():
     """Run code formatting tools."""
+    print("⚠️  DEPRECATION WARNING: This script is deprecated.")
+    print("    Please use: python -m cli.main format")
+    print()
+
     root_dir = Path(__file__).parent.parent
 
     print("🎨 Formatting code with black and isort...")

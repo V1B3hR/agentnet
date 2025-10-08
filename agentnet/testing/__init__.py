@@ -18,7 +18,7 @@ __all__ = [
     "FeatureSet",
     "AgentType",
     "IntegrationTestSuite",
-    "MultiAgentTestCase", 
+    "MultiAgentTestCase",
     "RegressionTestSuite",
     "PerformanceRegression",
     "PerformanceBaseline",

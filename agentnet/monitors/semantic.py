@@ -48,9 +48,7 @@ def create_semantic_similarity_monitor(spec: MonitorSpec) -> MonitorFn:
             model = SentenceTransformer("all-MiniLM-L6-v2")
             use_semantic = True
         except Exception as model_error:
-            logger.warning(
-                f"Failed to load sentence transformer model: {model_error}"
-            )
+            logger.warning(f"Failed to load sentence transformer model: {model_error}")
             model = None
             use_semantic = False
     except ImportError:
@@ -90,9 +88,7 @@ def create_semantic_similarity_monitor(spec: MonitorSpec) -> MonitorFn:
             return
 
         content = (
-            str(result.get("content", ""))
-            if isinstance(result, dict)
-            else str(result)
+            str(result.get("content", "")) if isinstance(result, dict) else str(result)
         )
         if not content.strip():
             return
@@ -141,8 +137,6 @@ def create_semantic_similarity_monitor(spec: MonitorSpec) -> MonitorFn:
                 "outcome": {"content": content},
                 "violations": violations,
             }
-            MonitorFactory._handle(
-                spec, agent, task, passed=False, detail=detail
-            )
+            MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
 
     return monitor

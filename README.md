@@ -550,17 +550,64 @@ Actions (initial set): `allow`, `block`, `redact`, `transform`, `log`, `defer`, 
 
 ## Development Workflow (Suggested)
 
+### Using the Unified CLI (Recommended)
+
+AgentNet provides a unified CLI for all development tasks:
+
 ```bash
-# Lint & type check
-ruff check .
-mypy agentnet
+# Lint code
+python -m cli lint
+
+# Format code
+python -m cli format
 
 # Run tests
-pytest -q
+python -m cli test
 
-# Regenerate event schema (planned)
-python scripts/gen_schema.py
+# Validate security features
+python -m cli validate-security
+
+# Verify roadmap issues
+python -m cli validate-roadmap
+
+# Train debate model
+python -m cli train-debate-model --datasets-dir datasets
+
+# Get help
+python -m cli --help
 ```
+
+### Using Makefile Targets
+
+```bash
+# Use new CLI-based targets
+make cli-lint       # Lint code
+make cli-format     # Format code
+make cli-test       # Run tests
+make check          # Format, lint, and test
+```
+
+### Using Legacy Scripts (Deprecated)
+
+Legacy scripts in `scripts/` directory are still available but deprecated:
+
+```bash
+# Lint & type check
+python scripts/lint.py
+
+# Format code
+python scripts/format.py
+
+# Run tests
+python scripts/test.py
+
+# Deprecated Makefile targets (show warnings)
+make lint           # Use 'make cli-lint' instead
+make format         # Use 'make cli-format' instead
+make test           # Use 'make cli-test' instead
+```
+
+**Note**: Legacy scripts will show deprecation warnings and will be removed in a future release. Please migrate to the unified CLI.
 
 ---
 

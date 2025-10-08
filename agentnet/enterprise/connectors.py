@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class IntegrationConfig:
     """Configuration for enterprise integrations."""
+
     platform: str
     api_endpoint: str
     api_key: Optional[str] = None
@@ -31,6 +32,7 @@ class IntegrationConfig:
 @dataclass
 class Message:
     """Standardized message format for enterprise communications."""
+
     id: str
     content: str
     sender: str
@@ -42,6 +44,7 @@ class Message:
 @dataclass
 class Document:
     """Standardized document format for enterprise document processing."""
+
     id: str
     title: str
     content: str
@@ -53,22 +56,22 @@ class Document:
 
 class EnterpriseConnector(ABC):
     """Base class for all enterprise connectors."""
-    
+
     def __init__(self, config: IntegrationConfig):
         self.config = config
         self.is_connected = False
         self.logger = logging.getLogger(f"{self.__class__.__name__}")
-    
+
     @abstractmethod
     async def connect(self) -> bool:
         """Establish connection to the enterprise platform."""
         pass
-    
+
     @abstractmethod
     async def disconnect(self) -> bool:
         """Close connection to the enterprise platform."""
         pass
-    
+
     @abstractmethod
     async def health_check(self) -> bool:
         """Check if the connection is healthy."""
@@ -77,17 +80,17 @@ class EnterpriseConnector(ABC):
 
 class ConversationalConnector(EnterpriseConnector):
     """Base class for conversational platforms (Slack, Teams)."""
-    
+
     @abstractmethod
     async def send_message(self, channel: str, content: str) -> bool:
         """Send a message to a channel."""
         pass
-    
+
     @abstractmethod
     async def receive_messages(self, channel: str, limit: int = 10) -> List[Message]:
         """Receive messages from a channel."""
         pass
-    
+
     @abstractmethod
     async def create_channel(self, name: str, description: str = "") -> str:
         """Create a new channel and return its ID."""
@@ -96,7 +99,7 @@ class ConversationalConnector(EnterpriseConnector):
 
 class SlackConnector(ConversationalConnector):
     """Slack integration for conversational AI."""
-    
+
     async def connect(self) -> bool:
         """Connect to Slack API."""
         try:
@@ -109,22 +112,22 @@ class SlackConnector(ConversationalConnector):
         except Exception as e:
             self.logger.error(f"Failed to connect to Slack: {e}")
             return False
-    
+
     async def disconnect(self) -> bool:
         """Disconnect from Slack API."""
         self.is_connected = False
         self.logger.info("Disconnected from Slack")
         return True
-    
+
     async def health_check(self) -> bool:
         """Check Slack connection health."""
         return self.is_connected
-    
+
     async def send_message(self, channel: str, content: str) -> bool:
         """Send message to Slack channel."""
         if not self.is_connected:
             return False
-        
+
         try:
             self.logger.info(f"Sending message to Slack channel {channel}")
             # TODO: Implement actual Slack message sending
@@ -132,12 +135,12 @@ class SlackConnector(ConversationalConnector):
         except Exception as e:
             self.logger.error(f"Failed to send Slack message: {e}")
             return False
-    
+
     async def receive_messages(self, channel: str, limit: int = 10) -> List[Message]:
         """Receive messages from Slack channel."""
         if not self.is_connected:
             return []
-        
+
         try:
             self.logger.info(f"Receiving messages from Slack channel {channel}")
             # TODO: Implement actual Slack message retrieval
@@ -146,12 +149,12 @@ class SlackConnector(ConversationalConnector):
         except Exception as e:
             self.logger.error(f"Failed to receive Slack messages: {e}")
             return []
-    
+
     async def create_channel(self, name: str, description: str = "") -> str:
         """Create a new Slack channel."""
         if not self.is_connected:
             return ""
-        
+
         try:
             self.logger.info(f"Creating Slack channel: {name}")
             # TODO: Implement actual Slack channel creation
@@ -163,7 +166,7 @@ class SlackConnector(ConversationalConnector):
 
 class TeamsConnector(ConversationalConnector):
     """Microsoft Teams integration for conversational AI."""
-    
+
     async def connect(self) -> bool:
         """Connect to Teams API."""
         try:
@@ -175,22 +178,22 @@ class TeamsConnector(ConversationalConnector):
         except Exception as e:
             self.logger.error(f"Failed to connect to Teams: {e}")
             return False
-    
+
     async def disconnect(self) -> bool:
         """Disconnect from Teams API."""
         self.is_connected = False
         self.logger.info("Disconnected from Microsoft Teams")
         return True
-    
+
     async def health_check(self) -> bool:
         """Check Teams connection health."""
         return self.is_connected
-    
+
     async def send_message(self, channel: str, content: str) -> bool:
         """Send message to Teams channel."""
         if not self.is_connected:
             return False
-        
+
         try:
             self.logger.info(f"Sending message to Teams channel {channel}")
             # TODO: Implement actual Teams message sending
@@ -198,12 +201,12 @@ class TeamsConnector(ConversationalConnector):
         except Exception as e:
             self.logger.error(f"Failed to send Teams message: {e}")
             return False
-    
+
     async def receive_messages(self, channel: str, limit: int = 10) -> List[Message]:
         """Receive messages from Teams channel."""
         if not self.is_connected:
             return []
-        
+
         try:
             self.logger.info(f"Receiving messages from Teams channel {channel}")
             # TODO: Implement actual Teams message retrieval
@@ -211,12 +214,12 @@ class TeamsConnector(ConversationalConnector):
         except Exception as e:
             self.logger.error(f"Failed to receive Teams messages: {e}")
             return []
-    
+
     async def create_channel(self, name: str, description: str = "") -> str:
         """Create a new Teams channel."""
         if not self.is_connected:
             return ""
-        
+
         try:
             self.logger.info(f"Creating Teams channel: {name}")
             # TODO: Implement actual Teams channel creation
@@ -228,22 +231,22 @@ class TeamsConnector(ConversationalConnector):
 
 class CRMConnector(EnterpriseConnector):
     """Base class for CRM integrations."""
-    
+
     @abstractmethod
     async def get_contacts(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Retrieve contacts from CRM."""
         pass
-    
+
     @abstractmethod
     async def create_contact(self, contact_data: Dict[str, Any]) -> str:
         """Create a new contact in CRM."""
         pass
-    
+
     @abstractmethod
     async def get_opportunities(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Retrieve opportunities from CRM."""
         pass
-    
+
     @abstractmethod
     async def create_opportunity(self, opportunity_data: Dict[str, Any]) -> str:
         """Create a new opportunity in CRM."""
@@ -252,7 +255,7 @@ class CRMConnector(EnterpriseConnector):
 
 class SalesforceConnector(CRMConnector):
     """Salesforce CRM integration."""
-    
+
     async def connect(self) -> bool:
         """Connect to Salesforce API."""
         try:
@@ -264,22 +267,22 @@ class SalesforceConnector(CRMConnector):
         except Exception as e:
             self.logger.error(f"Failed to connect to Salesforce: {e}")
             return False
-    
+
     async def disconnect(self) -> bool:
         """Disconnect from Salesforce API."""
         self.is_connected = False
         self.logger.info("Disconnected from Salesforce")
         return True
-    
+
     async def health_check(self) -> bool:
         """Check Salesforce connection health."""
         return self.is_connected
-    
+
     async def get_contacts(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Retrieve contacts from Salesforce."""
         if not self.is_connected:
             return []
-        
+
         try:
             self.logger.info(f"Retrieving {limit} contacts from Salesforce")
             # TODO: Implement actual Salesforce contact retrieval
@@ -287,12 +290,12 @@ class SalesforceConnector(CRMConnector):
         except Exception as e:
             self.logger.error(f"Failed to retrieve Salesforce contacts: {e}")
             return []
-    
+
     async def create_contact(self, contact_data: Dict[str, Any]) -> str:
         """Create a new contact in Salesforce."""
         if not self.is_connected:
             return ""
-        
+
         try:
             self.logger.info("Creating contact in Salesforce")
             # TODO: Implement actual Salesforce contact creation
@@ -300,12 +303,12 @@ class SalesforceConnector(CRMConnector):
         except Exception as e:
             self.logger.error(f"Failed to create Salesforce contact: {e}")
             return ""
-    
+
     async def get_opportunities(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Retrieve opportunities from Salesforce."""
         if not self.is_connected:
             return []
-        
+
         try:
             self.logger.info(f"Retrieving {limit} opportunities from Salesforce")
             # TODO: Implement actual Salesforce opportunity retrieval
@@ -313,12 +316,12 @@ class SalesforceConnector(CRMConnector):
         except Exception as e:
             self.logger.error(f"Failed to retrieve Salesforce opportunities: {e}")
             return []
-    
+
     async def create_opportunity(self, opportunity_data: Dict[str, Any]) -> str:
         """Create a new opportunity in Salesforce."""
         if not self.is_connected:
             return ""
-        
+
         try:
             self.logger.info("Creating opportunity in Salesforce")
             # TODO: Implement actual Salesforce opportunity creation
@@ -330,7 +333,7 @@ class SalesforceConnector(CRMConnector):
 
 class HubSpotConnector(CRMConnector):
     """HubSpot CRM integration."""
-    
+
     async def connect(self) -> bool:
         """Connect to HubSpot API."""
         try:
@@ -342,22 +345,22 @@ class HubSpotConnector(CRMConnector):
         except Exception as e:
             self.logger.error(f"Failed to connect to HubSpot: {e}")
             return False
-    
+
     async def disconnect(self) -> bool:
         """Disconnect from HubSpot API."""
         self.is_connected = False
         self.logger.info("Disconnected from HubSpot")
         return True
-    
+
     async def health_check(self) -> bool:
         """Check HubSpot connection health."""
         return self.is_connected
-    
+
     async def get_contacts(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Retrieve contacts from HubSpot."""
         if not self.is_connected:
             return []
-        
+
         try:
             self.logger.info(f"Retrieving {limit} contacts from HubSpot")
             # TODO: Implement actual HubSpot contact retrieval
@@ -365,12 +368,12 @@ class HubSpotConnector(CRMConnector):
         except Exception as e:
             self.logger.error(f"Failed to retrieve HubSpot contacts: {e}")
             return []
-    
+
     async def create_contact(self, contact_data: Dict[str, Any]) -> str:
         """Create a new contact in HubSpot."""
         if not self.is_connected:
             return ""
-        
+
         try:
             self.logger.info("Creating contact in HubSpot")
             # TODO: Implement actual HubSpot contact creation
@@ -378,12 +381,12 @@ class HubSpotConnector(CRMConnector):
         except Exception as e:
             self.logger.error(f"Failed to create HubSpot contact: {e}")
             return ""
-    
+
     async def get_opportunities(self, limit: int = 100) -> List[Dict[str, Any]]:
         """Retrieve deals from HubSpot."""
         if not self.is_connected:
             return []
-        
+
         try:
             self.logger.info(f"Retrieving {limit} deals from HubSpot")
             # TODO: Implement actual HubSpot deal retrieval
@@ -391,12 +394,12 @@ class HubSpotConnector(CRMConnector):
         except Exception as e:
             self.logger.error(f"Failed to retrieve HubSpot deals: {e}")
             return []
-    
+
     async def create_opportunity(self, opportunity_data: Dict[str, Any]) -> str:
         """Create a new deal in HubSpot."""
         if not self.is_connected:
             return ""
-        
+
         try:
             self.logger.info("Creating deal in HubSpot")
             # TODO: Implement actual HubSpot deal creation
@@ -408,17 +411,17 @@ class HubSpotConnector(CRMConnector):
 
 class WorkflowConnector(EnterpriseConnector):
     """Base class for workflow automation platforms."""
-    
+
     @abstractmethod
     async def get_issues(self, project: str, limit: int = 100) -> List[Dict[str, Any]]:
         """Retrieve issues/tickets from workflow system."""
         pass
-    
+
     @abstractmethod
     async def create_issue(self, project: str, issue_data: Dict[str, Any]) -> str:
         """Create a new issue/ticket in workflow system."""
         pass
-    
+
     @abstractmethod
     async def update_issue(self, issue_id: str, update_data: Dict[str, Any]) -> bool:
         """Update an existing issue/ticket."""
@@ -427,7 +430,7 @@ class WorkflowConnector(EnterpriseConnector):
 
 class JiraConnector(WorkflowConnector):
     """Jira workflow automation integration."""
-    
+
     async def connect(self) -> bool:
         """Connect to Jira API."""
         try:
@@ -439,22 +442,22 @@ class JiraConnector(WorkflowConnector):
         except Exception as e:
             self.logger.error(f"Failed to connect to Jira: {e}")
             return False
-    
+
     async def disconnect(self) -> bool:
         """Disconnect from Jira API."""
         self.is_connected = False
         self.logger.info("Disconnected from Jira")
         return True
-    
+
     async def health_check(self) -> bool:
         """Check Jira connection health."""
         return self.is_connected
-    
+
     async def get_issues(self, project: str, limit: int = 100) -> List[Dict[str, Any]]:
         """Retrieve issues from Jira project."""
         if not self.is_connected:
             return []
-        
+
         try:
             self.logger.info(f"Retrieving {limit} issues from Jira project {project}")
             # TODO: Implement actual Jira issue retrieval
@@ -462,12 +465,12 @@ class JiraConnector(WorkflowConnector):
         except Exception as e:
             self.logger.error(f"Failed to retrieve Jira issues: {e}")
             return []
-    
+
     async def create_issue(self, project: str, issue_data: Dict[str, Any]) -> str:
         """Create a new issue in Jira."""
         if not self.is_connected:
             return ""
-        
+
         try:
             self.logger.info(f"Creating issue in Jira project {project}")
             # TODO: Implement actual Jira issue creation
@@ -475,12 +478,12 @@ class JiraConnector(WorkflowConnector):
         except Exception as e:
             self.logger.error(f"Failed to create Jira issue: {e}")
             return ""
-    
+
     async def update_issue(self, issue_id: str, update_data: Dict[str, Any]) -> bool:
         """Update an existing Jira issue."""
         if not self.is_connected:
             return False
-        
+
         try:
             self.logger.info(f"Updating Jira issue {issue_id}")
             # TODO: Implement actual Jira issue update
@@ -492,7 +495,7 @@ class JiraConnector(WorkflowConnector):
 
 class ServiceNowConnector(WorkflowConnector):
     """ServiceNow workflow automation integration."""
-    
+
     async def connect(self) -> bool:
         """Connect to ServiceNow API."""
         try:
@@ -504,22 +507,22 @@ class ServiceNowConnector(WorkflowConnector):
         except Exception as e:
             self.logger.error(f"Failed to connect to ServiceNow: {e}")
             return False
-    
+
     async def disconnect(self) -> bool:
         """Disconnect from ServiceNow API."""
         self.is_connected = False
         self.logger.info("Disconnected from ServiceNow")
         return True
-    
+
     async def health_check(self) -> bool:
         """Check ServiceNow connection health."""
         return self.is_connected
-    
+
     async def get_issues(self, project: str, limit: int = 100) -> List[Dict[str, Any]]:
         """Retrieve tickets from ServiceNow."""
         if not self.is_connected:
             return []
-        
+
         try:
             self.logger.info(f"Retrieving {limit} tickets from ServiceNow")
             # TODO: Implement actual ServiceNow ticket retrieval
@@ -527,12 +530,12 @@ class ServiceNowConnector(WorkflowConnector):
         except Exception as e:
             self.logger.error(f"Failed to retrieve ServiceNow tickets: {e}")
             return []
-    
+
     async def create_issue(self, project: str, issue_data: Dict[str, Any]) -> str:
         """Create a new ticket in ServiceNow."""
         if not self.is_connected:
             return ""
-        
+
         try:
             self.logger.info("Creating ticket in ServiceNow")
             # TODO: Implement actual ServiceNow ticket creation
@@ -540,12 +543,12 @@ class ServiceNowConnector(WorkflowConnector):
         except Exception as e:
             self.logger.error(f"Failed to create ServiceNow ticket: {e}")
             return ""
-    
+
     async def update_issue(self, issue_id: str, update_data: Dict[str, Any]) -> bool:
         """Update an existing ServiceNow ticket."""
         if not self.is_connected:
             return False
-        
+
         try:
             self.logger.info(f"Updating ServiceNow ticket {issue_id}")
             # TODO: Implement actual ServiceNow ticket update
@@ -557,17 +560,17 @@ class ServiceNowConnector(WorkflowConnector):
 
 class DocumentConnector(EnterpriseConnector):
     """Base class for document processing platforms."""
-    
+
     @abstractmethod
     async def get_documents(self, folder: str, limit: int = 100) -> List[Document]:
         """Retrieve documents from a folder."""
         pass
-    
+
     @abstractmethod
     async def create_document(self, folder: str, document: Document) -> str:
         """Create a new document."""
         pass
-    
+
     @abstractmethod
     async def search_documents(self, query: str, limit: int = 10) -> List[Document]:
         """Search for documents by content."""
@@ -576,7 +579,7 @@ class DocumentConnector(EnterpriseConnector):
 
 class Office365Connector(DocumentConnector):
     """Office 365 document processing integration."""
-    
+
     async def connect(self) -> bool:
         """Connect to Office 365 API."""
         try:
@@ -588,35 +591,37 @@ class Office365Connector(DocumentConnector):
         except Exception as e:
             self.logger.error(f"Failed to connect to Office 365: {e}")
             return False
-    
+
     async def disconnect(self) -> bool:
         """Disconnect from Office 365 API."""
         self.is_connected = False
         self.logger.info("Disconnected from Office 365")
         return True
-    
+
     async def health_check(self) -> bool:
         """Check Office 365 connection health."""
         return self.is_connected
-    
+
     async def get_documents(self, folder: str, limit: int = 100) -> List[Document]:
         """Retrieve documents from Office 365 folder."""
         if not self.is_connected:
             return []
-        
+
         try:
-            self.logger.info(f"Retrieving {limit} documents from Office 365 folder {folder}")
+            self.logger.info(
+                f"Retrieving {limit} documents from Office 365 folder {folder}"
+            )
             # TODO: Implement actual Office 365 document retrieval
             return []
         except Exception as e:
             self.logger.error(f"Failed to retrieve Office 365 documents: {e}")
             return []
-    
+
     async def create_document(self, folder: str, document: Document) -> str:
         """Create a new document in Office 365."""
         if not self.is_connected:
             return ""
-        
+
         try:
             self.logger.info(f"Creating document in Office 365 folder {folder}")
             # TODO: Implement actual Office 365 document creation
@@ -624,12 +629,12 @@ class Office365Connector(DocumentConnector):
         except Exception as e:
             self.logger.error(f"Failed to create Office 365 document: {e}")
             return ""
-    
+
     async def search_documents(self, query: str, limit: int = 10) -> List[Document]:
         """Search for documents in Office 365."""
         if not self.is_connected:
             return []
-        
+
         try:
             self.logger.info(f"Searching Office 365 documents for: {query}")
             # TODO: Implement actual Office 365 document search
@@ -641,7 +646,7 @@ class Office365Connector(DocumentConnector):
 
 class GoogleWorkspaceConnector(DocumentConnector):
     """Google Workspace document processing integration."""
-    
+
     async def connect(self) -> bool:
         """Connect to Google Workspace API."""
         try:
@@ -653,35 +658,37 @@ class GoogleWorkspaceConnector(DocumentConnector):
         except Exception as e:
             self.logger.error(f"Failed to connect to Google Workspace: {e}")
             return False
-    
+
     async def disconnect(self) -> bool:
         """Disconnect from Google Workspace API."""
         self.is_connected = False
         self.logger.info("Disconnected from Google Workspace")
         return True
-    
+
     async def health_check(self) -> bool:
         """Check Google Workspace connection health."""
         return self.is_connected
-    
+
     async def get_documents(self, folder: str, limit: int = 100) -> List[Document]:
         """Retrieve documents from Google Drive folder."""
         if not self.is_connected:
             return []
-        
+
         try:
-            self.logger.info(f"Retrieving {limit} documents from Google Drive folder {folder}")
+            self.logger.info(
+                f"Retrieving {limit} documents from Google Drive folder {folder}"
+            )
             # TODO: Implement actual Google Drive document retrieval
             return []
         except Exception as e:
             self.logger.error(f"Failed to retrieve Google Drive documents: {e}")
             return []
-    
+
     async def create_document(self, folder: str, document: Document) -> str:
         """Create a new document in Google Drive."""
         if not self.is_connected:
             return ""
-        
+
         try:
             self.logger.info(f"Creating document in Google Drive folder {folder}")
             # TODO: Implement actual Google Drive document creation
@@ -689,12 +696,12 @@ class GoogleWorkspaceConnector(DocumentConnector):
         except Exception as e:
             self.logger.error(f"Failed to create Google Drive document: {e}")
             return ""
-    
+
     async def search_documents(self, query: str, limit: int = 10) -> List[Document]:
         """Search for documents in Google Drive."""
         if not self.is_connected:
             return []
-        
+
         try:
             self.logger.info(f"Searching Google Drive documents for: {query}")
             # TODO: Implement actual Google Drive document search

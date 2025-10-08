@@ -49,7 +49,7 @@ from .deployment import (
 __all__ = [
     # Enterprise Connectors
     "SlackConnector",
-    "TeamsConnector", 
+    "TeamsConnector",
     "SalesforceConnector",
     "HubSpotConnector",
     "JiraConnector",
@@ -59,7 +59,6 @@ __all__ = [
     "IntegrationConfig",
     "Message",
     "Document",
-    
     # Developer Platform
     "WorkflowDesigner",
     "LowCodeInterface",
@@ -69,7 +68,6 @@ __all__ = [
     "WorkflowDefinition",
     "AgentTemplate",
     "MarketplacePlugin",
-    
     # Cloud-Native Deployment
     "KubernetesOperator",
     "AutoScaler",

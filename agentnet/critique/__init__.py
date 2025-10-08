@@ -11,12 +11,12 @@ from .debate import DebateManager, DebateRole, DebateResult
 
 __all__ = [
     "CritiqueEvaluator",
-    "RevisionEvaluator", 
+    "RevisionEvaluator",
     "CritiqueResult",
     "Arbitrator",
     "ArbitrationStrategy",
     "ArbitrationResult",
     "DebateManager",
     "DebateRole",
-    "DebateResult"
+    "DebateResult",
 ]

@@ -45,8 +45,8 @@ def test_direct_reasoning_import():
 
         # Assert success instead of returning
         assert result is not None
-        assert hasattr(result, 'reasoning_type')
-        assert hasattr(result, 'confidence')
+        assert hasattr(result, "reasoning_type")
+        assert hasattr(result, "confidence")
 
     except Exception as e:
         print(f"  ❌ Direct reasoning import failed: {e}")
@@ -223,8 +223,8 @@ def test_standalone_agentnet():
 
         # Assert success instead of returning
         assert multi_result is not None
-        assert 'transcript' in multi_result
-        assert len(multi_result['transcript']) > 0
+        assert "transcript" in multi_result
+        assert len(multi_result["transcript"]) > 0
 
     except Exception as e:
         print(f"  ❌ Standalone AgentNet test failed: {e}")

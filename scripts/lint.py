@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Development utility: Code linting with flake8."""
+"""Development utility: Code linting with flake8.
+
+DEPRECATED: This script is deprecated and will be removed in a future release.
+Please use the unified CLI instead:
+    python -m cli.main lint
+    or: python cli/main.py lint
+"""
 
 import subprocess
 import sys
@@ -8,6 +14,10 @@ from pathlib import Path
 
 def main():
     """Run code linting tools."""
+    print("⚠️  DEPRECATION WARNING: This script is deprecated.")
+    print("    Please use: python -m cli.main lint")
+    print()
+
     root_dir = Path(__file__).parent.parent
 
     print("🔍 Linting code with flake8...")

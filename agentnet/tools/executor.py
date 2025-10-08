@@ -31,11 +31,11 @@ class ToolExecutor:
 
         # Execution cache for deterministic tools
         self._cache: Dict[str, ToolResult] = {}
-        
+
         # Security configuration
         self.enable_sandboxing = True
         self.security_checks = True
-        
+
         # Tool governance settings
         self.governance_enabled = policy_engine is not None
         self.custom_validators: Dict[str, List[callable]] = {}
@@ -212,24 +212,24 @@ class ToolExecutor:
             "security_checks": self.security_checks,
             "sandboxing_enabled": self.enable_sandboxing,
         }
-    
+
     def add_custom_validator(self, tool_name: str, validator_fn: callable) -> None:
         """Add a custom validation function for a specific tool."""
         if tool_name not in self.custom_validators:
             self.custom_validators[tool_name] = []
         self.custom_validators[tool_name].append(validator_fn)
         logger.info(f"Added custom validator for tool: {tool_name}")
-    
+
     async def validate_tool_governance(
-        self, 
-        tool: Tool, 
+        self,
+        tool: Tool,
         parameters: Dict[str, Any],
         user_id: Optional[str] = None,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Validate tool usage against governance policies.
-        
+
         Returns:
             Dict with validation result and any policy violations
         """
@@ -237,12 +237,12 @@ class ToolExecutor:
             "allowed": True,
             "violations": [],
             "recommendations": [],
-            "risk_level": "low"
+            "risk_level": "low",
         }
-        
+
         if not self.governance_enabled:
             return validation_result
-        
+
         # Create governance context
         gov_context = {
             "tool_name": tool.spec.name,
@@ -251,30 +251,31 @@ class ToolExecutor:
             "user_id": user_id,
             "agent_name": context.get("agent_name", "") if context else "",
             "agent_role": context.get("agent_role", "") if context else "",
-            "action_type": "tool_execution"
+            "action_type": "tool_execution",
         }
-        
+
         # Evaluate with policy engine
         try:
             policy_result = self.policy_engine.evaluate_tool_usage_policy(
                 tool.spec.name, parameters, gov_context
             )
-            
+
             if policy_result.action.value in ["block", "require_approval"]:
                 validation_result["allowed"] = False
                 validation_result["risk_level"] = "high"
             elif policy_result.action.value == "log":
                 validation_result["risk_level"] = "medium"
-            
-            validation_result["violations"] = [v.to_dict() for v in policy_result.violations]
-            
+
+            validation_result["violations"] = [
+                v.to_dict() for v in policy_result.violations
+            ]
+
         except Exception as e:
             logger.error(f"Policy evaluation failed for tool {tool.spec.name}: {e}")
-            validation_result["violations"].append({
-                "type": "policy_evaluation_error",
-                "message": str(e)
-            })
-        
+            validation_result["violations"].append(
+                {"type": "policy_evaluation_error", "message": str(e)}
+            )
+
         # Run custom validators
         if tool.spec.name in self.custom_validators:
             for validator in self.custom_validators[tool.spec.name]:
@@ -286,17 +287,15 @@ class ToolExecutor:
                             validation_result["allowed"] = False
                 except Exception as e:
                     logger.error(f"Custom validator failed for {tool.spec.name}: {e}")
-        
+
         return validation_result
-    
+
     def validate_tool_security(
-        self, 
-        tool: Tool, 
-        parameters: Dict[str, Any]
+        self, tool: Tool, parameters: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Validate tool security constraints.
-        
+
         Returns:
             Dict with security validation results
         """
@@ -304,12 +303,12 @@ class ToolExecutor:
             "secure": True,
             "security_level": "standard",
             "warnings": [],
-            "sandbox_required": False
+            "sandbox_required": False,
         }
-        
+
         if not self.security_checks:
             return security_result
-        
+
         # Check for high-risk operations
         high_risk_categories = ["system", "file", "network", "exec"]
         if tool.spec.category in high_risk_categories:
@@ -318,7 +317,7 @@ class ToolExecutor:
             security_result["warnings"].append(
                 f"Tool category '{tool.spec.category}' requires enhanced security"
             )
-        
+
         # Check for dangerous parameters
         dangerous_params = ["command", "exec", "eval", "path", "url"]
         for param_name, param_value in parameters.items():
@@ -327,16 +326,16 @@ class ToolExecutor:
                     f"Parameter '{param_name}' flagged as potentially dangerous"
                 )
                 if isinstance(param_value, str) and any(
-                    danger in param_value.lower() 
+                    danger in param_value.lower()
                     for danger in ["rm ", "del ", "format", "sudo", "admin"]
                 ):
                     security_result["secure"] = False
                     security_result["warnings"].append(
                         f"Parameter '{param_name}' contains dangerous content"
                     )
-        
+
         return security_result
-    
+
     async def execute_with_governance(
         self,
         tool_name: str,
@@ -345,16 +344,16 @@ class ToolExecutor:
         context: Optional[Dict[str, Any]] = None,
     ) -> ToolResult:
         """Execute tool with full governance and security validation."""
-        
+
         # Get tool
         tool = self.registry.get_tool(tool_name)
         if not tool:
             return ToolResult(
                 status=ToolStatus.ERROR,
                 error_message=f"Tool '{tool_name}' not found",
-                execution_time=0.0
+                execution_time=0.0,
             )
-        
+
         # Security validation
         security_result = self.validate_tool_security(tool, parameters)
         if not security_result["secure"]:
@@ -362,9 +361,9 @@ class ToolExecutor:
                 status=ToolStatus.BLOCKED,
                 error_message="Tool execution blocked due to security concerns",
                 execution_time=0.0,
-                metadata={"security_validation": security_result}
+                metadata={"security_validation": security_result},
             )
-        
+
         # Governance validation
         governance_result = await self.validate_tool_governance(
             tool, parameters, user_id, context
@@ -374,17 +373,19 @@ class ToolExecutor:
                 status=ToolStatus.BLOCKED,
                 error_message="Tool execution blocked by governance policy",
                 execution_time=0.0,
-                metadata={"governance_validation": governance_result}
+                metadata={"governance_validation": governance_result},
             )
-        
+
         # Execute tool with standard flow if all validations pass
         result = await self.execute_tool(tool_name, parameters, user_id, context)
-        
+
         # Add governance metadata to result
-        result.metadata.update({
-            "governance_validation": governance_result,
-            "security_validation": security_result,
-            "governance_enabled": self.governance_enabled
-        })
-        
+        result.metadata.update(
+            {
+                "governance_validation": governance_result,
+                "security_validation": security_result,
+                "governance_enabled": self.governance_enabled,
+            }
+        )
+
         return result

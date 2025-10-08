@@ -57,9 +57,7 @@ def create_custom_monitor(spec: MonitorSpec) -> MonitorFn:
         if MonitorFactory._should_cooldown(spec, task):
             return
 
-        outcome = (
-            result if isinstance(result, dict) else {"content": str(result)}
-        )
+        outcome = result if isinstance(result, dict) else {"content": str(result)}
         ret = func(outcome)
 
         if isinstance(ret, tuple):
@@ -80,9 +78,7 @@ def create_custom_monitor(spec: MonitorSpec) -> MonitorFn:
                 )
             ]
             detail = {"outcome": outcome, "violations": violations}
-            MonitorFactory._handle(
-                spec, agent, task, passed=False, detail=detail
-            )
+            MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
 
     return monitor
 
@@ -103,9 +99,7 @@ def create_llm_classifier_monitor(spec: MonitorSpec) -> MonitorFn:
     model_name = spec.params.get("model", "moderation-small")
     threshold = float(spec.params.get("threshold", 0.78))
     classifier_type = spec.params.get("classifier_type", "toxicity")
-    violation_name = spec.params.get(
-        "violation_name", f"{spec.name}_classifier"
-    )
+    violation_name = spec.params.get("violation_name", f"{spec.name}_classifier")
 
     def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
         # Import here to avoid circular imports
@@ -115,9 +109,7 @@ def create_llm_classifier_monitor(spec: MonitorSpec) -> MonitorFn:
             return
 
         content = (
-            str(result.get("content", ""))
-            if isinstance(result, dict)
-            else str(result)
+            str(result.get("content", "")) if isinstance(result, dict) else str(result)
         )
         if not content.strip():
             return
@@ -146,9 +138,7 @@ def create_llm_classifier_monitor(spec: MonitorSpec) -> MonitorFn:
                 "outcome": {"content": content},
                 "violations": violations,
             }
-            MonitorFactory._handle(
-                spec, agent, task, passed=False, detail=detail
-            )
+            MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
 
     return monitor
 
@@ -169,9 +159,7 @@ def create_numerical_threshold_monitor(spec: MonitorSpec) -> MonitorFn:
     field_name = spec.params.get("field", "confidence")
     min_value = spec.params.get("min_value")
     max_value = spec.params.get("max_value")
-    violation_name = spec.params.get(
-        "violation_name", f"{spec.name}_threshold"
-    )
+    violation_name = spec.params.get("violation_name", f"{spec.name}_threshold")
 
     def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
         # Import here to avoid circular imports
@@ -231,9 +219,7 @@ def create_numerical_threshold_monitor(spec: MonitorSpec) -> MonitorFn:
 
         if violations:
             detail = {"outcome": result, "violations": violations}
-            MonitorFactory._handle(
-                spec, agent, task, passed=False, detail=detail
-            )
+            MonitorFactory._handle(spec, agent, task, passed=False, detail=detail)
 
     return monitor
 
@@ -261,9 +247,9 @@ def _simulate_classifier_score(content: str, classifier_type: str) -> float:
             "racist",
             "sexist",
         ]
-        score = sum(
-            1 for word in toxic_keywords if word in content_lower
-        ) / len(toxic_keywords)
+        score = sum(1 for word in toxic_keywords if word in content_lower) / len(
+            toxic_keywords
+        )
         return min(score * 2.0, 1.0)  # Scale and cap at 1.0
 
     elif classifier_type == "pii":

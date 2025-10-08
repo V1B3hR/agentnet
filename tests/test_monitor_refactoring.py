@@ -25,22 +25,22 @@ def test_monitor_factory_with_refactored_modules():
     # Test keyword monitor
     keyword_spec = MonitorSpec(
         name="test_keyword",
-        type="keyword", 
+        type="keyword",
         params={"keywords": ["test", "error"]},
         severity=Severity.MINOR,
-        description="Test keyword monitor"
+        description="Test keyword monitor",
     )
     keyword_monitor = MonitorFactory.build(keyword_spec)
     assert callable(keyword_monitor)
     print("  ✅ Keyword monitor created successfully")
 
-    # Test regex monitor  
+    # Test regex monitor
     regex_spec = MonitorSpec(
         name="test_regex",
         type="regex",
         params={"pattern": r"\berror\b"},
         severity=Severity.MINOR,
-        description="Test regex monitor"
+        description="Test regex monitor",
     )
     regex_monitor = MonitorFactory.build(regex_spec)
     assert callable(regex_monitor)
@@ -52,7 +52,7 @@ def test_monitor_factory_with_refactored_modules():
         type="resource",
         params={"budget_key": "resource_budget", "tolerance": 0.2},
         severity=Severity.MINOR,
-        description="Test resource monitor"
+        description="Test resource monitor",
     )
     resource_monitor = MonitorFactory.build(resource_spec)
     assert callable(resource_monitor)
@@ -64,7 +64,7 @@ def test_monitor_factory_with_refactored_modules():
         type="semantic_similarity",
         params={"max_similarity": 0.9, "window_size": 3},
         severity=Severity.MINOR,
-        description="Test semantic monitor"
+        description="Test semantic monitor",
     )
     semantic_monitor = MonitorFactory.build(semantic_spec)
     assert callable(semantic_monitor)
@@ -88,9 +88,9 @@ def test_individual_monitor_modules():
         name="direct_test",
         type="keyword",
         params={"keywords": ["direct"]},
-        severity=Severity.MINOR
+        severity=Severity.MINOR,
     )
-    
+
     direct_monitor = create_keyword_monitor(spec)
     assert callable(direct_monitor)
     print("  ✅ Direct monitor creation works")
@@ -109,7 +109,7 @@ def test_monitor_integration_with_agent():
         type="keyword",
         params={"keywords": ["fail", "error"]},
         severity=Severity.MINOR,
-        description="Integration test keyword monitor"
+        description="Integration test keyword monitor",
     )
     keyword_monitor = MonitorFactory.build(keyword_spec)
     agent.register_monitor(keyword_monitor)
@@ -134,19 +134,19 @@ def test_experiments_utils_compatibility():
             create_repetition_monitor,
             create_semantic_similarity_monitor,
         )
-        
+
         print("  ✅ Experiments utils monitors can be imported")
 
         # Test creating a repetition monitor
         repetition_spec = MonitorSpec(
             name="test_repetition",
-            type="repetition", 
+            type="repetition",
             params={"max_similarity": 0.8, "window_size": 3},
             severity=Severity.MINOR,
             description="Test repetition monitor",
-            cooldown_seconds=None
+            cooldown_seconds=None,
         )
-        
+
         repetition_monitor = create_repetition_monitor(repetition_spec)
         assert callable(repetition_monitor)
         print("  ✅ Repetition monitor creation works")
@@ -185,6 +185,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Test failed: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
 

@@ -10,14 +10,14 @@ from .modes import (
     DebateStrategy,
     ConsensusStrategy,
     WorkflowStrategy,
-    DialogueStrategy
+    DialogueStrategy,
 )
 
 __all__ = [
     "BaseStrategy",
-    "BrainstormStrategy", 
+    "BrainstormStrategy",
     "DebateStrategy",
     "ConsensusStrategy",
     "WorkflowStrategy",
-    "DialogueStrategy"
+    "DialogueStrategy",
 ]

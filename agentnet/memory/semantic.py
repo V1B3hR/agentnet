@@ -15,6 +15,7 @@ from .base import MemoryEntry, MemoryLayer, MemoryType
 try:
     from ..core.cache import CacheManager
     from .retention import RetentionManager, RetentionPolicy
+
     _CACHE_AVAILABLE = True
 except ImportError:
     CacheManager = None
@@ -179,9 +180,11 @@ class SemanticMemory(MemoryLayer):
             # Default retention policy can be configured
             if retention_config.get("policy"):
                 from .retention import (
-                    LRURetentionPolicy, SemanticSalienceRetentionPolicy,
-                    HybridRetentionPolicy
+                    LRURetentionPolicy,
+                    SemanticSalienceRetentionPolicy,
+                    HybridRetentionPolicy,
                 )
+
                 policy_type = retention_config["policy"]
                 if policy_type == "lru":
                     policy = LRURetentionPolicy(retention_config)
@@ -280,7 +283,7 @@ class SemanticMemory(MemoryLayer):
                 # Add similarity to metadata
                 entry.metadata["similarity_score"] = similarity
                 entries.append(entry)
-                
+
                 # Update access tracking for retention
                 if self.retention_manager:
                     self.retention_manager.update_access(entry_id, MemoryType.SEMANTIC)
@@ -310,14 +313,16 @@ class SemanticMemory(MemoryLayer):
             entries_by_time = sorted(
                 self._content_store.items(), key=lambda x: x[1].timestamp
             )
-            entries_to_remove = [entry_id for entry_id, _ in entries_by_time[:entries_to_remove_count]]
+            entries_to_remove = [
+                entry_id for entry_id, _ in entries_by_time[:entries_to_remove_count]
+            ]
 
         # Remove selected entries
         for entry_id in entries_to_remove:
             self.vector_store.delete(entry_id)
             if entry_id in self._content_store:
                 del self._content_store[entry_id]
-            
+
             # Remove from retention tracking
             if self.retention_manager:
                 self.retention_manager.remove_entry(entry_id, MemoryType.SEMANTIC)

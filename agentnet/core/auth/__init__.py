@@ -1,6 +1,11 @@
 """Authentication and Role-Based Access Control (RBAC) for AgentNet."""
 
-from .middleware import AuthMiddleware, SecurityIsolationManager, get_current_tenant, get_current_user
+from .middleware import (
+    AuthMiddleware,
+    SecurityIsolationManager,
+    get_current_tenant,
+    get_current_user,
+)
 from .rbac import Permission, RBACManager, Role, User, require_permission
 
 __all__ = [

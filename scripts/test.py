@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Development utility: Test harness for AgentNet."""
+"""Development utility: Test harness for AgentNet.
+
+DEPRECATED: This script is deprecated and will be removed in a future release.
+Please use the unified CLI instead:
+    python -m cli.main test
+    or: python cli/main.py test
+"""
 
 import os
 import subprocess
@@ -9,6 +15,10 @@ from pathlib import Path
 
 def main():
     """Run test harness."""
+    print("⚠️  DEPRECATION WARNING: This script is deprecated.")
+    print("    Please use: python -m cli.main test")
+    print()
+
     root_dir = Path(__file__).parent.parent
 
     print("🧪 Running AgentNet test harness...")
