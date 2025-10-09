@@ -43,13 +43,28 @@ from agentnet.monitors.base import MonitorFn
 from agentnet.persistence.agent_state import AgentStateManager
 from agentnet.persistence.session import SessionManager
 from agentnet.tools.executor import ToolExecutor
-from .tools.registry import ToolRegistry
+from agentnet.tools.registry import ToolRegistry
 from .autoconfig import get_global_autoconfig
 from .cost.recorder import CostRecorder
 from .types import CognitiveFault
 from .planner import Planner
 from .self_reflection import SelfReflection
 from .skill_manager import SkillManager
+
+# Import message schema for structured message generation
+try:
+    from agentnet.schemas import (
+        TurnMessage,
+        MessageFactory,
+        MessageType,
+        MonitorStatus,
+        CostProvider,
+    )
+    _schemas_available = True
+except ImportError:
+    _schemas_available = False
+    TurnMessage = None
+    MessageFactory = None
 
 # Phase 7 Advanced Intelligence & Reasoning imports
 try:
@@ -511,22 +526,65 @@ class AgentNet:
             tags=list(tags),
         )
 
-    def _maybe_record_cost(self, result: Dict[str, Any]) -> None:
-        """Record cost if usage metadata is found."""
+    def _maybe_record_cost(
+        self, 
+        result: Dict[str, Any],
+        task_id: Optional[str] = None,
+        session_id: Optional[str] = None,
+    ) -> Optional[Any]:
+        """
+        Record cost if usage metadata is found.
+        
+        Enhanced for Step 3: Complete Partial Implementations - Cost Tracking Integration.
+        """
         usage = result.get("usage") or result.get("metadata", {}).get("usage")
-        if usage and self.cost_recorder:
+        tokens = result.get("tokens", {})
+        
+        # Extract token information from various possible formats
+        tokens_input = (
+            usage.get("prompt_tokens", 0) if usage else 0
+        ) or tokens.get("input", 0)
+        tokens_output = (
+            usage.get("completion_tokens", 0) if usage else 0
+        ) or tokens.get("output", 0)
+        
+        if (tokens_input > 0 or tokens_output > 0) and self.cost_recorder:
             try:
-                self.cost_recorder.record(
-                    tenant_id=self.tenant_id or "default",
-                    prompt_tokens=usage.get("prompt_tokens", 0),
-                    completion_tokens=usage.get("completion_tokens", 0),
-                    total_tokens=usage.get("total_tokens"),
-                    model=usage.get("model"),
-                    cost=usage.get("cost"),
-                    meta={"agent": self.name},
+                # Determine provider and model
+                provider = getattr(self.engine, 'provider', 'unknown')
+                model = (
+                    usage.get("model") if usage 
+                    else getattr(self.engine, 'model_name', 'unknown')
                 )
+                
+                # Create a result dict with the expected format
+                cost_result = {
+                    "tokens_input": tokens_input,
+                    "tokens_output": tokens_output,
+                    "content": result.get("content", ""),
+                }
+                
+                # Record the cost
+                cost_record = self.cost_recorder.record_inference_cost(
+                    provider=provider,
+                    model=model,
+                    result=cost_result,
+                    agent_name=self.name,
+                    task_id=task_id or "unknown",
+                    session_id=session_id,
+                    tenant_id=self.tenant_id or "default",
+                    metadata={"confidence": result.get("confidence")},
+                )
+                
+                self.logger.debug(
+                    f"Recorded cost: ${cost_record.total_cost:.6f} for task {task_id}"
+                )
+                return cost_record
+                
             except Exception as e:  # pragma: no cover
                 logger.debug("Failed to record cost: %s", e)
+                
+        return None
 
     def _generate_reasoning_tree(
         self,
@@ -1047,6 +1105,163 @@ class AgentNet:
             return None
         spec = self.tool_registry.get_tool_spec(tool_name)
         return spec.to_dict() if spec else None
+
+    # ------------------------------------------------------------------
+    # Message Schema Integration (Step 3: Complete Partial Implementations)
+    # ------------------------------------------------------------------
+    def to_turn_message(
+        self,
+        reasoning_tree: ReasoningTree,
+        task_id: Optional[str] = None,
+    ) -> Optional["TurnMessage"]:
+        """
+        Convert a ReasoningTree to a structured TurnMessage.
+        
+        This implements message schema integration (Step 3 of roadmap) by
+        providing a standard JSON contract for agent responses.
+        
+        Args:
+            reasoning_tree: The reasoning tree to convert
+            task_id: Optional task identifier (generated if not provided)
+            
+        Returns:
+            TurnMessage if schemas are available, None otherwise
+        """
+        if not _schemas_available or MessageFactory is None:
+            self.logger.debug("Message schema not available, skipping TurnMessage generation")
+            return None
+            
+        try:
+            result = reasoning_tree.get("result", {})
+            content = str(result.get("content", ""))
+            confidence = float(result.get("confidence", 0.0))
+            
+            # Extract token information if available
+            tokens_info = result.get("tokens", {})
+            input_tokens = int(tokens_info.get("input", 0))
+            output_tokens = int(tokens_info.get("output", 0))
+            
+            # Extract timing information
+            runtime = reasoning_tree.get("runtime", 0.0)
+            timestamp = reasoning_tree.get("timestamp", time.time())
+            
+            # Create the message using the factory
+            message = MessageFactory.create_turn_message(
+                agent_name=self.name,
+                prompt=reasoning_tree.get("task", ""),
+                content=content,
+                confidence=confidence,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                task_id=task_id,
+                duration=runtime,
+            )
+            
+            # Add monitor results if available
+            monitor_trace = reasoning_tree.get("monitor_trace", [])
+            for monitor_result in monitor_trace:
+                status_str = monitor_result.get("status", "unknown")
+                # Map status strings to MonitorStatus enum
+                if status_str == "success":
+                    status = MonitorStatus.PASS
+                elif status_str == "error":
+                    status = MonitorStatus.ERROR
+                elif status_str == "violation":
+                    status = MonitorStatus.FAIL
+                else:
+                    status = MonitorStatus.SKIP
+                    
+                message.add_monitor_result(
+                    name=monitor_result.get("name", "unknown"),
+                    status=status,
+                    elapsed_ms=monitor_result.get("elapsed_ms", 0.0),
+                    details=monitor_result.get("details"),
+                )
+            
+            # Add cost information if available from cost_recorder
+            if hasattr(self, 'cost_recorder') and self.cost_recorder:
+                # Try to get recent cost record for this task
+                try:
+                    # The cost model will use estimation for now
+                    # Full integration would require cost_recorder.get_task_cost(task_id)
+                    if input_tokens + output_tokens > 0:
+                        from agentnet.schemas import CostModel
+                        # Estimate cost based on tokens (simplified)
+                        estimated_cost = (input_tokens * 0.00001 + output_tokens * 0.00003)
+                        message.cost = CostModel(
+                            provider=CostProvider.EXAMPLE,
+                            model=getattr(self.engine, 'model_name', 'unknown'),
+                            usd=estimated_cost,
+                            estimated=True,
+                        )
+                except Exception as e:
+                    self.logger.debug(f"Could not add cost information: {e}")
+            
+            # Add metadata
+            message.metadata.update({
+                "agent_style": reasoning_tree.get("style", {}),
+                "memory_used": reasoning_tree.get("memory_used", False),
+                "autoconfig": reasoning_tree.get("autoconfig", {}),
+            })
+            
+            return message
+            
+        except Exception as e:
+            self.logger.error(f"Failed to convert ReasoningTree to TurnMessage: {e}")
+            return None
+
+    def get_cost_summary(
+        self,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        agent_name: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Get cost summary for this agent or all agents.
+        
+        This implements cost tracking integration (Step 3 of roadmap) by
+        providing access to cost analytics and reporting.
+        
+        Args:
+            start_date: Start date for cost query
+            end_date: End date for cost query
+            agent_name: Agent name to filter by (defaults to this agent)
+            
+        Returns:
+            Dictionary with cost summary information
+        """
+        if not self.cost_recorder:
+            return {
+                "error": "Cost recorder not available",
+                "total_cost": 0.0,
+                "record_count": 0,
+            }
+        
+        try:
+            from ..core.cost.recorder import CostAggregator
+            
+            aggregator = CostAggregator(self.cost_recorder)
+            
+            # Use this agent's name if not specified
+            if agent_name is None:
+                agent_name = self.name
+            
+            # Get cost summary
+            summary = aggregator.get_cost_summary(
+                start_date=start_date,
+                end_date=end_date,
+                agent_name=agent_name,
+            )
+            
+            return summary
+            
+        except Exception as e:
+            self.logger.error(f"Failed to get cost summary: {e}")
+            return {
+                "error": str(e),
+                "total_cost": 0.0,
+                "record_count": 0,
+            }
 
     # ------------------------------------------------------------------
     # Phase 7 advanced / hybrid reasoning

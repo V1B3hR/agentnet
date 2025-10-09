@@ -40,7 +40,8 @@ class DescribedEnum(str, Enum):
     """
 
     # Allow subclasses to define optional synonyms mapping if desired
-    _synonyms_: ClassVar[Dict[str, str]] = {}
+    # Changed from _synonyms_ to synonyms_map to avoid Python 3.12+ Enum restrictions
+    synonyms_map: ClassVar[Dict[str, str]] = {}
 
     def __new__(cls, value: str, description: str = ""):
         obj = str.__new__(cls, value)
@@ -173,7 +174,7 @@ class DescribedEnum(str, Enum):
             if item in cls.values():
                 return True
             # Accept synonyms
-            if item in cls._synonyms_ and cls._synonyms_[item] in cls.values():
+            if item in cls.synonyms_map and cls.synonyms_map[item] in cls.values():
                 return True
         return False
 
