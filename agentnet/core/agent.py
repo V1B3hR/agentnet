@@ -38,11 +38,11 @@ from typing import (
     TypedDict,
 )
 
-from .memory.manager import MemoryManager
-from .monitors.base import MonitorFn
-from .persistence.agent_state import AgentStateManager
-from .persistence.session import SessionManager
-from .tools.executor import ToolExecutor
+from agentnet.memory.manager import MemoryManager
+from agentnet.monitors.base import MonitorFn
+from agentnet.persistence.agent_state import AgentStateManager
+from agentnet.persistence.session import SessionManager
+from agentnet.tools.executor import ToolExecutor
 from .tools.registry import ToolRegistry
 from .autoconfig import get_global_autoconfig
 from .cost.recorder import CostRecorder

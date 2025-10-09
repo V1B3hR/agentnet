@@ -7,7 +7,6 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Set
 
 import jwt
-import pyjwt>=2.0.0
 from .rbac import RBACManager, Role, User, set_current_tenant, set_current_user
 
 logger = logging.getLogger("agentnet.auth")

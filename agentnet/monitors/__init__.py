@@ -1,6 +1,6 @@
 """Monitor system for AgentNet."""
 
-from .base import MonitorFn, MonitorSpec, MonitorTemplate
+from .base import MonitorFn, MonitorSpec
 from .custom import register_custom_monitor_func
 from .factory import MonitorFactory
 
@@ -14,7 +14,6 @@ from .semantic import create_semantic_similarity_monitor
 __all__ = [
     "MonitorFn",
     "MonitorSpec",
-    "MonitorTemplate",
     "MonitorFactory",
     "MonitorManager",
     "register_custom_monitor_func",
