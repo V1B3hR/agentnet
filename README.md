@@ -3,7 +3,7 @@
 Policy-governed multi-agent LLM framework for dialogue, debate, tool-use, memory, and observability.  
 Designed for safe, inspectable, and extensible cognitive workflows.
 
-> **Status: UNDER ACTIVE DEVELOPMENT** - Core architecture implemented with excellent documentation, but several critical dependencies missing. See [ROADMAP_AUDIT_REPORT.md](ROADMAP_AUDIT_REPORT.md) for detailed implementation status.
+> **Status: UNDER ACTIVE DEVELOPMENT** - Core architecture implemented with excellent documentation. Step 3 roadmap items in progress (2/5 completed: message schema & cost tracking integrated). See [ROADMAP_AUDIT_REPORT.md](ROADMAP_AUDIT_REPORT.md) for detailed implementation status.
 
 ## ⚠️ Current Status & Known Issues
 
@@ -13,14 +13,15 @@ Designed for safe, inspectable, and extensible cognitive workflows.
 - ✅ Task graph planning and orchestration logic
 - ✅ API endpoints structure (/tasks/plan, /tasks/execute, /eval/run)
 - ✅ Comprehensive documentation and architectural planning
-- ✅ **NEW**: Schema validation (pydantic imports working)
+- ✅ **NEW**: Message schema integration (pydantic-based, full AgentNet integration via `to_turn_message()`)
+- ✅ **NEW**: Cost tracking integration (automatic recording, analytics via `get_cost_summary()`)
 - ✅ **NEW**: Test execution framework (pytest functional)
 - ✅ **NEW**: Observability imports (prometheus-client, opentelemetry-api)
 - ✅ **NEW**: Phase 9 Deep Learning scaffolding (model registry, training pipeline, fine-tuning)
 
 **Minor Issues (Non-blocking):**
 - 🟠 Some advanced tests require optional dependencies (networkx for DAG components)
-- 🟠 Integration features are partial implementations 
+- 🟠 Step 3 partial implementations (3 of 5 remaining: tool governance, LLM provider adapters, policy features)
 - 🔴 **No CI/CD**: Despite documentation, no automation implemented
 
 ~~**Critical Issues (Blocks Basic Usage):**~~ **RESOLVED**
