@@ -144,4 +144,69 @@ def _create_semantic_monitor_impl(
             max_score = torch.max(similarities).item()
             
             # Check for max_similarity violation
-            if m
+            if max_similarity is not None and max_score > max_similarity:
+                from .factory import MonitorFactory
+                MonitorFactory._record_violation(
+                    spec, task, agent,
+                    f"{violation_name}: Similarity score {max_score:.3f} exceeds max threshold of {max_similarity} (mode: {comparison_mode})"
+                )
+            
+            # Check for min_similarity violation
+            min_score = torch.min(similarities).item() if min_similarity is not None else None
+            if min_similarity is not None and min_score is not None and min_score < min_similarity:
+                from .factory import MonitorFactory
+                MonitorFactory._record_violation(
+                    spec, task, agent,
+                    f"{violation_name}: Similarity score {min_score:.3f} below min threshold of {min_similarity} (mode: {comparison_mode})"
+                )
+
+        # Store current embedding in history if not using reference texts
+        if reference_embeddings is None:
+            agent_key = f"{agent.name}_{task}_{model_name}"
+            if agent_key in _history_cache:
+                _history_cache[agent_key].append(current_embedding)
+
+    return monitor
+
+
+def _create_jaccard_fallback_monitor(spec, max_similarity, window_size, violation_name) -> MonitorFn:
+    """Creates a fallback monitor using Jaccard similarity when sentence-transformers is not available."""
+    
+    def jaccard_similarity(text1: str, text2: str) -> float:
+        """Calculate Jaccard similarity between two texts."""
+        tokens1 = set(text1.lower().split())
+        tokens2 = set(text2.lower().split())
+        intersection = tokens1.intersection(tokens2)
+        union = tokens1.union(tokens2)
+        return len(intersection) / len(union) if union else 0.0
+
+    def monitor(agent: "AgentNet", task: str, result: Dict[str, Any]) -> None:
+        from .factory import MonitorFactory
+        if MonitorFactory._should_cooldown(spec, task):
+            return
+
+        content = str(result.get("content", "")) if isinstance(result, dict) else str(result)
+        if not content.strip():
+            return
+
+        # Use history cache for comparison
+        agent_key = f"{agent.name}_{task}_jaccard"
+        if agent_key not in _history_cache:
+            _history_cache[agent_key] = deque(maxlen=window_size)
+        
+        history = _history_cache[agent_key]
+        
+        if history and max_similarity is not None:
+            # Compare against history
+            max_score = max(jaccard_similarity(content, past_content) for past_content in history)
+            
+            if max_score > max_similarity:
+                MonitorFactory._record_violation(
+                    spec, task, agent,
+                    f"{violation_name}: Jaccard similarity {max_score:.3f} exceeds max threshold of {max_similarity}"
+                )
+        
+        # Store current content in history
+        history.append(content)
+
+    return monitor
