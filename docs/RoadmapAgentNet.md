@@ -223,6 +223,9 @@ CREATE TABLE memory_episode (
 
 ## 9. Message / Turn Schema (JSON Contract)
 
+**Implementation Status:** ✅ **COMPLETED** (Step 3 - Message Schema Integration)  
+Full pydantic-based schema with AgentNet integration via `to_turn_message()` method. See `agentnet/schemas/` and `docs/STEP3_IMPLEMENTATION_SUMMARY.md`.
+
 ```json
 {
   "task_id": "uuid",
@@ -327,6 +330,9 @@ Scheduler:
 
 ## 13. LLM Provider Adapter Contract
 
+**Implementation Status:** 🟠 **PARTIAL** (Step 3 - Remaining Work)  
+Base interface exists with limited provider implementations. Expansion needed for Azure OpenAI, HuggingFace, and custom providers.
+
 ```python
 class ProviderAdapter:
     def infer(self, model: str, prompt: str, **opts) -> "ProviderResult": ...
@@ -340,6 +346,9 @@ Phase 2: Azure OpenAI, HuggingFace, Custom internal
 **Fallback Chain Example:** `gpt-4o → gpt-4o-mini → local → synthetic stub`
 
 ## 14. Tool System
+
+**Implementation Status:** 🟠 **PARTIAL** (Step 3 - Remaining Work)  
+Core structure exists. Tool governance with approval workflows and policies needs completion. See `agentnet/tools/` and `docs/security_governance_workflows.md`.
 
 Registration:
 ```json
@@ -360,6 +369,9 @@ Registration:
 Flow: Select → Validate (rate/auth) → Execute → Cache → Append context.
 
 ## 15. Policy & Governance Extensions
+
+**Implementation Status:** 🟠 **PARTIAL** (Step 3 - Remaining Work)  
+Basic policy structure exists. Advanced features (semantic similarity, LLM classifier rules) need completion. See `agentnet/core/policy/`.
 
 New rule types:
 - `semantic_similarity`
@@ -453,6 +465,9 @@ scenarios:
 Per-scenario metrics: coverage_score, novelty_score, coherence_score, rule_violations_count.
 
 ## 20. Cost Tracking Flow
+
+**Implementation Status:** ✅ **COMPLETED** (Step 3 - Cost Tracking Integration)  
+Automatic cost recording with analytics via `get_cost_summary()`. See `agentnet/core/cost/` and `docs/STEP3_IMPLEMENTATION_SUMMARY.md`.
 
 1. Adapter returns token counts.
 2. Pricing table (JSON) applied.
