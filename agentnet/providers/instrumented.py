@@ -23,8 +23,8 @@ from tenacity import (
 
 # --- Observability Imports ---
 # The base class is now directly responsible for instrumentation.
-from ..observability.latency import get_latency_tracker, LatencyComponent
-from ..observability.tokens import get_token_tracker
+from ..performance.latency import get_latency_tracker, LatencyComponent
+from ..performance.tokens import get_token_tracker
 from ..observability.tracing import get_global_tracer, trace_agent_operation
 from ..observability.logging import get_correlation_logger
 
@@ -168,3 +168,19 @@ class ProviderAdapter(ABC):
             "configured_model": self.model_name,
             "supports_streaming": not self.stream_infer.__doc__.startswith("Streaming is not supported"),
         }
+
+
+# Compatibility aliases and helper classes
+class InstrumentedProviderAdapter(ProviderAdapter):
+    """Alias for ProviderAdapter (which already has instrumentation built-in)."""
+    pass
+
+
+class InstrumentedProviderMixin:
+    """Mixin to add instrumentation to provider adapters (no-op since base class has it)."""
+    pass
+
+
+def instrument_provider(provider_class):
+    """Decorator to instrument a provider adapter (no-op since base class has it)."""
+    return provider_class

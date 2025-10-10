@@ -41,13 +41,19 @@ class DescribedEnum(str, Enum):
 
     # Allow subclasses to define optional synonyms mapping if desired
     # Changed from _synonyms_ to synonyms_map to avoid Python 3.12+ Enum restrictions
-    synonyms_map: ClassVar[Dict[str, str]] = {}
+    # Note: In Python 3.12+, we need to use getattr() to access this dynamically
+    # to avoid enum member detection issues
 
     def __new__(cls, value: str, description: str = ""):
         obj = str.__new__(cls, value)
         obj._value_ = value
         obj.description = description
         return obj
+
+    @classmethod
+    def _get_synonyms_map(cls) -> Dict[str, str]:
+        """Safely retrieve synonyms_map, returning empty dict if not defined."""
+        return getattr(cls, 'synonyms_map', {})
 
     # ------------------------------------------------------------------
     # Representation & coercion
@@ -94,8 +100,9 @@ class DescribedEnum(str, Enum):
         """
         if isinstance(value, cls):
             return value
-        if value in cls._synonyms_:
-            value = cls._synonyms_[value]
+        synonyms = cls._get_synonyms_map()
+        if value in synonyms:
+            value = synonyms[value]
         try:
             return cls(value)  # type: ignore[arg-type]
         except ValueError:
@@ -174,7 +181,8 @@ class DescribedEnum(str, Enum):
             if item in cls.values():
                 return True
             # Accept synonyms
-            if item in cls.synonyms_map and cls.synonyms_map[item] in cls.values():
+            synonyms = cls._get_synonyms_map()
+            if item in synonyms and synonyms[item] in cls.values():
                 return True
         return False
 
