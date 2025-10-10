@@ -10,6 +10,20 @@ from .engine import PolicyEngine, PolicyAction, PolicyResult
 from .rules import ConstraintRule, RuleResult, Severity
 from .fundamental_laws import FundamentalLawsEngine, create_all_fundamental_laws
 
+# Import advanced rule types
+try:
+    from .advanced_rules import (
+        SemanticSimilarityRule,
+        LLMClassifierRule,
+        NumericalThresholdRule,
+    )
+    _advanced_rules_available = True
+except ImportError:
+    SemanticSimilarityRule = None
+    LLMClassifierRule = None
+    NumericalThresholdRule = None
+    _advanced_rules_available = False
+
 __all__ = [
     "PolicyEngine",
     "PolicyAction",
@@ -19,4 +33,7 @@ __all__ = [
     "Severity",
     "FundamentalLawsEngine",
     "create_all_fundamental_laws",
+    "SemanticSimilarityRule",
+    "LLMClassifierRule",
+    "NumericalThresholdRule",
 ]
