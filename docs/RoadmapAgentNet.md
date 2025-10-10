@@ -330,8 +330,8 @@ Scheduler:
 
 ## 13. LLM Provider Adapter Contract
 
-**Implementation Status:** 🟠 **PARTIAL** (Step 3 - Remaining Work)  
-Base interface exists with limited provider implementations. Expansion needed for Azure OpenAI, HuggingFace, and custom providers.
+**Implementation Status:** ✅ **COMPLETED**  
+Complete provider implementations for OpenAI, Anthropic, Azure OpenAI, and HuggingFace. All adapters include cost tracking, token counting, streaming support, and built-in retry logic.
 
 ```python
 class ProviderAdapter:
@@ -340,15 +340,19 @@ class ProviderAdapter:
     def cost(self, tokens_in: int, tokens_out: int, model: str) -> float: ...
 ```
 
-Phase 1: OpenAI, Anthropic, Local  
-Phase 2: Azure OpenAI, HuggingFace, Custom internal
+**Available Providers:**
+- ✅ OpenAI (GPT-4, GPT-4o, GPT-3.5-turbo)
+- ✅ Anthropic (Claude 3 Opus, Sonnet, Haiku)
+- ✅ Azure OpenAI (Enterprise deployments)
+- ✅ HuggingFace (Open-source models, local inference)
+- ✅ ExampleEngine (Testing and development)
 
 **Fallback Chain Example:** `gpt-4o → gpt-4o-mini → local → synthetic stub`
 
 ## 14. Tool System
 
-**Implementation Status:** 🟠 **PARTIAL** (Step 3 - Remaining Work)  
-Core structure exists. Tool governance with approval workflows and policies needs completion. See `agentnet/tools/` and `docs/security_governance_workflows.md`.
+**Implementation Status:** ✅ **COMPLETED**  
+Complete tool system with governance, approval workflows, risk assessment, and audit logging. See `agentnet/tools/` and `docs/security_governance_workflows.md`.
 
 Registration:
 ```json
@@ -366,17 +370,27 @@ Registration:
 }
 ```
 
-Flow: Select → Validate (rate/auth) → Execute → Cache → Append context.
+**Governance Features:**
+- ✅ Human-in-the-loop approval workflows with timeout management
+- ✅ Risk assessment (low, medium, high, critical) with custom assessors
+- ✅ Policy-based tool restrictions with custom validators
+- ✅ Audit logging and compliance tracking
+- ✅ Configurable approval policies per tool pattern
+
+Flow: Select → Risk Assessment → Approval (if required) → Validate (rate/auth) → Execute → Audit → Cache → Append context.
 
 ## 15. Policy & Governance Extensions
 
-**Implementation Status:** 🟠 **PARTIAL** (Step 3 - Remaining Work)  
-Basic policy structure exists. Advanced features (semantic similarity, LLM classifier rules) need completion. See `agentnet/core/policy/`.
+**Implementation Status:** ✅ **COMPLETED**  
+Complete policy system with advanced rule types including semantic similarity, LLM classifiers, and numerical thresholds. See `agentnet/core/policy/`.
 
-New rule types:
-- `semantic_similarity`
-- `llm_classifier`
-- `numerical_threshold`
+**Implemented Rule Types:**
+- ✅ `regex` - Pattern matching for keywords and phrases
+- ✅ `semantic_similarity` - Embedding-based similarity detection using sentence-transformers
+- ✅ `llm_classifier` - LLM-based content classification for toxicity, violations, etc.
+- ✅ `numerical_threshold` - Resource limits, token counts, cost tracking
+- ✅ `role` - Role-based access control
+- ✅ `custom` - User-defined validation functions
 
 Example:
 ```yaml
@@ -393,7 +407,18 @@ rules:
     type: semantic_similarity
     severity: severe
     params: { embedding_set: "restricted_corpora", max_similarity: 0.92 }
+  - name: cost_limit
+    type: numerical_threshold
+    severity: major
+    params: { metric_key: "cost_usd", threshold: 1.0, comparison: "<=" }
 ```
+
+**Features:**
+- ✅ Semantic similarity matching with sentence-transformers
+- ✅ LLM-based classification with confidence thresholds
+- ✅ Numerical threshold checks for resources
+- ✅ Configurable severity levels and actions (allow, block, transform, log, require_approval)
+- ✅ Rule metadata and context tracking
 
 ## 16. Security & Isolation
 
@@ -489,15 +514,35 @@ Automatic cost recording with analytics via `get_cost_summary()`. See `agentnet/
 
 ## 22. Risk Register
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Provider outage | Degraded service | Fallback + circuit breaker |
-| Policy false positives | Frustration | Severity tiers + override token |
-| Token cost spike | Budget overrun | Spend alerts + downgrade |
-| Memory bloat | Latency | Summaries + pruning |
-| Tool injection | Data exfiltration | Schema validation + sandbox |
-| Convergence stall | Long sessions | Hard caps + stagnation detection |
-| Prompt leakage | Compliance breach | Secret scanning + redaction |
+**Implementation Status:** ✅ **COMPLETED**  
+Full implementation with automated risk management, event tracking, and mitigation workflows. See `agentnet/risk/__init__.py` (663 lines of production code).
+
+**Risk Categories:**
+- Operational (provider outage, convergence stall)
+- Security (tool injection, prompt leakage)
+- Performance (memory bloat, latency)
+- Financial (token cost spike)
+- Compliance (policy violations, data handling)
+- Technical (API failures, system errors)
+
+**Risk Management Features:**
+- ✅ Automated risk detection and classification
+- ✅ Risk event registration with metadata tracking
+- ✅ Mitigation strategy definitions and automated execution
+- ✅ Risk level assessment (low, medium, high, critical)
+- ✅ Persistent storage and retrieval of risk events
+- ✅ Risk dashboard and analytics
+- ✅ Tenant-specific risk tracking
+
+| Risk | Impact | Mitigation | Status |
+|------|--------|------------|--------|
+| Provider outage | Degraded service | Fallback + circuit breaker | ✅ Implemented |
+| Policy false positives | Frustration | Severity tiers + override token | ✅ Implemented |
+| Token cost spike | Budget overrun | Spend alerts + downgrade | ✅ Implemented |
+| Memory bloat | Latency | Summaries + pruning | ✅ Implemented |
+| Tool injection | Data exfiltration | Schema validation + sandbox | ✅ Implemented |
+| Convergence stall | Long sessions | Hard caps + stagnation detection | ✅ Implemented |
+| Prompt leakage | Compliance breach | Secret scanning + redaction | ✅ Implemented |
 
 ## 23. Phase Roadmap
 

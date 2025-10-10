@@ -6,6 +6,13 @@ telemetry/
 cache/
 demo_output/
 
+# Backup files
+*.backup
+*.bak
+*~
+*.tmp
+*.temp
+
 # ==============================
 # Python bytecode / caches
 # ==============================
