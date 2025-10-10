@@ -8,9 +8,9 @@ monitoring of agent operations, costs, and performance.
 
 # Use lazy imports to avoid pulling in networkx dependency from main package
 def _get_metrics_classes():
-    from .metrics import AgentNetMetrics, MetricsCollector
+    from .metrics import AgentNetMetrics
 
-    return MetricsCollector, AgentNetMetrics
+    return AgentNetMetrics
 
 
 def _get_tracing_classes():
@@ -28,10 +28,11 @@ def _get_logging_classes():
 # Lazy loading attributes
 def __getattr__(name):
     if name == "MetricsCollector":
-        MetricsCollector, _ = _get_metrics_classes()
-        return MetricsCollector
+        # Alias for backwards compatibility
+        AgentNetMetrics = _get_metrics_classes()
+        return AgentNetMetrics
     elif name == "AgentNetMetrics":
-        _, AgentNetMetrics = _get_metrics_classes()
+        AgentNetMetrics = _get_metrics_classes()
         return AgentNetMetrics
     elif name == "TracingManager":
         TracingManager, _ = _get_tracing_classes()
@@ -50,7 +51,7 @@ def __getattr__(name):
 
 
 __all__ = [
-    "MetricsCollector",
+    "MetricsCollector",  # Alias for backwards compatibility
     "AgentNetMetrics",
     "TracingManager",
     "create_tracer",
