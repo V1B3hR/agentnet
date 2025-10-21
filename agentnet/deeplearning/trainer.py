@@ -260,3 +260,68 @@ class DeepLearningTrainer:
                     callback.on_save(self, kwargs["checkpoint_path"])
             except Exception as e:
                 logger.error(f"Callback error in {callback.__class__.__name__}: {e}")
+
+
+def main():
+    """
+    Demo script showing trainer configuration and usage.
+    
+    This demonstrates how to set up and configure the DeepLearningTrainer
+    for training models with AgentNet.
+    """
+    print("\n" + "=" * 60)
+    print("  AgentNet Deep Learning Trainer Demo")
+    print("=" * 60 + "\n")
+    
+    # Create a sample training configuration
+    print("Creating training configuration...")
+    config = TrainingConfig(
+        model_name="demo-model",
+        output_dir="./output/demo_training",
+        learning_rate=2e-5,
+        batch_size=8,
+        num_epochs=3,
+        warmup_steps=100,
+        save_steps=500,
+        logging_steps=10,
+        fp16=True,
+    )
+    
+    print("✓ Training configuration created:")
+    print(f"  Model: {config.model_name}")
+    print(f"  Output: {config.output_dir}")
+    print(f"  Learning Rate: {config.learning_rate}")
+    print(f"  Batch Size: {config.batch_size}")
+    print(f"  Epochs: {config.num_epochs}")
+    print(f"  Mixed Precision (FP16): {config.fp16}")
+    
+    # Show configuration export
+    print(f"\n✓ Configuration can be exported to dict with {len(config.to_dict())} parameters")
+    
+    # Create a trainer instance (stub mode)
+    print("\nCreating trainer instance...")
+    trainer = DeepLearningTrainer(
+        config=config,
+        model=None,  # Model would be provided in real usage
+        train_dataset=None,
+        eval_dataset=None,
+    )
+    
+    print(f"✓ Trainer initialized for: {config.model_name}")
+    print(f"  Current epoch: {trainer.current_epoch}")
+    print(f"  Current step: {trainer.current_step}")
+    print(f"  Callbacks: {len(trainer.callbacks)}")
+    
+    # Show available callback events
+    print("\n✓ Available callback events:")
+    for event in CallbackEvent:
+        print(f"  - {event.value}")
+    
+    print("\n" + "=" * 60)
+    print("  Note: Full training requires PyTorch dependencies")
+    print("  Install with: pip install agentnet[deeplearning]")
+    print("=" * 60 + "\n")
+
+
+if __name__ == "__main__":
+    main()
